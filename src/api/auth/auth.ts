@@ -1,4 +1,5 @@
-import { httpPost, type HttpResponse } from '../utils/request'
+import { httpPost } from '../../utils/http/request.ts'
+import { SERVICE } from '../../config/http/serviceConfig.ts'
 
 // 登录请求 DTO
 export interface LoginRequest {
@@ -22,14 +23,14 @@ export interface LogoutRequest {
 /**
  * 用户登录接口
  */
-export function loginApi(payload: LoginRequest): Promise<HttpResponse<LoginVo>> {
-  return httpPost<LoginVo>('/auth/login', payload)
+export function login(payload: LoginRequest): Promise<LoginVo> {
+  return httpPost<LoginVo>(SERVICE.USERCENTER, '/auth/login', payload)
 }
 
 /**
  * 用户登出接口
  */
-export function logoutApi(payload: LogoutRequest): Promise<HttpResponse<void>> {
-  return httpPost<void>('/auth/logout', payload)
+export function logout(payload: LogoutRequest): Promise<void> {
+  return httpPost<void>(SERVICE.USERCENTER, '/auth/logout', payload)
 }
 

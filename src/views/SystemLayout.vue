@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute, RouterLink, RouterView } from 'vue-router'
-import { logoutApi } from '../api/auth'
-import { useAuthStore } from '../store/auth'
+import { logout } from '../api/auth/auth.ts'
+import { useAuthStore } from '../store/auth/auth.ts'
+import { handleErrorSilent } from '../utils/http/errorHandler.ts'
 import logoImg from '../assets/mms.svg'
 
 const router = useRouter()
@@ -16,18 +17,15 @@ const handleLogout = async () => {
 
   try {
     if (refreshToken) {
-      await logoutApi({ refreshToken })
+      await logout({ refreshToken })
     }
-  } catch (e) {
-    // 登出失败也不阻塞前端清理
-    console.error('调用登出接口失败:', e)
+  } catch (error) {
+    handleErrorSilent(error)
+  } finally {
+    // 清理本地 token 并跳转
+    authStore.clearTokens()
+    await router.push({name: 'login'})
   }
-
-  // 清理本地 token
-  authStore.clearTokens()
-
-  // 跳转到登录页
-  await router.push('/login')
 }
 </script>
 
@@ -52,33 +50,33 @@ const handleLogout = async () => {
         <div class="sider-title">系统管理</div>
         <nav class="menu">
           <RouterLink
-            to="/system/user"
+            to="/system/userPage"
             class="menu-item"
-            :class="{ active: activePath === '/system/user' }"
+            :class="{ active: activePath === '/system/userPage' }"
           >
             <span class="dot"></span>
             <span>用户管理</span>
           </RouterLink>
           <RouterLink
-            to="/system/role"
+            to="/system/rolePage"
             class="menu-item"
-            :class="{ active: activePath === '/system/role' }"
+            :class="{ active: activePath === '/system/rolePage' }"
           >
             <span class="dot"></span>
             <span>角色管理</span>
           </RouterLink>
           <RouterLink
-            to="/system/menu"
+            to="/system/menuPage"
             class="menu-item"
-            :class="{ active: activePath === '/system/menu' }"
+            :class="{ active: activePath === '/system/menuPage' }"
           >
             <span class="dot"></span>
             <span>菜单管理</span>
           </RouterLink>
           <RouterLink
-            to="/system/param"
+            to="/system/paramPage"
             class="menu-item"
-            :class="{ active: activePath === '/system/param' }"
+            :class="{ active: activePath === '/system/paramPage' }"
           >
             <span class="dot"></span>
             <span>参数管理</span>

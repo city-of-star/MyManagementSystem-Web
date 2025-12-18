@@ -1,35 +1,34 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { loginApi, type LoginRequest, type LoginVo } from '../api/auth'
-import { useAuthStore } from '../store/auth'
+import { login, type LoginRequest } from '../../api/auth/auth.ts'
+import { useAuthStore } from '../../store/auth/auth.ts'
+import { handleErrorToast } from '../../utils/http/errorHandler.ts'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+// 表单
 const form = ref<LoginRequest>({
   username: '',
   password: '',
 })
 
+// 登录动画
 const loading = ref(false)
-const errorMsg = ref('')
 
+// 登录
 const handleSubmit = async () => {
-  errorMsg.value = ''
   loading.value = true
   try {
-    const res = await loginApi(form.value)
-    const data: LoginVo = res.data
-
-    // 使用 Pinia 管理并持久化 token
+    // 登录
+    const data = await login(form.value)
+    // 持久化 token
     authStore.setTokens(data.accessToken, data.refreshToken)
-
-    // 登录成功后跳转到系统管理-用户管理页面
-    await router.push('/system/user')
-  } catch (err: any) {
-    console.error('登录失败:', err)
-    errorMsg.value = err?.response?.data?.message || err?.message || '登录失败'
+    // 跳转到用户管理页面
+    await router.push({name: 'userPage'})
+  } catch (error) {
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
@@ -74,8 +73,6 @@ const handleSubmit = async () => {
             {{ loading ? '登录中...' : '登 录' }}
           </button>
         </form>
-
-        <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
       </section>
     </div>
   </main>

@@ -1,29 +1,26 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import Login from '../views/Login.vue'
+import Login from '../views/auth/Login.vue'
 import SystemLayout from '../views/SystemLayout.vue'
-import UserPage from '../views/system/UserPage.vue'
-import RolePage from '../views/system/RolePage.vue'
-import MenuPage from '../views/system/MenuPage.vue'
-import ParamPage from '../views/system/ParamPage.vue'
+import UserPage from '../views/system/user/UserPage.vue'
+import RolePage from '../views/system/role/RolePage.vue'
+import MenuPage from '../views/system/menu/MenuPage.vue'
+import ParamPage from '../views/system/param/ParamPage.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
-    name: 'Login',
+    name: 'login',
     component: Login,
   },
   {
-    path: '/',
-    redirect: '/system/user',
-  },
-  {
     path: '/system',
+    name: 'system',
     component: SystemLayout,
     children: [
-      { path: 'user', name: 'SystemUser', component: UserPage },
-      { path: 'role', name: 'SystemRole', component: RolePage },
-      { path: 'menu', name: 'SystemMenu', component: MenuPage },
-      { path: 'param', name: 'SystemParam', component: ParamPage },
+      { path: 'userPage', name: 'userPage', component: UserPage },
+      { path: 'rolePage', name: 'rolePage', component: RolePage },
+      { path: 'menuPage', name: 'menuPage', component: MenuPage },
+      { path: 'paramPage', name: 'paramPage', component: ParamPage },
     ],
   },
 ]
