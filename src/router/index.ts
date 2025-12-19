@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Login from '../views/auth/Login.vue'
-import SystemLayout from '../views/SystemLayout.vue'
+import Layout from '../layouts/Layout.vue'
 import UserPage from '../views/system/user/UserPage.vue'
 import RolePage from '../views/system/role/RolePage.vue'
 import MenuPage from '../views/system/menu/MenuPage.vue'
@@ -8,19 +8,26 @@ import ParamPage from '../views/system/param/ParamPage.vue'
 
 const routes: RouteRecordRaw[] = [
   {
+    path: '/',
+    redirect: '/login',
+  },
+  {
     path: '/login',
     name: 'login',
     component: Login,
   },
   {
     path: '/system',
-    name: 'system',
-    component: SystemLayout,
+    component: Layout,
     children: [
-      { path: 'userPage', name: 'userPage', component: UserPage },
-      { path: 'rolePage', name: 'rolePage', component: RolePage },
-      { path: 'menuPage', name: 'menuPage', component: MenuPage },
-      { path: 'paramPage', name: 'paramPage', component: ParamPage },
+      { path: 'userPage', name: 'userPage', component: UserPage, meta: { title: '用户管理' } },
+      { path: 'rolePage', name: 'rolePage', component: RolePage, meta: { title: '角色管理' } },
+      { path: 'menuPage', name: 'menuPage', component: MenuPage, meta: { title: '菜单管理' } },
+      { path: 'paramPage', name: 'paramPage', component: ParamPage, meta: { title: '参数管理' } },
+      {
+        path: '',
+        redirect: '/system/userPage',
+      },
     ],
   },
 ]
@@ -36,7 +43,7 @@ router.beforeEach((to, _from, next) => {
   if (to.path !== '/login' && !isLoggedIn) {
     next('/login')
   } else if (to.path === '/login' && isLoggedIn) {
-    next('/system/user')
+    next('/system/userPage')
   } else {
     next()
   }
