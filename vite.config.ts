@@ -16,6 +16,11 @@ export default defineConfig({
         target: 'http://localhost:5092',
         changeOrigin: true,
       },
+      // 开发环境：将 /base 代理到本地网关，避免浏览器跨域问题
+      '/base': {
+        target: 'http://localhost:5092',
+        changeOrigin: true,
+      },
     },
   },
 })
