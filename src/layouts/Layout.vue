@@ -5,7 +5,7 @@ import { logout } from '@/api/auth/auth'
 import { handleErrorSilent } from '@/utils/http/request'
 import LayoutHeader from '@/layouts/LayoutHeader.vue'
 import LayoutSidebar from '@/layouts/LayoutSidebar.vue'
-import LayoutBreadcrumb from '@/layouts/LayoutBreadcrumb.vue'
+import LayoutTabs from '@/layouts/LayoutTabs.vue'
 import { menus } from '@/config/menu/menuConfig'
 
 const router = useRouter()
@@ -33,8 +33,8 @@ const handleLogout = async () => {
     <div class="body">
       <LayoutSidebar :menus="menus" />
       <main class="content">
+        <LayoutTabs />
         <div class="content-inner">
-          <LayoutBreadcrumb />
           <RouterView />
         </div>
       </main>
@@ -48,28 +48,48 @@ const handleLogout = async () => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f3f4f6;
+  background: #f0f2f5;
+  overflow: hidden;
 }
 
 .body {
   flex: 1;
   display: flex;
   min-height: 0;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
-  padding: 16px 18px;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .content-inner {
-  min-height: calc(100vh - 56px - 32px);
-  padding: 16px 18px;
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #f0f2f5;
+}
+
+/* 滚动条样式 */
+.content-inner::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content-inner::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 4px;
+}
+
+.content-inner::-webkit-scrollbar-thumb:hover {
+  background: #8c8c8c;
 }
 </style>
-
-

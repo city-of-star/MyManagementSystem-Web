@@ -13,81 +13,163 @@ const handleLogout = () => {
 
 <template>
   <header class="app-header">
-    <div class="logo-area">
-      <img :src="logoImg" alt="Logo" class="logo-mark" />
-      <div class="logo-text">
-        <div class="name">My Management System</div>
-        <div class="sub">系统管理中心</div>
+    <div class="header-left">
+      <div class="logo-area">
+        <img :src="logoImg" alt="Logo" class="logo-mark" />
+        <div class="logo-text">
+          <div class="name">My Management System</div>
+        </div>
       </div>
     </div>
     <div class="header-right">
-      <span class="welcome">欢迎回来，管理员</span>
-      <button class="logout-btn" type="button" @click="handleLogout">退出登录</button>
+      <div class="user-info">
+        <div class="user-avatar">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+        <span class="username">管理员</span>
+      </div>
+      <div class="divider" />
+      <button class="logout-btn" type="button" @click="handleLogout">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span>退出</span>
+      </button>
     </div>
   </header>
 </template>
 
 <style scoped>
 .app-header {
-  height: 56px;
-  padding: 0 22px;
+  height: 64px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, #111827, #1f2937);
-  color: #e5e7eb;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border-bottom: 1px solid #e8ebf0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .logo-mark {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   object-fit: contain;
   display: block;
 }
 
 .logo-text .name {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
-}
-
-.logo-text .sub {
-  font-size: 11px;
-  color: #9ca3af;
+  background: linear-gradient(135deg, #1677ff 0%, #722ed1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 13px;
 }
 
-.welcome {
-  color: #d1d5db;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.user-info:hover {
+  background: #f5f7fa;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1677ff 0%, #722ed1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(22, 119, 255, 0.2);
+}
+
+.username {
+  font-size: 14px;
+  color: #262626;
+  font-weight: 500;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #e8ebf0;
 }
 
 .logout-btn {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(248, 113, 113, 0.9);
-  background: transparent;
-  color: #fecaca;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e8ebf0;
+  background: #ffffff;
+  color: #595959;
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s ease;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .logout-btn:hover {
-  background: rgba(248, 113, 113, 0.16);
+  background: #fff1f0;
+  border-color: #ffccc7;
+  color: #cf1322;
+}
+
+.logout-btn svg {
+  flex-shrink: 0;
 }
 </style>
-
-
