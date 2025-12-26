@@ -81,15 +81,15 @@ export function handleError(
   const opts = { ...defaultOptions, ...options }
 
   // 兜底：把所有未知错误统一转成 NetworkError，保证后面类型统一
+  let err: BusinessError | NetworkError
   if (!(error instanceof BusinessError) && !(error instanceof NetworkError)) {
     const unknownError = error instanceof Error ? error : new Error(String(error))
-    const networkError = new NetworkError(unknownError.message || '未知错误')
+    err = new NetworkError(unknownError.message || '未知错误')
     // 简单记录一下，方便开发调试
     console.error('[未知错误]', error)
-    return handleError(networkError, opts)
+  } else {
+    err = error as BusinessError | NetworkError
   }
-
-  const err = error as BusinessError | NetworkError
 
   // 静默处理
   if (opts.silent) {

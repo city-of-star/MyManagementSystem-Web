@@ -15,6 +15,11 @@ export interface LoginVo {
   refreshTokenExpiresIn: number
 }
 
+// 刷新Token请求 DTO
+export interface RefreshTokenRequest {
+  refreshToken: string
+}
+
 // 登出请求 DTO
 export interface LogoutRequest {
   refreshToken: string
@@ -25,6 +30,13 @@ export interface LogoutRequest {
  */
 export function login(payload: LoginRequest): Promise<LoginVo> {
   return httpPost<LoginVo>(SERVICE.USERCENTER, '/auth/login', payload)
+}
+
+/**
+ * 刷新Token接口
+ */
+export function refreshToken(payload: RefreshTokenRequest): Promise<LoginVo> {
+  return httpPost<LoginVo>(SERVICE.USERCENTER, '/auth/refresh', payload)
 }
 
 /**
