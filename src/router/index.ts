@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import Login from '../views/auth/Login.vue'
-import Layout from '../layouts/Layout.vue'
-import UserPage from '../views/system/user/UserPage.vue'
-import RolePage from '../views/system/role/RolePage.vue'
-import MenuPage from '../views/system/menu/MenuPage.vue'
-import ParamPage from '../views/system/param/ParamPage.vue'
+import Login from '@/views/auth/Login.vue'
+import Layout from '@/layouts/Layout.vue'
+import UserPage from '@/views/system/user/UserPage.vue'
+import RolePage from '@/views/system/role/RolePage.vue'
+import MenuPage from '@/views/system/menu/MenuPage.vue'
+import ParamPage from '@/views/system/param/ParamPage.vue'
 
 const routes: RouteRecordRaw[] = [
   {

@@ -1,7 +1,7 @@
-import axios, { AxiosError, type AxiosInstance, type AxiosResponse, type Method } from 'axios'
-import { useAuthStore } from '../../store/auth/auth.ts'
-import router from '../../router'
-import { type ServicePrefix } from '../../config/http/serviceConfig.ts'
+import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
+import { useAuthStore } from '@/store/auth/auth'
+import router from '@/router'
+import { type HttpResponse, BusinessError, NetworkError } from '@/utils/http/type.ts'
 
 // API 地址
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
@@ -155,87 +155,5 @@ function handleUnauthorized() {
   }
 }
 
-/**
- * 统一响应接口（与后端 Response<T> 保持一致）
- */
-export interface HttpResponse<T = unknown> {
-  code: number
-  message: string
-  data: T
-  traceId?: string
-}
-
-/**
- * 业务错误类
- * 用于表示后端返回的业务错误（code !== 200）
- */
-export class BusinessError extends Error {
-  code: number
-  traceId?: string
-
-  constructor(code: number, message: string, traceId?: string) {
-    super(message)
-    this.name = 'BusinessError'
-    this.code = code
-    this.traceId = traceId
-  }
-}
-
-/**
- * 网络错误类
- * 用于表示网络连接、超时等系统级错误
- */
-export class NetworkError extends Error {
-  traceId?: string
-
-  constructor(message: string, traceId?: string) {
-    super(message)
-    this.name = 'NetworkError'
-    this.traceId = traceId
-  }
-}
-
-/**
- * 通用 HTTP 请求方法（按服务 + 方法 + 相对路径发送）
- */
-async function httpRequest<T = unknown>(options: {
-  service: ServicePrefix
-  method: Method
-  path: string
-  params?: Record<string, unknown>
-  body?: unknown
-}): Promise<T> {
-  const { service, method, path, params, body } = options
-  const url = `${service}${path}`
-
-  const resp = await http.request<HttpResponse<T>>({
-    url,
-    method,
-    params,
-    data: body ?? {},
-  })
-
-  return resp.data.data
-}
-
-/**
- * GET 请求（按服务 + 相对路径）
- */
-export function httpGet<T = unknown>(
-  service: ServicePrefix,
-  path: string,
-  params?: Record<string, unknown>
-): Promise<T> {
-  return httpRequest<T>({service, method: 'GET', path, params,})
-}
-
-/**
- * POST 请求（按服务 + 相对路径）
- */
-export function httpPost<T = unknown>(
-  service: ServicePrefix,
-  path: string,
-  body?: unknown
-): Promise<T> {
-  return httpRequest<T>({service, method: 'POST', path, body,})
-}
+// 导出 http 实例
+export { http }

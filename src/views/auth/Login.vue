@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, type LoginRequest } from '../../api/auth/auth.ts'
-import { useAuthStore } from '../../store/auth/auth.ts'
-import { handleErrorToast } from '../../utils/http/errorHandler.ts'
+import { login, type LoginRequest } from '@/api/auth/auth'
+import { useAuthStore } from '@/store/auth/auth'
+import { handleErrorToast } from '@/utils/http/errorHandler'
 
 const router = useRouter()
 const authStore = useAuthStore()

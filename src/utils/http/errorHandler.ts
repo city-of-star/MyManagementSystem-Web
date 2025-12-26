@@ -29,7 +29,7 @@
  */
 
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { BusinessError, NetworkError } from './request.ts'
+import { BusinessError, NetworkError } from '@/utils/http/type.ts'
 
 /**
  * 快速错误处理：静默失败（不显示任何提示）

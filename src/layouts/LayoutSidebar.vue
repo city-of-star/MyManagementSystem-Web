@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import type { MenuItem } from '../config/menuConfig'
+import type { MenuItem } from '@/config/menu/menuConfig'
 
 const props = defineProps<{
   menus: MenuItem[]

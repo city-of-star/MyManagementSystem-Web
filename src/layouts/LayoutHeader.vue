@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { defineEmits } from 'vue'
-import logoImg from '../assets/mms.svg'
+import logoImg from '@/assets/mms.svg'
 
 const emit = defineEmits<{
   (e: 'logout'): void

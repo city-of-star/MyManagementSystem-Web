@@ -1,5 +1,5 @@
-import { httpPost } from '../../utils/http/request.ts'
-import { SERVICE } from '../../config/http/serviceConfig.ts'
+import { httpPost } from '@/utils/http/client'
+import { SERVICE } from '@/config/http/serviceConfig'
 
 // 登录请求 DTO
 export interface LoginRequest {
