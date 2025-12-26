@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login, type LoginRequest } from '@/api/auth/auth'
 import { useAuthStore } from '@/store/auth/auth'
-import { handleErrorToast } from '@/utils/http/errorHandler'
+import { handleErrorToast } from '@/utils/http/request'
 
 const router = useRouter()
 const authStore = useAuthStore()

@@ -29,7 +29,7 @@
  */
 
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { BusinessError, NetworkError } from '@/utils/http/type.ts'
+import { BusinessError, NetworkError } from '../types'
 
 /**
  * 快速错误处理：静默失败（不显示任何提示）
@@ -162,3 +162,4 @@ function showModal(title: string, message: string) {
     dangerouslyUseHTMLString: false, // 不使用 HTML，防止 XSS
   })
 }
+

@@ -1,5 +1,4 @@
-import { httpPost } from '@/utils/http/client'
-import { SERVICE } from '@/config/http/serviceConfig'
+import { httpPost, SERVICE } from '@/utils/http/request'
 
 // 登录请求 DTO
 export interface LoginRequest {

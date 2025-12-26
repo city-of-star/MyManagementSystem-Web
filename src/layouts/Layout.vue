@@ -2,7 +2,7 @@
 import { RouterView, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth/auth'
 import { logout } from '@/api/auth/auth'
-import { handleErrorSilent } from '@/utils/http/errorHandler'
+import { handleErrorSilent } from '@/utils/http/request'
 import LayoutHeader from '@/layouts/LayoutHeader.vue'
 import LayoutSidebar from '@/layouts/LayoutSidebar.vue'
 import LayoutBreadcrumb from '@/layouts/LayoutBreadcrumb.vue'

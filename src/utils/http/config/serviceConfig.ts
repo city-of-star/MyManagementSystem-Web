@@ -8,3 +8,4 @@ export const SERVICE = {
 } as const
 
 export type ServicePrefix = (typeof SERVICE)[keyof typeof SERVICE]
+
