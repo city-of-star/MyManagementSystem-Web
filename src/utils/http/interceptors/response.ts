@@ -3,7 +3,7 @@
  * 处理成功响应和错误响应
  */
 
-import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 import type { HttpResponse } from '../types'
 import { BusinessError, NetworkError } from '../types'
 import { SUCCESS_CODE } from '../config'

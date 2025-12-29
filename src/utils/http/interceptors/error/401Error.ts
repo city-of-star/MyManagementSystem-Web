@@ -35,10 +35,13 @@ export async function handle401Error(
       return handleUnauthorizedAndReject(data)
     }
 
-    // 使用新token重试请求
-    return await retryRequestWithNewTokens(httpInstance, config, refreshResult)
-  } catch {
-    // 刷新失败，跳转登录
+    // 使用新token重试请求（现在直接返回响应，不再抛出）
+    const response = await retryRequestWithNewTokens(httpInstance, config, refreshResult)
+    // 重试成功，直接返回 Promise.resolve，让 Axios 将其视为成功响应
+    // 使用类型断言绕过 Promise<never> 的类型限制
+    return Promise.resolve(response) as any as never
+  } catch (error) {
+    // 真正的刷新失败，跳转登录
     return handleUnauthorizedAndReject(data)
   }
 }
