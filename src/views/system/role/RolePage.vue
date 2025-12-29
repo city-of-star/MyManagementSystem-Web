@@ -12,7 +12,7 @@ import {
   batchDeleteRole,
   switchRoleStatus,
 } from '@/api/role/role'
-import { handleErrorToast } from '@/utils/http/request'
+import { handleErrorToast } from '@/utils/http'
 
 const query = reactive<RolePageQuery>({
   pageNum: 1,

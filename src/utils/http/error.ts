@@ -1,10 +1,10 @@
 /**
- * 全局错误处理工具（前端统一处理接口错误）
- *
+ * UI 层错误处理
+ * 
  * 设计目标：
  * - 把「错误分类 / UI 提示」从页面组件里抽出来，做到一处维护，处处使用。
- * - 所有通过 `request.ts` 抛出来的错误，最终都建议走这里来做统一处理。
- *
+ * - 所有通过 HTTP 请求抛出来的错误，最终都建议走这里来做统一处理。
+ * 
  * 常用用法（按场景选择一个快捷方法）：
  * - 静默接口（不打扰用户）：此方法什么都不做，只返回错误消息
  *   try {
@@ -12,14 +12,14 @@
  *   } catch (e) {
  *       handleErrorSilent(e)
  *   }
- *
+ * 
  * - 普通业务错误（Toast提示）：此方法会使用 ElMessage 弹出错误消息，然后返回错误消息
  *   try {
  *       await httpPost(...)
  *   } catch (e) {
  *       handleErrorToast(e, '保存失败')
  *   }
- *
+ * 
  * - 关键操作失败（弹窗提示）：此方法会用 ElMessageBox 弹出提示框显示错误消息，用户需要点击确定，然后返回错误消息
  *   try {
  *       await deleteUser(...)
@@ -29,7 +29,7 @@
  */
 
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { BusinessError, NetworkError } from '../types'
+import { BusinessError, NetworkError } from './types'
 
 /**
  * 快速错误处理：静默失败（不显示任何提示）

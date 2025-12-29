@@ -12,7 +12,7 @@ import {
   batchDeletePermission,
   switchPermissionStatus,
 } from '@/api/permission/permission'
-import { handleErrorToast } from '@/utils/http/request'
+import { handleErrorToast } from '@/utils/http'
 
 const query = reactive<PermissionPageQuery>({
   pageNum: 1,

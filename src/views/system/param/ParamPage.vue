@@ -12,7 +12,7 @@ import {
   batchDeleteConfig,
   switchConfigStatus,
 } from '@/api/config/config'
-import { handleErrorToast } from '@/utils/http/request'
+import { handleErrorToast } from '@/utils/http'
 
 const query = reactive<ConfigPageQuery>({
   pageNum: 1,

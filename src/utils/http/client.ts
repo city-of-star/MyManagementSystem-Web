@@ -4,9 +4,9 @@
  */
 
 import { type Method } from 'axios'
-import { http } from '../core/instance'
-import type { HttpResponse } from '../types'
-import type { ServicePrefix } from '@/utils/http/config'
+import { http } from './instance'
+import type { HttpResponse } from './types'
+import type { ServicePrefix } from './config'
 
 /**
  * 通用 HTTP 请求方法（按服务 + 方法 + 相对路径发送）

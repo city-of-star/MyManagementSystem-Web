@@ -1,4 +1,4 @@
-import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http/request'
+import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
 
 export interface RolePageQuery {
   pageNum?: number

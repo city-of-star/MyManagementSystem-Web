@@ -14,7 +14,7 @@ import {
   lockOrUnlockUser,
   resetUserPassword,
 } from '@/api/user/user'
-import { handleErrorToast } from '@/utils/http/request'
+import { handleErrorToast } from '@/utils/http'
 
 // 查询条件
 const query = reactive<UserPageQuery>({

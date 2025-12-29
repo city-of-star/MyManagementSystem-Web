@@ -1,4 +1,4 @@
-import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http/request'
+import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
 
 // 分页查询请求 DTO（与后端 UserPageQueryDto 字段对齐，日期用字符串承载）
 export interface UserPageQuery {
