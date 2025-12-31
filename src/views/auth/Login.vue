@@ -26,7 +26,7 @@ const handleSubmit = async () => {
     // 持久化 token
     authStore.setTokens(data.accessToken, data.refreshToken)
     // 跳转到用户管理页面
-    await router.push({name: 'userPage'})
+    await router.push({name: 'system:user:manage'})
   } catch (error) {
     handleErrorToast(error)
   } finally {

@@ -1,4 +1,4 @@
-import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
+import { httpGet, httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
 
 export interface PermissionPageQuery {
   pageNum?: number
@@ -99,6 +99,25 @@ export function batchDeletePermission(payload: PermissionBatchDeleteRequest): Pr
 
 export function switchPermissionStatus(payload: PermissionStatusSwitchRequest): Promise<void> {
   return httpPost<void>(SERVICE.USERCENTER, '/permission/switch-status', payload)
+}
+
+// 扩展 PermissionVo 以支持 children
+export interface PermissionTreeVo extends PermissionVo {
+  children?: PermissionTreeVo[]
+}
+
+// 获取权限树
+export function getPermissionTree(params?: {
+  permissionType?: string
+  status?: number
+  visible?: number
+}): Promise<PermissionTreeVo[]> {
+  const queryParams: Record<string, unknown> = {}
+  if (params?.permissionType) queryParams.permissionType = params.permissionType
+  if (params?.status !== undefined) queryParams.status = params.status
+  if (params?.visible !== undefined) queryParams.visible = params.visible
+  
+  return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree', Object.keys(queryParams).length > 0 ? queryParams : undefined)
 }
 
 

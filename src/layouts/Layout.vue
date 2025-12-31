@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { RouterView, useRouter } from 'vue-router'
+import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth/auth'
+import { useMenuStore } from '@/store/menu/menu'
 import { logout } from '@/api/auth/auth'
 import { handleErrorSilent } from '@/utils/http'
 import LayoutHeader from '@/layouts/LayoutHeader.vue'
 import LayoutSidebar from '@/layouts/LayoutSidebar.vue'
 import LayoutTabs from '@/layouts/LayoutTabs.vue'
-import { menus } from '@/config/menu/menuConfig'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const menuStore = useMenuStore()
+
+// 使用动态菜单
+const menus = computed(() => menuStore.menus)
 
 const handleLogout = async () => {
   const refreshToken = authStore.refreshToken || localStorage.getItem('refreshToken')
@@ -22,6 +27,7 @@ const handleLogout = async () => {
     handleErrorSilent(error)
   } finally {
     authStore.clearTokens()
+    menuStore.clearMenus()
     await router.push({ name: 'login' })
   }
 }
