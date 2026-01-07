@@ -11,7 +11,7 @@ import {
   deleteConfigApi,
   batchDeleteConfig,
   switchConfigStatus,
-} from '@/api/config/config'
+} from '@/api/system/config/config.ts'
 import { handleErrorToast } from '@/utils/http'
 
 const query = reactive<ConfigPageQuery>({
@@ -260,11 +260,11 @@ const handleSubmit = async () => {
     </div>
 
     <el-table
-      v-loading="loading"
-      :data="tableData"
-      border
-      stripe
-      @selection-change="handleSelectionChange"
+        v-loading="loading"
+        :data="tableData"
+        border
+        stripe
+        @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="48" />
       <el-table-column prop="id" label="ID" width="70" />
@@ -275,12 +275,12 @@ const handleSubmit = async () => {
           <span>
             {{
               row.configType === 'number'
-                ? '数字'
-                : row.configType === 'boolean'
-                  ? '布尔'
-                  : row.configType === 'json'
-                    ? 'JSON'
-                    : '字符串'
+                  ? '数字'
+                  : row.configType === 'boolean'
+                      ? '布尔'
+                      : row.configType === 'json'
+                          ? 'JSON'
+                          : '字符串'
             }}
           </span>
         </template>
@@ -314,14 +314,14 @@ const handleSubmit = async () => {
 
     <div class="pagination">
       <el-pagination
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        :page-size="query.pageSize || 10"
-        :current-page="query.pageNum || 1"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          :page-size="query.pageSize || 10"
+          :current-page="query.pageNum || 1"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
       />
     </div>
 
@@ -343,10 +343,10 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="配置值">
           <el-input
-            v-model="form.configValue"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入配置值，JSON 类型请填写合法 JSON 文本"
+              v-model="form.configValue"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入配置值，JSON 类型请填写合法 JSON 文本"
           />
         </el-form-item>
         <el-form-item label="状态">

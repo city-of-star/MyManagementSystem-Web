@@ -11,7 +11,7 @@ import {
   deleteRole,
   batchDeleteRole,
   switchRoleStatus,
-} from '@/api/role/role'
+} from '@/api/system/role/role.ts'
 import { handleErrorToast } from '@/utils/http'
 
 const query = reactive<RolePageQuery>({

@@ -13,7 +13,7 @@ import {
   switchUserStatus,
   lockOrUnlockUser,
   resetUserPassword,
-} from '@/api/user/user'
+} from '@/api/system/user/user.ts'
 import { handleErrorToast } from '@/utils/http'
 
 // 查询条件

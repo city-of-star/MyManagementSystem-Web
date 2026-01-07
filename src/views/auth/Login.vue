@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, type LoginRequest } from '@/api/auth/auth'
+import { ensureDynamicRoutesLoaded } from '@/router'
+import { login, type LoginRequest } from '@/api/system/auth/auth.ts'
 import { useAuthStore } from '@/store/auth/auth'
 import { handleErrorToast } from '@/utils/http'
 
@@ -25,6 +26,8 @@ const handleSubmit = async () => {
     const data = await login(form.value)
     // 持久化 token
     authStore.setTokens(data.accessToken, data.refreshToken)
+    // 先加载动态路由，避免路由未注册导致跳转报错
+    await ensureDynamicRoutesLoaded()
     // 跳转到用户管理页面
     await router.push({name: 'system:user:manage'})
   } catch (error) {

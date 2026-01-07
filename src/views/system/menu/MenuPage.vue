@@ -2,39 +2,34 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
-  getPermissionPage,
-  type PageResult,
-  type PermissionVo,
-  type PermissionPageQuery,
+  getPermissionTree,
   createPermission,
   updatePermission,
   deletePermission,
-  batchDeletePermission,
   switchPermissionStatus,
-} from '@/api/permission/permission'
+  type PermissionTreeVo,
+} from '@/api/system/permission/permission.ts'
 import { handleErrorToast } from '@/utils/http'
 
-const query = reactive<PermissionPageQuery>({
-  pageNum: 1,
-  pageSize: 10,
-  permissionType: 'menu',
-  permissionName: '',
-  permissionCode: '',
-  status: null,
-  visible: null,
+const query = reactive({
+  status: null as number | null,
+  visible: null as number | null,
 })
 
 const loading = ref(false)
-const tableData = ref<PermissionVo[]>([])
-const total = ref(0)
-const multipleSelection = ref<PermissionVo[]>([])
+const treeData = ref<PermissionTreeVo[]>([])
+const expandedKeys = ref<number[]>([])
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建菜单')
 const editingId = ref<number | null>(null)
+const codePrefix = ref('')
+const parentLabel = ref('根目录')
+const typeLocked = ref(false)
 
 const form = reactive({
-  permissionType: 'menu',
+  parentId: 0 as number | null,
+  permissionType: 'catalog' as 'catalog' | 'menu' | 'button',
   permissionName: '',
   permissionCode: '',
   path: '',
@@ -49,7 +44,8 @@ const form = reactive({
 const resetForm = () => {
   editingId.value = null
   dialogTitle.value = '新建菜单'
-  form.permissionType = 'menu'
+  form.parentId = 0
+  form.permissionType = 'catalog'
   form.permissionName = ''
   form.permissionCode = ''
   form.path = ''
@@ -59,86 +55,94 @@ const resetForm = () => {
   form.visible = 1
   form.status = 1
   form.remark = ''
+  typeLocked.value = false
 }
 
-const fetchData = async () => {
+const fetchTree = async () => {
   loading.value = true
   try {
-    const resp: PageResult<PermissionVo> = await getPermissionPage(query)
-    tableData.value = resp.records
-    total.value = resp.total
-    query.pageNum = resp.current
-    query.pageSize = resp.size
+    const resp = await getPermissionTree({
+      status: query.status ?? undefined,
+      visible: query.visible ?? undefined,
+    })
+    treeData.value = resp || []
+    // 默认展开根节点
+    expandedKeys.value = (treeData.value || []).map((n) => n.id).filter(Boolean) as number[]
   } catch (error) {
-    handleErrorToast(error, '加载菜单列表失败')
+    handleErrorToast(error, '加载菜单树失败')
   } finally {
     loading.value = false
   }
 }
 
 onMounted(() => {
-  fetchData()
+  fetchTree()
 })
 
 const handleSearch = () => {
-  query.pageNum = 1
-  fetchData()
+  fetchTree()
 }
 
 const handleReset = () => {
-  query.pageNum = 1
-  query.permissionName = ''
-  query.permissionCode = ''
   query.status = null
   query.visible = null
-  fetchData()
+  fetchTree()
 }
 
-const handleSizeChange = (size: number) => {
-  query.pageSize = size
-  fetchData()
-}
-
-const handleCurrentChange = (page: number) => {
-  query.pageNum = page
-  fetchData()
-}
-
-const handleSelectionChange = (rows: PermissionVo[]) => {
-  multipleSelection.value = rows
-}
-
-const handleCreate = () => {
+const openCreateDialog = (parent: PermissionTreeVo | null, type: 'catalog' | 'menu' | 'button', title?: string) => {
   resetForm()
-  dialogTitle.value = '新建菜单'
+  form.parentId = parent?.id ?? 0
+  form.permissionType = type
+  typeLocked.value = true
+  parentLabel.value = parent ? parent.permissionName : '根目录'
+  codePrefix.value = !editingId.value && parent?.permissionCode ? `${parent.permissionCode}_` : ''
+  dialogTitle.value = title || (type === 'catalog' ? '新建目录' : type === 'menu' ? '新建菜单' : '新建按钮')
   dialogVisible.value = true
 }
 
-const handleEdit = (row: PermissionVo) => {
+const handleCreateRoot = () => {
+  // 根只允许创建目录
+  openCreateDialog(null, 'catalog', '新建根目录')
+}
+
+const handleCreateChild = (node: PermissionTreeVo, type: 'catalog' | 'menu' | 'button') => {
+  // 规则：目录下只能建菜单；菜单下只能建按钮；按钮下不能再建
+  if (node.permissionType === 'catalog' && type !== 'menu') return
+  if (node.permissionType === 'menu' && type !== 'button') return
+  if (node.permissionType === 'button') return
+  const label = type === 'catalog' ? '目录' : type === 'menu' ? '菜单' : '按钮'
+  openCreateDialog(node, type, `在「${node.permissionName}」下新建${label}`)
+}
+
+const handleEdit = (node: PermissionTreeVo) => {
   resetForm()
   dialogTitle.value = '编辑菜单'
-  editingId.value = row.id
-  form.permissionType = row.permissionType || 'menu'
-  form.permissionName = row.permissionName
-  form.permissionCode = row.permissionCode
-  form.path = row.path || ''
-  form.component = row.component || ''
-  form.icon = row.icon || ''
-  form.sortOrder = row.sortOrder ?? 1
-  form.visible = row.visible ?? 1
-  form.status = row.status ?? 1
-  form.remark = row.remark || ''
+  editingId.value = node.id
+  form.parentId = node.parentId ?? 0
+  form.permissionType = (node.permissionType as 'catalog' | 'menu' | 'button') || 'catalog'
+  typeLocked.value = false
+  form.permissionName = node.permissionName
+  form.permissionCode = node.permissionCode
+  form.path = node.path || ''
+  form.component = node.component || ''
+  form.icon = node.icon || ''
+  form.sortOrder = node.sortOrder ?? 1
+  form.visible = node.visible ?? 1
+  form.status = node.status ?? 1
+  form.remark = node.remark || ''
+  parentLabel.value = node.parentId === 0 ? '根目录' : parentLabel.value
+  codePrefix.value = '' // 编辑不强制前缀
   dialogVisible.value = true
 }
 
-const handleDelete = async (row: PermissionVo) => {
+const handleDelete = async (node: PermissionTreeVo) => {
   try {
-    await ElMessageBox.confirm(`确定要删除菜单【${row.permissionName}】吗？`, '提示', {
+    await ElMessageBox.confirm(`确定要删除【${node.permissionName}】吗？`, '提示', {
       type: 'warning',
     })
-    await deletePermission(row.id)
+    await deletePermission(node.id)
     ElMessage.success('删除成功')
-    fetchData()
+    fetchTree()
   } catch (error) {
     if (error !== 'cancel') {
       handleErrorToast(error, '删除失败')
@@ -146,85 +150,76 @@ const handleDelete = async (row: PermissionVo) => {
   }
 }
 
-const handleBatchDelete = async () => {
-  if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的菜单')
-    return
-  }
+const handleToggleStatus = async (node: PermissionTreeVo) => {
+  const targetStatus = node.status === 1 ? 0 : 1
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个菜单吗？`, '提示', {
-      type: 'warning',
-    })
-    const ids = multipleSelection.value.map((m) => m.id)
-    await batchDeletePermission({ permissionIds: ids })
-    ElMessage.success('批量删除成功')
-    fetchData()
+    await switchPermissionStatus({ permissionId: node.id, status: targetStatus })
+    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    fetchTree()
   } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
-    }
-  }
-}
-
-const handleToggleStatus = async (row: PermissionVo) => {
-  const targetStatus = row.status === 1 ? 0 : 1
-  try {
-    await switchPermissionStatus({ permissionId: row.id, status: targetStatus })
-    ElMessage.success(targetStatus === 1 ? '已启用菜单' : '已禁用菜单')
-    fetchData()
-  } catch (error) {
-    handleErrorToast(error, '切换菜单状态失败')
+    handleErrorToast(error, '切换状态失败')
   }
 }
 
 const handleSubmit = async () => {
   try {
     if (!form.permissionName) {
-      ElMessage.warning('请填写菜单名称')
+      ElMessage.warning('请填写名称')
       return
     }
     if (!form.permissionCode) {
-      ElMessage.warning('请填写菜单编码')
+      ElMessage.warning('请填写编码')
       return
+    }
+    if (form.permissionType === 'menu') {
+      if (!form.path) {
+        ElMessage.warning('菜单类型必须填写路由路径')
+        return
+      }
+      if (!form.component) {
+        ElMessage.warning('菜单类型必须填写组件路径')
+        return
+      }
+    } else if (form.permissionType === 'catalog') {
+      form.path = ''
+      form.component = ''
+    } else if (form.permissionType === 'button') {
+      form.path = ''
+      form.component = ''
+    }
+
+    const finalCode =
+      editingId.value || !codePrefix.value ? form.permissionCode : `${codePrefix.value}${form.permissionCode}`
+
+    const payload = {
+      parentId: form.parentId ?? 0,
+      permissionType: form.permissionType,
+      permissionName: form.permissionName,
+      permissionCode: finalCode,
+      path: form.path || undefined,
+      component: form.component || undefined,
+      icon: form.icon || undefined,
+      sortOrder: form.sortOrder,
+      visible: form.visible,
+      status: form.status,
+      remark: form.remark || undefined,
     }
 
     if (editingId.value) {
-      await updatePermission({
-        id: editingId.value,
-        permissionType: form.permissionType,
-        permissionName: form.permissionName,
-        permissionCode: form.permissionCode,
-        path: form.path || undefined,
-        component: form.component || undefined,
-        icon: form.icon || undefined,
-        sortOrder: form.sortOrder,
-        visible: form.visible,
-        status: form.status,
-        remark: form.remark || undefined,
-      })
+      await updatePermission({ ...payload, id: editingId.value })
       ElMessage.success('更新成功')
     } else {
-      await createPermission({
-        permissionType: form.permissionType,
-        permissionName: form.permissionName,
-        permissionCode: form.permissionCode,
-        path: form.path || undefined,
-        component: form.component || undefined,
-        icon: form.icon || undefined,
-        sortOrder: form.sortOrder,
-        visible: form.visible,
-        status: form.status,
-        remark: form.remark || undefined,
-      })
+      await createPermission(payload)
       ElMessage.success('创建成功')
     }
 
     dialogVisible.value = false
-    fetchData()
+    fetchTree()
   } catch (error) {
     handleErrorToast(error, editingId.value ? '更新失败' : '创建失败')
   }
 }
+
 </script>
 
 <template>
@@ -233,12 +228,6 @@ const handleSubmit = async () => {
 
     <div class="search-card">
       <el-form :inline="true" label-width="80px">
-        <el-form-item label="菜单名称">
-          <el-input v-model="query.permissionName" placeholder="菜单名称" clearable />
-        </el-form-item>
-        <el-form-item label="菜单编码">
-          <el-input v-model="query.permissionCode" placeholder="菜单编码" clearable />
-        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
             <el-option label="启用" :value="1" />
@@ -259,78 +248,96 @@ const handleSubmit = async () => {
     </div>
 
     <div class="toolbar">
-      <el-button type="primary" @click="handleCreate">新建菜单</el-button>
-      <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
-        批量删除
-      </el-button>
+      <div class="toolbar-left">
+        <el-button type="primary" @click="handleCreateRoot()">新建根目录</el-button>
+      </div>
+      <div class="toolbar-tip">目录仅作为分组；目录下建菜单，菜单下建按钮</div>
     </div>
 
-    <el-table
-      v-loading="loading"
-      :data="tableData"
-      border
-      stripe
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="48" />
-      <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column prop="permissionName" label="菜单名称" min-width="140" />
-      <el-table-column prop="permissionCode" label="菜单编码" min-width="160" />
-      <el-table-column prop="path" label="路由路径" min-width="160" />
-      <el-table-column prop="component" label="组件路径" min-width="160" />
-      <el-table-column prop="icon" label="图标" min-width="100" />
-      <el-table-column prop="sortOrder" label="排序" width="80" />
-      <el-table-column label="显示" width="90">
-        <template #default="{ row }">
-          <el-tag :type="row.visible === 1 ? 'success' : 'info'">
-            {{ row.visible === 1 ? '显示' : '隐藏' }}
-          </el-tag>
+    <el-card class="tree-card" shadow="never">
+      <el-tree
+        v-loading="loading"
+        :data="treeData"
+        node-key="id"
+        highlight-current
+        :expand-on-click-node="false"
+        :default-expanded-keys="expandedKeys"
+        :props="{ label: 'permissionName', children: 'children' }"
+        class="menu-tree"
+      >
+        <template #default="{ data }">
+            <div class="tree-node">
+              <el-tag
+                size="small"
+                :type="data.permissionType === 'catalog' ? 'warning' : data.permissionType === 'menu' ? 'success' : 'info'"
+              >
+                {{
+                  data.permissionType === 'catalog'
+                    ? '目录'
+                    : data.permissionType === 'menu'
+                      ? '菜单'
+                      : '按钮'
+                }}
+            </el-tag>
+            <span class="node-title">{{ data.permissionName }}</span>
+            <span class="node-code">{{ data.permissionCode }}</span>
+            <el-tag size="small" :type="data.status === 1 ? 'success' : 'info'">
+              {{ data.status === 1 ? '启用' : '禁用' }}
+            </el-tag>
+            <el-tag size="small" :type="data.visible === 1 ? 'success' : 'info'">
+              {{ data.visible === 1 ? '显示' : '隐藏' }}
+            </el-tag>
+            <span class="node-actions">
+              <template v-if="data.permissionType === 'catalog'">
+                <el-button link type="primary" @click.stop="handleCreateChild(data, 'menu')">新菜单</el-button>
+              </template>
+              <template v-else-if="data.permissionType === 'menu'">
+                <el-button link type="primary" @click.stop="handleCreateChild(data, 'button')">新按钮</el-button>
+              </template>
+              <el-button link type="primary" @click.stop="handleEdit(data)">编辑</el-button>
+              <el-button link type="primary" @click.stop="handleToggleStatus(data)">
+                {{ data.status === 1 ? '禁用' : '启用' }}
+              </el-button>
+              <el-button link type="danger" @click.stop="handleDelete(data)">删除</el-button>
+            </span>
+          </div>
         </template>
-      </el-table-column>
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? '启用' : '禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="220">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button type="primary" link @click="handleToggleStatus(row)">
-            {{ row.status === 1 ? '禁用' : '启用' }}
-          </el-button>
-          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      </el-tree>
+    </el-card>
 
-    <div class="pagination">
-      <el-pagination
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        :page-size="query.pageSize || 10"
-        :current-page="query.pageNum || 1"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-    </div>
-
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
-      <el-form label-width="90px" class="dialog-form">
-        <el-form-item label="菜单名称" required>
-          <el-input v-model="form.permissionName" placeholder="请输入菜单名称" />
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="620px" destroy-on-close>
+      <el-form label-width="96px" class="dialog-form">
+        <el-form-item label="类型" required>
+          <template v-if="!typeLocked">
+            <el-radio-group v-model="form.permissionType">
+              <el-radio label="catalog">目录</el-radio>
+              <el-radio label="menu">菜单</el-radio>
+              <el-radio label="button">按钮</el-radio>
+            </el-radio-group>
+          </template>
+          <template v-else>
+            <el-tag size="small" :type="form.permissionType === 'catalog' ? 'warning' : form.permissionType === 'menu' ? 'success' : 'info'">
+              {{ form.permissionType === 'catalog' ? '目录' : form.permissionType === 'menu' ? '菜单' : '按钮' }}
+            </el-tag>
+          </template>
         </el-form-item>
-        <el-form-item label="菜单编码" required>
-          <el-input v-model="form.permissionCode" placeholder="请输入菜单编码" />
+        <el-form-item label="上级">
+          <el-input :model-value="parentLabel" disabled />
         </el-form-item>
-        <el-form-item label="路由路径">
+        <el-form-item label="名称" required>
+          <el-input v-model="form.permissionName" placeholder="请输入名称" />
+        </el-form-item>
+        <el-form-item label="编码" required>
+          <div class="code-input">
+            <el-input v-if="!editingId && codePrefix" v-model="codePrefix" disabled style="width: 160px" />
+            <el-input v-model="form.permissionCode" placeholder="请输入编码" />
+          </div>
+          <div v-if="!editingId && codePrefix" class="code-tip">编码将生成为：{{ codePrefix }}{{ form.permissionCode }}</div>
+        </el-form-item>
+        <el-form-item v-if="form.permissionType === 'menu'" label="路由路径" required>
           <el-input v-model="form.path" placeholder="例如：/system/userPage" />
         </el-form-item>
-        <el-form-item label="组件路径">
+        <el-form-item v-if="form.permissionType === 'menu'" label="组件路径" required>
           <el-input v-model="form.component" placeholder="例如：system/user/UserPage" />
         </el-form-item>
         <el-form-item label="图标">
@@ -391,13 +398,48 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
-.pagination {
-  margin-top: 16px;
+.toolbar-left {
   display: flex;
-  justify-content: flex-end;
+  gap: 8px;
+}
+
+.toolbar-tip {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.tree-card {
+  padding: 8px 12px;
+}
+
+.menu-tree {
+  width: 100%;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.node-title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.node-code {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.node-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
 }
 
 .dialog-footer {
