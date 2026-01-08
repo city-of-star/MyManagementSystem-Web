@@ -22,11 +22,8 @@ export function convertPermissionToMenu(permissions: PermissionTreeVo[]): MenuIt
 
       const children = permission.children ? convertPermissionToMenu(permission.children) : []
 
-      // 目录：仅作为分组，必须有子项才展示，不设置 path（避免被当作普通菜单重复渲染）
+      // 目录：仅作为分组，即使没有子项也展示，不设置 path（避免被当作普通菜单重复渲染）
       if (permission.permissionType === 'catalog') {
-        if (!children.length) {
-          return []
-        }
         return [{
           label: permission.permissionName,
           icon: permission.icon,
@@ -63,6 +60,8 @@ function normalizePathForMatch(path: string): string {
   normalized = normalized.replace(/\.vue$/, '')
   // 统一使用正斜杠
   normalized = normalized.replace(/\\/g, '/')
+  // 去掉开头的斜杠，兼容后端返回类似 "/system/user/UserPage" 的写法
+  normalized = normalized.replace(/^\/+/, '')
   // 转换为小写用于匹配（但保留原始路径用于实际导入）
   return normalized.toLowerCase()
 }

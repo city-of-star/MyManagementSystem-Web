@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import type {ElTree} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
-  getRolePage,
-  type PageResult,
-  type RoleVo,
-  type RolePageQuery,
-  createRole,
-  updateRole,
-  deleteRole,
+  assignRolePermissions,
   batchDeleteRole,
+  createRole,
+  deleteRole,
+  getRolePage,
+  getRolePermissionIds,
+  type PageResult,
+  type RolePageQuery,
+  type RoleVo,
   switchRoleStatus,
+  updateRole,
 } from '@/api/system/role/role.ts'
-import { handleErrorToast } from '@/utils/http'
+import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
+import {handleErrorToast} from '@/utils/http'
 
 const query = reactive<RolePageQuery>({
   pageNum: 1,
@@ -31,6 +35,15 @@ const multipleSelection = ref<RoleVo[]>([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建角色')
 const editingRoleId = ref<number | null>(null)
+
+// 分配权限相关
+const permissionDialogVisible = ref(false)
+const assigningRoleId = ref<number | null>(null)
+const assigningRoleName = ref('')
+const permissionTree = ref<PermissionTreeVo[]>([])
+const checkedPermissionIds = ref<number[]>([])
+const permissionTreeLoading = ref(false)
+const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
 
 const form = reactive({
   roleCode: '',
@@ -204,6 +217,61 @@ const handleSubmit = async () => {
     handleErrorToast(error, editingRoleId.value ? '更新失败' : '创建失败')
   }
 }
+
+// 分配权限相关函数
+const handleAssignPermissions = async (row: RoleVo) => {
+  assigningRoleId.value = row.id
+  assigningRoleName.value = row.roleName
+  permissionDialogVisible.value = true
+  await loadPermissionTree()
+  await loadRolePermissions(row.id)
+}
+
+const loadPermissionTree = async () => {
+  permissionTreeLoading.value = true
+  try {
+    permissionTree.value = await getPermissionTree({
+      status: 1,
+    })
+  } catch (error) {
+    handleErrorToast(error, '加载权限树失败')
+  } finally {
+    permissionTreeLoading.value = false
+  }
+}
+
+const loadRolePermissions = async (roleId: number) => {
+  try {
+    checkedPermissionIds.value = await getRolePermissionIds(roleId)
+  } catch (error) {
+    handleErrorToast(error, '加载角色权限失败')
+  }
+}
+
+const handlePermissionTreeChange = () => {
+  // 更新选中的权限ID列表
+  checkedPermissionIds.value = permissionTreeRef.value?.getCheckedKeys() as number[] || []
+}
+
+const handleSubmitPermissions = async () => {
+  if (!assigningRoleId.value) return
+  // 获取所有选中的节点（不包括半选中的父节点）
+  const checkedKeys = permissionTreeRef.value?.getCheckedKeys() as number[] || []
+  if (checkedKeys.length === 0) {
+    ElMessage.warning('请至少选择一个权限')
+    return
+  }
+  try {
+    await assignRolePermissions({
+      roleId: assigningRoleId.value,
+      permissionIds: checkedKeys,
+    })
+    ElMessage.success('分配权限成功')
+    permissionDialogVisible.value = false
+  } catch (error) {
+    handleErrorToast(error, '分配权限失败')
+  }
+}
 </script>
 
 <template>
@@ -269,9 +337,10 @@ const handleSubmit = async () => {
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="220">
+      <el-table-column label="操作" fixed="right" width="300">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button type="success" link @click="handleAssignPermissions(row)">分配权限</el-button>
           <el-button type="primary" link @click="handleToggleStatus(row)">
             {{ row.status === 1 ? '禁用' : '启用' }}
           </el-button>
@@ -325,6 +394,43 @@ const handleSubmit = async () => {
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmit">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 分配权限弹窗 -->
+    <el-dialog
+      v-model="permissionDialogVisible"
+      :title="`分配权限 - ${assigningRoleName}`"
+      width="600px"
+      destroy-on-close
+    >
+      <div v-loading="permissionTreeLoading" style="min-height: 300px">
+        <el-tree
+          ref="permissionTreeRef"
+          :data="permissionTree"
+          :props="{ children: 'children', label: 'permissionName' }"
+          show-checkbox
+          node-key="id"
+          :default-checked-keys="checkedPermissionIds"
+          @check="handlePermissionTreeChange"
+          style="max-height: 400px; overflow-y: auto"
+        >
+          <template #default="{ data }">
+            <span style="display: flex; align-items: center; gap: 8px">
+              <span>{{ data.permissionName }}</span>
+              <el-tag v-if="data.permissionType" size="small" type="info">
+                {{ data.permissionType === 'catalog' ? '目录' : data.permissionType === 'menu' ? '菜单' : '按钮' }}
+              </el-tag>
+            </span>
+          </template>
+        </el-tree>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="permissionDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleSubmitPermissions">确 定</el-button>
         </span>
       </template>
     </el-dialog>

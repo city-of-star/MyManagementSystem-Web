@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
-  getUserPage,
-  type PageResult,
-  type UserVo,
-  type UserPageQuery,
-  createUser,
-  updateUser,
-  deleteUser,
+  assignUserRoles,
   batchDeleteUser,
-  switchUserStatus,
+  createUser,
+  deleteUser,
+  getUserPage,
+  getUserRoleIds,
   lockOrUnlockUser,
+  type PageResult,
   resetUserPassword,
+  switchUserStatus,
+  updateUser,
+  type UserPageQuery,
+  type UserVo,
 } from '@/api/system/user/user.ts'
-import { handleErrorToast } from '@/utils/http'
+import {getRolePage, type RoleVo} from '@/api/system/role/role.ts'
+import {handleErrorToast} from '@/utils/http'
 
 // 查询条件
 const query = reactive<UserPageQuery>({
@@ -38,6 +41,14 @@ const multipleSelection = ref<UserVo[]>([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建用户')
 const editingUserId = ref<number | null>(null)
+
+// 分配角色相关
+const roleDialogVisible = ref(false)
+const assigningUserId = ref<number | null>(null)
+const assigningUserName = ref('')
+const allRoles = ref<RoleVo[]>([])
+const checkedRoleIds = ref<number[]>([])
+const roleLoading = ref(false)
 
 // 表单（用于新增/编辑）
 const form = reactive({
@@ -266,6 +277,57 @@ const handleSubmit = async () => {
     handleErrorToast(error, editingUserId.value ? '更新失败' : '创建失败')
   }
 }
+
+// 分配角色相关函数
+const handleAssignRoles = async (row: UserVo) => {
+  assigningUserId.value = row.id
+  assigningUserName.value = row.username
+  roleDialogVisible.value = true
+  await loadAllRoles()
+  await loadUserRoles(row.id)
+}
+
+const loadAllRoles = async () => {
+  roleLoading.value = true
+  try {
+    const resp = await getRolePage({
+      pageNum: 1,
+      pageSize: 1000,
+      status: 1, // 只加载启用的角色
+    })
+    allRoles.value = resp.records
+  } catch (error) {
+    handleErrorToast(error, '加载角色列表失败')
+  } finally {
+    roleLoading.value = false
+  }
+}
+
+const loadUserRoles = async (userId: number) => {
+  try {
+    checkedRoleIds.value = await getUserRoleIds(userId)
+  } catch (error) {
+    handleErrorToast(error, '加载用户角色失败')
+  }
+}
+
+const handleSubmitRoles = async () => {
+  if (!assigningUserId.value) return
+  if (checkedRoleIds.value.length === 0) {
+    ElMessage.warning('请至少选择一个角色')
+    return
+  }
+  try {
+    await assignUserRoles({
+      userId: assigningUserId.value,
+      roleIds: checkedRoleIds.value,
+    })
+    ElMessage.success('分配角色成功')
+    roleDialogVisible.value = false
+  } catch (error) {
+    handleErrorToast(error, '分配角色失败')
+  }
+}
 </script>
 
 <template>
@@ -336,9 +398,10 @@ const handleSubmit = async () => {
       </el-table-column>
       <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="260">
+      <el-table-column label="操作" fixed="right" width="340">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button type="success" link @click="handleAssignRoles(row)">分配角色</el-button>
           <el-button type="primary" link @click="handleToggleStatus(row)">
             {{ row.status === 1 ? '禁用' : '启用' }}
           </el-button>
@@ -408,6 +471,42 @@ const handleSubmit = async () => {
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmit">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 分配角色弹窗 -->
+    <el-dialog
+      v-model="roleDialogVisible"
+      :title="`分配角色 - ${assigningUserName}`"
+      width="500px"
+      destroy-on-close
+    >
+      <div v-loading="roleLoading" style="min-height: 300px">
+        <el-checkbox-group v-model="checkedRoleIds" style="display: flex; flex-direction: column; gap: 12px">
+          <el-checkbox
+            v-for="role in allRoles"
+            :key="role.id"
+            :label="role.id"
+            style="height: 32px; display: flex; align-items: center"
+          >
+            <span style="display: flex; align-items: center; gap: 8px">
+              <span>{{ role.roleName }}</span>
+              <el-tag v-if="role.roleType" size="small" type="info">
+                {{ role.roleType === 'system' ? '系统角色' : '自定义角色' }}
+              </el-tag>
+            </span>
+          </el-checkbox>
+        </el-checkbox-group>
+        <div v-if="allRoles.length === 0 && !roleLoading" style="text-align: center; color: #999; padding: 40px 0">
+          暂无可用角色
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="roleDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleSubmitRoles">确 定</el-button>
         </span>
       </template>
     </el-dialog>

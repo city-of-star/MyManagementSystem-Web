@@ -1,4 +1,4 @@
-import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
+import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
 
 export interface RolePageQuery {
   pageNum?: number
@@ -87,6 +87,13 @@ export function switchRoleStatus(payload: RoleStatusSwitchRequest): Promise<void
 
 export function assignRolePermissions(payload: RoleAssignPermissionRequest): Promise<void> {
   return httpPost<void>(SERVICE.USERCENTER, '/role/assign-permissions', payload)
+}
+
+/**
+ * 获取角色已分配的权限ID列表
+ */
+export function getRolePermissionIds(roleId: number): Promise<number[]> {
+  return httpGet<number[]>(SERVICE.USERCENTER, `/role/${roleId}/permission-ids`)
 }
 
 

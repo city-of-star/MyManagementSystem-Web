@@ -69,7 +69,7 @@ const fetchTree = async () => {
     // 默认展开根节点
     expandedKeys.value = (treeData.value || []).map((n) => n.id).filter(Boolean) as number[]
   } catch (error) {
-    handleErrorToast(error, '加载菜单树失败')
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
@@ -145,7 +145,7 @@ const handleDelete = async (node: PermissionTreeVo) => {
     fetchTree()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -157,7 +157,7 @@ const handleToggleStatus = async (node: PermissionTreeVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchTree()
   } catch (error) {
-    handleErrorToast(error, '切换状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -216,7 +216,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchTree()
   } catch (error) {
-    handleErrorToast(error, editingId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
   }
 }
 

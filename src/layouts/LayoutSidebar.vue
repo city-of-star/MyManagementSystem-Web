@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import type { MenuItem } from '@/config/menu/menuConfig'
+import type { MenuItem } from '@/utils/menu/menuUtils.ts'
 
 const props = defineProps<{
   menus: MenuItem[]
@@ -66,9 +66,9 @@ const getIcon = (icon?: string) => {
       >
         <!-- 目录项 -->
         <div
-          v-if="menu.children && menu.children.length > 0"
+          v-if="menu.children"
           class="menu-folder"
-          :class="{ 
+          :class="{
             active: isMenuActive(menu),
             expanded: expandedMenus.has(menu.label)
           }"
@@ -113,7 +113,7 @@ const getIcon = (icon?: string) => {
 
         <!-- 子菜单 -->
         <div
-          v-if="menu.children && expandedMenus.has(menu.label)"
+          v-if="menu.children && menu.children.length > 0 && expandedMenus.has(menu.label)"
           class="submenu"
         >
           <RouterLink

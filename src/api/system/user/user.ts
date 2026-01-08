@@ -1,4 +1,4 @@
-import { httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
+import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
 
 // 分页查询请求 DTO（与后端 UserPageQueryDto 字段对齐，日期用字符串承载）
 export interface UserPageQuery {
@@ -158,6 +158,26 @@ export function lockOrUnlockUser(payload: UserLockRequest): Promise<void> {
  */
 export function resetUserPassword(payload: UserPasswordResetRequest): Promise<void> {
   return httpPost<void>(SERVICE.USERCENTER, '/user/reset-password', payload)
+}
+
+// 用户分配角色
+export interface UserAssignRoleRequest {
+  userId: number
+  roleIds: number[]
+}
+
+/**
+ * 为用户分配角色
+ */
+export function assignUserRoles(payload: UserAssignRoleRequest): Promise<void> {
+  return httpPost<void>(SERVICE.USERCENTER, '/user/assign-roles', payload)
+}
+
+/**
+ * 获取用户已分配的角色ID列表
+ */
+export function getUserRoleIds(userId: number): Promise<number[]> {
+  return httpGet<number[]>(SERVICE.USERCENTER, `/user/${userId}/role-ids`)
 }
 
 
