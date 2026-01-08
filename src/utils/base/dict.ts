@@ -40,8 +40,6 @@ export interface DictOption {
   value: string
   /** 完整的后端 VO 对象 */
   raw: DictDataVo
-  /** 标签样式类型（用于 el-tag） */
-  tagType?: string
 }
 
 // 简单缓存，避免同一字典类型反复请求
@@ -76,7 +74,6 @@ export async function fetchDictOptions(
         label: item.dictLabel,
         value: item.dictValue,
         raw: item,
-        tagType: item.listClass || undefined, // 用于 el-tag 的 type 属性
       }))
 
     // 存入缓存
@@ -155,18 +152,3 @@ export async function getDictLabel(
   return option?.label ?? String(value)
 }
 
-/**
- * 根据字典值获取标签样式类型
- *
- * @param dictTypeCode 字典类型编码
- * @param value 字典值
- * @returns 标签样式类型，如果找不到则返回 undefined
- */
-export async function getDictTagType(
-  dictTypeCode: string,
-  value: string | number
-): Promise<string | undefined> {
-  const options = await fetchDictOptions(dictTypeCode)
-  const option = options.find((opt) => opt.value === String(value))
-  return option?.tagType
-}

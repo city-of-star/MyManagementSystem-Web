@@ -272,8 +272,6 @@ const dataForm = reactive<DictDataCreateRequest & { id?: number }>({
   dictLabel: '',
   dictValue: '',
   dictSort: 0,
-  cssClass: '',
-  listClass: '',
   isDefault: 0,
   status: 1,
   remark: '',
@@ -286,8 +284,6 @@ const resetDataForm = () => {
   dataForm.dictLabel = ''
   dataForm.dictValue = ''
   dataForm.dictSort = 0
-  dataForm.cssClass = ''
-  dataForm.listClass = ''
   dataForm.isDefault = 0
   dataForm.status = 1
   dataForm.remark = ''
@@ -362,8 +358,6 @@ const handleDataEdit = (row: DictDataVo) => {
   dataForm.dictLabel = row.dictLabel
   dataForm.dictValue = row.dictValue
   dataForm.dictSort = row.dictSort ?? 0
-  dataForm.cssClass = row.cssClass || ''
-  dataForm.listClass = row.listClass || ''
   dataForm.isDefault = row.isDefault ?? 0
   dataForm.status = row.status ?? 1
   dataForm.remark = row.remark || ''
@@ -438,8 +432,6 @@ const handleDataSubmit = async () => {
         dictLabel: dataForm.dictLabel,
         dictValue: dataForm.dictValue,
         dictSort: dataForm.dictSort,
-        cssClass: dataForm.cssClass || undefined,
-        listClass: dataForm.listClass || undefined,
         isDefault: dataForm.isDefault,
         status: dataForm.status,
         remark: dataForm.remark || undefined,
@@ -452,8 +444,6 @@ const handleDataSubmit = async () => {
         dictLabel: dataForm.dictLabel,
         dictValue: dataForm.dictValue,
         dictSort: dataForm.dictSort,
-        cssClass: dataForm.cssClass || undefined,
-        listClass: dataForm.listClass || undefined,
         isDefault: dataForm.isDefault,
         status: dataForm.status,
         remark: dataForm.remark || undefined,
@@ -753,15 +743,6 @@ onMounted(() => {
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="CSS类名">
-          <el-input v-model="dataForm.cssClass" placeholder="用于自定义样式类名" />
-        </el-form-item>
-        <el-form-item label="标签样式">
-          <el-input
-            v-model="dataForm.listClass"
-            placeholder="如 success/info/warning/danger，用于标签颜色"
-          />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="dataForm.remark" type="textarea" rows="3" placeholder="请输入备注" />

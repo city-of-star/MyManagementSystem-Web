@@ -124,8 +124,6 @@ export interface DictDataVo {
   dictLabel: string
   dictValue: string
   dictSort?: number
-  cssClass?: string
-  listClass?: string
   isDefault?: number
   status?: number
   remark?: string
@@ -140,8 +138,6 @@ export interface DictDataCreateRequest {
   dictLabel: string
   dictValue: string
   dictSort?: number
-  cssClass?: string
-  listClass?: string
   isDefault?: number
   status?: number
   remark?: string
@@ -153,8 +149,6 @@ export interface DictDataUpdateRequest {
   dictLabel?: string
   dictValue?: string
   dictSort?: number
-  cssClass?: string
-  listClass?: string
   isDefault?: number
   status?: number
   remark?: string

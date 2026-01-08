@@ -414,12 +414,7 @@ const handleSubmitRoles = async () => {
       </el-table-column>
       <el-table-column label="锁定" width="100">
         <template #default="{ row }">
-          <el-tag
-            :type="
-              lockStatusOptions.find((opt) => opt.value === String(row.locked))?.tagType ||
-              (row.locked === 1 ? 'danger' : 'success')
-            "
-          >
+          <el-tag :type="row.locked === 1 ? 'danger' : 'success'">
             {{
               lockStatusOptions.find((opt) => opt.value === String(row.locked))?.label ||
               (row.locked === 1 ? '已锁定' : '未锁定')
@@ -432,7 +427,7 @@ const handleSubmitRoles = async () => {
       <el-table-column label="操作" fixed="right" width="200">
         <template #default="{ row }">
           <div class="action-buttons">
-            <el-button type="primary" link @click="handleEdit(row)" style="margin-left: 12px"> 编辑</el-button>
+            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
             <el-button type="success" link @click="handleAssignRoles(row)">分配角色</el-button>
             <el-button type="primary" link @click="handleToggleStatus(row)">
               {{ row.status === 1 ? '禁用' : '启用' }}
