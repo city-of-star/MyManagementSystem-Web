@@ -331,9 +331,11 @@ const handleRemoveRole = async (role: RoleVo) => {
         class="menu-tree"
       >
         <template #default="{ data }">
-            <div class="tree-node">
+          <div class="tree-node">
+            <div class="node-main">
               <el-tag
                 size="small"
+                class="node-type-tag"
                 :type="data.permissionType === 'catalog' ? 'warning' : data.permissionType === 'menu' ? 'success' : 'info'"
               >
                 {{
@@ -343,29 +345,38 @@ const handleRemoveRole = async (role: RoleVo) => {
                       ? '菜单'
                       : '按钮'
                 }}
-            </el-tag>
-            <span class="node-title">{{ data.permissionName }}</span>
-            <span class="node-code">{{ data.permissionCode }}</span>
-            <el-tag size="small" :type="data.status === 1 ? 'success' : 'info'">
-              {{ data.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
-            <el-tag size="small" :type="data.visible === 1 ? 'success' : 'info'">
-              {{ data.visible === 1 ? '显示' : '隐藏' }}
-            </el-tag>
-            <span class="node-actions">
+              </el-tag>
+              <div class="node-info">
+                <span class="node-title">{{ data.permissionName }}</span>
+                <span class="node-code">{{ data.permissionCode }}</span>
+              </div>
+            </div>
+            <div class="node-meta">
+              <el-tag size="small" :type="data.status === 1 ? 'success' : 'info'" class="status-tag">
+                {{ data.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+              <el-tag size="small" :type="data.visible === 1 ? 'success' : 'info'" class="status-tag">
+                {{ data.visible === 1 ? '显示' : '隐藏' }}
+              </el-tag>
+            </div>
+            <div class="node-actions">
               <template v-if="data.permissionType === 'catalog'">
-                <el-button link type="primary" @click.stop="handleCreateChild(data, 'menu')">新菜单</el-button>
+                <el-button link type="primary" size="small" @click.stop="handleCreateChild(data, 'menu')">
+                  新菜单
+                </el-button>
               </template>
               <template v-else-if="data.permissionType === 'menu'">
-                <el-button link type="primary" @click.stop="handleCreateChild(data, 'button')">新按钮</el-button>
+                <el-button link type="primary" size="small" @click.stop="handleCreateChild(data, 'button')">
+                  新按钮
+                </el-button>
               </template>
-              <el-button link type="primary" @click.stop="handleEdit(data)">编辑</el-button>
-              <el-button link type="info" @click.stop="handleViewRoles(data)">查看角色</el-button>
-              <el-button link type="primary" @click.stop="handleToggleStatus(data)">
+              <el-button link type="primary" size="small" @click.stop="handleEdit(data)">编辑</el-button>
+              <el-button link type="info" size="small" @click.stop="handleViewRoles(data)">查看角色</el-button>
+              <el-button link type="primary" size="small" @click.stop="handleToggleStatus(data)">
                 {{ data.status === 1 ? '禁用' : '启用' }}
               </el-button>
-              <el-button link type="danger" @click.stop="handleDelete(data)">删除</el-button>
-            </span>
+              <el-button link type="danger" size="small" @click.stop="handleDelete(data)">删除</el-button>
+            </div>
           </div>
         </template>
       </el-tree>
@@ -492,78 +503,248 @@ const handleRemoveRole = async (role: RoleVo) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .page-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  color: #1f2933;
+  color: #1f2937;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
 
 .search-card {
-  padding: 16px 20px 4px;
+  padding: 20px 24px 8px;
   background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
+  padding: 8px 0;
+  flex-shrink: 0;
 }
 
 .toolbar-left {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .toolbar-tip {
   color: #6b7280;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-tip::before {
+  content: '💡';
+  font-size: 14px;
 }
 
 .tree-card {
-  padding: 8px 12px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tree-card :deep(.el-card__body) {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .menu-tree {
   width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+/* 自定义滚动条样式 */
+.menu-tree::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-tree::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.menu-tree::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.menu-tree::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox 滚动条样式 */
+.menu-tree {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.menu-tree :deep(.el-tree-node__content) {
+  height: auto;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.menu-tree :deep(.el-tree-node__content:hover) {
+  background-color: #f9fafb;
+}
+
+.menu-tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background-color: #eff6ff;
+  border: 1px solid #dbeafe;
 }
 
 .tree-node {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.node-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-type-tag {
+  min-width: 56px;
+  text-align: center;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.node-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .node-title {
   font-weight: 600;
-  color: #1f2937;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .node-code {
   color: #6b7280;
   font-size: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.node-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .node-actions {
-  margin-left: auto;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.node-actions .el-button {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
 }
 
 .dialog-form {
-  padding-top: 8px;
+  padding-top: 12px;
+}
+
+.code-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.code-tip {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* 响应式优化 */
+@media (max-width: 1200px) {
+  .tree-node {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .node-main {
+    width: 100%;
+  }
+
+  .node-meta {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .node-actions {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+    opacity: 1;
+    flex-wrap: wrap;
+  }
 }
 </style>
 
