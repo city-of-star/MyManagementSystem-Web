@@ -105,7 +105,7 @@ async function handleHttpError(
   }
 
   // 其他HTTP错误
-  return handleOtherHttpErrors(status, data)
+  return handleOtherHttpErrors(error, status, data)
 }
 
 /**
@@ -144,7 +144,17 @@ async function handle401Error(
 /**
  * 处理其他HTTP错误
  */
-function handleOtherHttpErrors(status: number, data: unknown): never {
+function handleOtherHttpErrors(
+  error: AxiosError<HttpResponse>,
+  status: number,
+  data: unknown
+): never {
+  
+  // 刷新token失败，跳转登录页并抛出异常
+  if (error.config?.url?.includes('/auth/refresh')) {
+    return handleUnauthorizedAndReject(data)
+  }
+
   // 使用映射表处理已知状态码
   if (HTTP_ERROR_MAP[status]) {
     return handleMappedHttpError(status, data)

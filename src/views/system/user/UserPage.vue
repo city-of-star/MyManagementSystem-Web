@@ -75,7 +75,7 @@ const fetchData = async () => {
     query.pageNum = resp.current
     query.pageSize = resp.size
   } catch (error) {
-    handleErrorToast(error, '加载用户列表失败')
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
