@@ -17,6 +17,7 @@ import {
 } from '@/api/system/role/role.ts'
 import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
 import {handleErrorToast} from '@/utils/http'
+import {useDict} from '@/utils/base/dict.ts'
 
 const query = reactive<RolePageQuery>({
   pageNum: 1,
@@ -26,6 +27,10 @@ const query = reactive<RolePageQuery>({
   roleType: '',
   status: null,
 })
+
+// 字典：通用状态、角色类型
+const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
+const {options: roleTypeOptions, load: loadRoleTypeDict} = useDict('role_type')
 
 const loading = ref(false)
 const tableData = ref<RoleVo[]>([])
@@ -82,6 +87,8 @@ const fetchData = async () => {
 
 onMounted(() => {
   fetchData()
+  loadStatusDict()
+  loadRoleTypeDict()
 })
 
 const handleSearch = () => {
@@ -288,14 +295,22 @@ const handleSubmitPermissions = async () => {
         </el-form-item>
         <el-form-item label="角色类型">
           <el-select v-model="query.roleType" placeholder="全部" clearable style="width: 140px">
-            <el-option label="系统角色" value="system" />
-            <el-option label="自定义角色" value="custom" />
+            <el-option
+              v-for="opt in roleTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -325,7 +340,13 @@ const handleSubmitPermissions = async () => {
       <el-table-column prop="roleName" label="角色名称" min-width="140" />
       <el-table-column prop="roleType" label="角色类型" min-width="110">
         <template #default="{ row }">
-          {{ row.roleType === 'system' ? '系统角色' : '自定义角色' }}
+          <span>
+            {{
+              roleTypeOptions.find((opt) => opt.value === row.roleType)?.label ||
+              row.roleType ||
+              '-'
+            }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="80" />
@@ -372,8 +393,12 @@ const handleSubmitPermissions = async () => {
         </el-form-item>
         <el-form-item label="角色类型">
           <el-select v-model="form.roleType" style="width: 160px">
-            <el-option label="系统角色" value="system" />
-            <el-option label="自定义角色" value="custom" />
+            <el-option
+              v-for="opt in roleTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="排序">
@@ -381,8 +406,12 @@ const handleSubmitPermissions = async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">

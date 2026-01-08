@@ -10,11 +10,16 @@ import {
   type PermissionTreeVo,
 } from '@/api/system/permission/permission.ts'
 import { handleErrorToast } from '@/utils/http'
+import { useDict } from '@/utils/base/dict.ts'
 
 const query = reactive({
   status: null as number | null,
   visible: null as number | null,
 })
+
+// 字典：通用状态、菜单显示状态
+const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
+const { options: visibleOptions, load: loadVisibleDict } = useDict('menu_visible')
 
 const loading = ref(false)
 const treeData = ref<PermissionTreeVo[]>([])
@@ -77,6 +82,8 @@ const fetchTree = async () => {
 
 onMounted(() => {
   fetchTree()
+  loadStatusDict()
+  loadVisibleDict()
 })
 
 const handleSearch = () => {
@@ -230,14 +237,22 @@ const handleSubmit = async () => {
       <el-form :inline="true" label-width="80px">
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="显示状态">
           <el-select v-model="query.visible" placeholder="全部" clearable style="width: 120px">
-            <el-option label="显示" :value="1" />
-            <el-option label="隐藏" :value="0" />
+            <el-option
+              v-for="opt in visibleOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -348,14 +363,22 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="显示状态">
           <el-select v-model="form.visible" style="width: 140px">
-            <el-option label="显示" :value="1" />
-            <el-option label="隐藏" :value="0" />
+            <el-option
+              v-for="opt in visibleOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">

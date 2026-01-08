@@ -13,6 +13,7 @@ import {
   switchConfigStatus,
 } from '@/api/system/config/config.ts'
 import { handleErrorToast } from '@/utils/http'
+import { useDict } from '@/utils/base/dict.ts'
 
 const query = reactive<ConfigPageQuery>({
   pageNum: 1,
@@ -23,6 +24,11 @@ const query = reactive<ConfigPageQuery>({
   status: null,
   editable: null,
 })
+
+// 字典：通用状态、是否、配置类型
+const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
+const { options: yesNoOptions, load: loadYesNoDict } = useDict('yes_no')
+const { options: configTypeOptions, load: loadConfigTypeDict } = useDict('config_type')
 
 const loading = ref(false)
 const tableData = ref<ConfigVo[]>([])
@@ -72,6 +78,9 @@ const fetchData = async () => {
 
 onMounted(() => {
   fetchData()
+  loadStatusDict()
+  loadYesNoDict()
+  loadConfigTypeDict()
 })
 
 const handleSearch = () => {
@@ -227,22 +236,32 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="query.configType" placeholder="全部" clearable style="width: 140px">
-            <el-option label="字符串" value="string" />
-            <el-option label="数字" value="number" />
-            <el-option label="布尔" value="boolean" />
-            <el-option label="JSON" value="json" />
+            <el-option
+              v-for="opt in configTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="可编辑">
           <el-select v-model="query.editable" placeholder="全部" clearable style="width: 120px">
-            <el-option label="是" :value="1" />
-            <el-option label="否" :value="0" />
+            <el-option
+              v-for="opt in yesNoOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -274,13 +293,9 @@ const handleSubmit = async () => {
         <template #default="{ row }">
           <span>
             {{
-              row.configType === 'number'
-                  ? '数字'
-                  : row.configType === 'boolean'
-                      ? '布尔'
-                      : row.configType === 'json'
-                          ? 'JSON'
-                          : '字符串'
+              configTypeOptions.find((opt) => opt.value === row.configType)?.label ||
+              row.configType ||
+              '-'
             }}
           </span>
         </template>
@@ -335,10 +350,12 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="配置类型">
           <el-select v-model="form.configType" style="width: 160px">
-            <el-option label="字符串" value="string" />
-            <el-option label="数字" value="number" />
-            <el-option label="布尔" value="boolean" />
-            <el-option label="JSON" value="json" />
+            <el-option
+              v-for="opt in configTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="配置值">
@@ -351,14 +368,22 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="可编辑">
           <el-select v-model="form.editable" style="width: 140px">
-            <el-option label="是" :value="1" />
-            <el-option label="否" :value="0" />
+            <el-option
+              v-for="opt in yesNoOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
