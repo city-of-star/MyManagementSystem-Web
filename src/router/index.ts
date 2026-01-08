@@ -3,7 +3,7 @@ import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
-import { getPermissionTree } from '@/api/system/permission/permission.ts'
+import { getCurrentUserPermissionTree } from '@/api/system/permission/permission.ts'
 import { convertPermissionToMenu, loadComponent } from '@/utils/menu/menuUtils'
 import { handleErrorSilent } from '@/utils/http'
 import type { PermissionTreeVo } from '@/api/system/permission/permission.ts'
@@ -101,8 +101,8 @@ async function loadDynamicRoutes() {
   }
 
   try {
-    // 获取权限树（目录+菜单），仅保留启用且可见
-    const permissionTree = await getPermissionTree({
+    // 获取当前用户有权限的权限树（目录+菜单），仅保留启用且可见
+    const permissionTree = await getCurrentUserPermissionTree({
       status: 1,
       visible: 1,
     })

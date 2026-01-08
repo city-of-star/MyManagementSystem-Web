@@ -174,7 +174,7 @@ const handleDelete = async (row: UserVo) => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -195,7 +195,7 @@ const handleBatchDelete = async () => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -208,7 +208,7 @@ const handleToggleStatus = async (row: UserVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '切换用户状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -224,7 +224,7 @@ const handleToggleLock = async (row: UserVo) => {
     ElMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '锁定/解锁用户失败')
+    handleErrorToast(error)
   }
 }
 
@@ -239,7 +239,7 @@ const handleResetPassword = async (row: UserVo) => {
     ElMessage.success('密码已重置为 123456')
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '重置密码失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -285,7 +285,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchData()
   } catch (error) {
-    handleErrorToast(error, editingUserId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
   }
 }
 
@@ -308,7 +308,7 @@ const loadAllRoles = async () => {
     })
     allRoles.value = resp.records
   } catch (error) {
-    handleErrorToast(error, '加载角色列表失败')
+    handleErrorToast(error)
   } finally {
     roleLoading.value = false
   }
@@ -318,7 +318,7 @@ const loadUserRoles = async (userId: number) => {
   try {
     checkedRoleIds.value = await getUserRoleIds(userId)
   } catch (error) {
-    handleErrorToast(error, '加载用户角色失败')
+    handleErrorToast(error)
   }
 }
 
@@ -336,7 +336,7 @@ const handleSubmitRoles = async () => {
     ElMessage.success('分配角色成功')
     roleDialogVisible.value = false
   } catch (error) {
-    handleErrorToast(error, '分配角色失败')
+    handleErrorToast(error)
   }
 }
 </script>

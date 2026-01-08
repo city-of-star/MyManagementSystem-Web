@@ -106,7 +106,7 @@ export interface PermissionTreeVo extends PermissionVo {
   children?: PermissionTreeVo[]
 }
 
-// 获取权限树
+// 获取权限树（全量，用于管理场景如角色分配）
 export function getPermissionTree(params?: {
   permissionType?: string
   status?: number
@@ -118,6 +118,20 @@ export function getPermissionTree(params?: {
   if (params?.visible !== undefined) queryParams.visible = params.visible
   
   return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree', Object.keys(queryParams).length > 0 ? queryParams : undefined)
+}
+
+// 获取当前用户的权限树（用于前端菜单展示）
+export function getCurrentUserPermissionTree(params?: {
+  permissionType?: string
+  status?: number
+  visible?: number
+}): Promise<PermissionTreeVo[]> {
+  const queryParams: Record<string, unknown> = {}
+  if (params?.permissionType) queryParams.permissionType = params.permissionType
+  if (params?.status !== undefined) queryParams.status = params.status
+  if (params?.visible !== undefined) queryParams.visible = params.visible
+  
+  return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree/current-user', Object.keys(queryParams).length > 0 ? queryParams : undefined)
 }
 
 

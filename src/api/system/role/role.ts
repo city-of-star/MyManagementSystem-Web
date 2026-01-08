@@ -1,4 +1,5 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
+import type { UserVo } from '@/api/system/user/user'
 
 export interface RolePageQuery {
   pageNum?: number
@@ -96,4 +97,22 @@ export function getRolePermissionIds(roleId: number): Promise<number[]> {
   return httpGet<number[]>(SERVICE.USERCENTER, `/role/${roleId}/permission-ids`)
 }
 
+export interface RoleRemoveUserRequest {
+  roleId: number
+  userId: number
+}
+
+/**
+ * 获取角色关联的用户列表
+ */
+export function getRoleUsers(roleId: number): Promise<UserVo[]> {
+  return httpGet<UserVo[]>(SERVICE.USERCENTER, `/role/${roleId}/users`)
+}
+
+/**
+ * 移除角色的用户关联
+ */
+export function removeUserFromRole(payload: RoleRemoveUserRequest): Promise<void> {
+  return httpPost<void>(SERVICE.USERCENTER, '/role/remove-user', payload)
+}
 

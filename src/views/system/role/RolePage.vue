@@ -9,12 +9,15 @@ import {
   deleteRole,
   getRolePage,
   getRolePermissionIds,
+  getRoleUsers,
+  removeUserFromRole,
   type PageResult,
   type RolePageQuery,
   type RoleVo,
   switchRoleStatus,
   updateRole,
 } from '@/api/system/role/role.ts'
+import type { UserVo } from '@/api/system/user/user'
 import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
 import {handleErrorToast} from '@/utils/http'
 import {useDict} from '@/utils/base/dict.ts'
@@ -50,6 +53,13 @@ const checkedPermissionIds = ref<number[]>([])
 const permissionTreeLoading = ref(false)
 const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
 
+// 查看用户相关
+const userDialogVisible = ref(false)
+const viewingRoleId = ref<number | null>(null)
+const viewingRoleName = ref('')
+const userList = ref<UserVo[]>([])
+const userListLoading = ref(false)
+
 const form = reactive({
   roleCode: '',
   roleName: '',
@@ -79,7 +89,7 @@ const fetchData = async () => {
     query.pageNum = resp.current
     query.pageSize = resp.size
   } catch (error) {
-    handleErrorToast(error, '加载角色列表失败')
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
@@ -148,7 +158,7 @@ const handleDelete = async (row: RoleVo) => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -168,7 +178,7 @@ const handleBatchDelete = async () => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -180,7 +190,7 @@ const handleToggleStatus = async (row: RoleVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用角色' : '已禁用角色')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '切换角色状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -221,7 +231,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchData()
   } catch (error) {
-    handleErrorToast(error, editingRoleId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
   }
 }
 
@@ -241,7 +251,7 @@ const loadPermissionTree = async () => {
       status: 1,
     })
   } catch (error) {
-    handleErrorToast(error, '加载权限树失败')
+    handleErrorToast(error)
   } finally {
     permissionTreeLoading.value = false
   }
@@ -251,7 +261,7 @@ const loadRolePermissions = async (roleId: number) => {
   try {
     checkedPermissionIds.value = await getRolePermissionIds(roleId)
   } catch (error) {
-    handleErrorToast(error, '加载角色权限失败')
+    handleErrorToast(error)
   }
 }
 
@@ -276,7 +286,49 @@ const handleSubmitPermissions = async () => {
     ElMessage.success('分配权限成功')
     permissionDialogVisible.value = false
   } catch (error) {
-    handleErrorToast(error, '分配权限失败')
+    handleErrorToast(error)
+  }
+}
+
+// 查看用户相关函数
+const handleViewUsers = async (row: RoleVo) => {
+  viewingRoleId.value = row.id
+  viewingRoleName.value = row.roleName
+  userDialogVisible.value = true
+  await loadRoleUsers(row.id)
+}
+
+const loadRoleUsers = async (roleId: number) => {
+  userListLoading.value = true
+  try {
+    userList.value = await getRoleUsers(roleId)
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    userListLoading.value = false
+  }
+}
+
+const handleRemoveUser = async (user: UserVo) => {
+  if (!viewingRoleId.value) return
+  try {
+    await ElMessageBox.confirm(
+      `确定要从角色【${viewingRoleName.value}】中移除用户【${user.username || user.realName || user.nickname}】吗？`,
+      '提示',
+      {
+        type: 'warning',
+      }
+    )
+    await removeUserFromRole({
+      roleId: viewingRoleId.value,
+      userId: user.id,
+    })
+    ElMessage.success('移除成功')
+    await loadRoleUsers(viewingRoleId.value)
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
   }
 }
 </script>
@@ -358,10 +410,11 @@ const handleSubmitPermissions = async () => {
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="300">
+      <el-table-column label="操作" fixed="right" width="380">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
           <el-button type="success" link @click="handleAssignPermissions(row)">分配权限</el-button>
+          <el-button type="info" link @click="handleViewUsers(row)">查看用户</el-button>
           <el-button type="primary" link @click="handleToggleStatus(row)">
             {{ row.status === 1 ? '禁用' : '启用' }}
           </el-button>
@@ -460,6 +513,44 @@ const handleSubmitPermissions = async () => {
         <span class="dialog-footer">
           <el-button @click="permissionDialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmitPermissions">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 查看用户弹窗 -->
+    <el-dialog
+      v-model="userDialogVisible"
+      :title="`查看用户 - ${viewingRoleName}`"
+      width="1000px"
+      destroy-on-close
+    >
+      <div v-loading="userListLoading" style="min-height: 300px">
+        <el-table :data="userList" border stripe v-if="userList.length > 0">
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="username" label="用户名" min-width="120" />
+          <el-table-column prop="realName" label="真实姓名" min-width="100" />
+          <el-table-column prop="nickname" label="昵称" min-width="100" />
+          <el-table-column prop="email" label="邮箱" min-width="160" />
+          <el-table-column prop="phone" label="手机号" min-width="120" />
+          <el-table-column label="状态" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'info'">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" fixed="right" width="100">
+            <template #default="{ row }">
+              <el-button type="danger" link @click="handleRemoveUser(row)">移除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-else description="该角色暂未分配用户" />
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="userDialogVisible = false">关 闭</el-button>
         </span>
       </template>
     </el-dialog>

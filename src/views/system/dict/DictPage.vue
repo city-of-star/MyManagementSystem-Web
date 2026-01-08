@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   batchDeleteDictData,
@@ -79,15 +79,11 @@ const fetchTypeData = async (): Promise<void> => {
       currentTypeId.value = resp.records[0]!.id
     }
   } catch (error) {
-    handleErrorToast(error, '加载字典类型列表失败')
+    handleErrorToast(error)
   } finally {
     typeLoading.value = false
   }
 }
-
-onMounted(() => {
-  fetchTypeData()
-})
 
 const handleTypeSearch = () => {
   typeQuery.pageNum = 1
@@ -164,7 +160,7 @@ const handleTypeDelete = async (row: DictTypeVo) => {
     fetchTypeData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -191,7 +187,7 @@ const handleTypeBatchDelete = async () => {
     fetchTypeData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -203,7 +199,7 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchTypeData()
   } catch (error) {
-    handleErrorToast(error, '切换字典类型状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -243,7 +239,7 @@ const handleTypeSubmit = async () => {
     typeDialogVisible.value = false
     fetchTypeData()
   } catch (error) {
-    handleErrorToast(error, editingTypeId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
   }
 }
 
@@ -306,7 +302,7 @@ const fetchDataData = async (): Promise<void> => {
     dataQuery.pageNum = resp.current
     dataQuery.pageSize = resp.size
   } catch (error) {
-    handleErrorToast(error, '加载字典数据列表失败')
+    handleErrorToast(error)
   } finally {
     dataLoading.value = false
   }
@@ -374,7 +370,7 @@ const handleDataDelete = async (row: DictDataVo) => {
     fetchDataData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -394,7 +390,7 @@ const handleDataBatchDelete = async () => {
     fetchDataData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -406,7 +402,7 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchDataData()
   } catch (error) {
-    handleErrorToast(error, '切换字典数据状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -454,7 +450,7 @@ const handleDataSubmit = async () => {
     dataDialogVisible.value = false
     fetchDataData()
   } catch (error) {
-    handleErrorToast(error, editingDataId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
   }
 }
 
@@ -470,8 +466,22 @@ const loadEnabledDictTypes = async () => {
   }
 }
 
+// 合并的 onMounted
 onMounted(() => {
+  fetchTypeData()
   loadEnabledDictTypes()
+})
+
+// 表格行类名函数
+const getTypeRowClassName = ({ row }: { row: DictTypeVo; rowIndex: number }) => {
+  return row.id === currentTypeId.value ? 'dict-type-row--active' : ''
+}
+
+// 当前选中类型的名称（用于显示）
+const currentTypeName = computed(() => {
+  if (!currentTypeId.value) return ''
+  const type = typeTableData.value.find((t) => t.id === currentTypeId.value)
+  return type?.dictTypeName || type?.dictTypeCode || ''
 })
 </script>
 
@@ -532,21 +542,20 @@ onMounted(() => {
           highlight-current-row
           @selection-change="handleTypeSelectionChange"
           @row-click="handleTypeRowClick"
-          :row-class-name="(params: { row: DictTypeVo }) =>
-            params.row.id === currentTypeId ? 'dict-type-row--active' : ''"
+          :row-class-name="getTypeRowClassName"
         >
           <el-table-column type="selection" width="48" />
-          <el-table-column prop="dictTypeCode" label="类型编码" min-width="140" />
-          <el-table-column prop="dictTypeName" label="类型名称" min-width="140" />
-          <el-table-column label="状态" width="90">
+          <el-table-column prop="dictTypeCode" label="类型编码" min-width="100" show-overflow-tooltip />
+          <el-table-column prop="dictTypeName" label="类型名称" min-width="100" show-overflow-tooltip />
+          <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
                 {{ row.status === 1 ? '启用' : '禁用' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="sortOrder" label="排序" width="80" />
-          <el-table-column label="操作" fixed="right" width="210">
+          <el-table-column prop="sortOrder" label="排序" width="70" />
+          <el-table-column label="操作" fixed="right" width="160">
             <template #default="{ row }">
               <el-button type="primary" link @click.stop="handleTypeEdit(row)">编辑</el-button>
               <el-button type="primary" link @click.stop="handleTypeToggleStatus(row)">
@@ -577,11 +586,7 @@ onMounted(() => {
           <div class="panel-title">
             字典数据
             <span v-if="currentTypeId" class="panel-subtitle">
-              （当前类型：
-              {{
-                typeTableData.find((t) => t.id === currentTypeId)?.dictTypeName ||
-                typeTableData.find((t) => t.id === currentTypeId)?.dictTypeCode
-              }}）
+              （当前类型：{{ currentTypeName }}）
             </span>
           </div>
           <div class="panel-actions">
@@ -632,24 +637,24 @@ onMounted(() => {
           @selection-change="handleDataSelectionChange"
         >
           <el-table-column type="selection" width="48" />
-          <el-table-column prop="dictLabel" label="字典标签" min-width="140" />
-          <el-table-column prop="dictValue" label="字典值" min-width="120" />
-          <el-table-column prop="dictSort" label="排序" width="80" />
-          <el-table-column prop="isDefault" label="默认" width="80">
+          <el-table-column prop="dictLabel" label="字典标签" min-width="100" show-overflow-tooltip />
+          <el-table-column prop="dictValue" label="字典值" min-width="80" show-overflow-tooltip />
+          <el-table-column prop="dictSort" label="排序" width="70" />
+          <el-table-column prop="isDefault" label="默认" width="70">
             <template #default="{ row }">
               <el-tag v-if="row.isDefault === 1" size="small" type="success">是</el-tag>
               <span v-else>否</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="90">
+          <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
                 {{ row.status === 1 ? '启用' : '禁用' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-          <el-table-column label="操作" fixed="right" width="220">
+          <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
+          <el-table-column label="操作" fixed="right" width="180">
             <template #default="{ row }">
               <el-button type="primary" link @click="handleDataEdit(row)">编辑</el-button>
               <el-button type="primary" link @click="handleDataToggleStatus(row)">
@@ -764,6 +769,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .page-title {
@@ -775,8 +782,17 @@ onMounted(() => {
 
 .dict-layout {
   display: grid;
-  grid-template-columns: 1.1fr 1.7fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
   gap: 16px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 1400px) {
+  .dict-layout {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .dict-panel {
@@ -786,6 +802,8 @@ onMounted(() => {
   padding: 12px 16px 16px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panel-header {
