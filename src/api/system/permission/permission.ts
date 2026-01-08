@@ -1,4 +1,5 @@
 import { httpGet, httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
+import type { RoleVo } from '@/api/system/role/role'
 
 export interface PermissionPageQuery {
   pageNum?: number
@@ -132,6 +133,25 @@ export function getCurrentUserPermissionTree(params?: {
   if (params?.visible !== undefined) queryParams.visible = params.visible
   
   return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree/current-user', Object.keys(queryParams).length > 0 ? queryParams : undefined)
+}
+
+/**
+ * 获取权限关联的角色列表
+ */
+export function getPermissionRoles(permissionId: number): Promise<RoleVo[]> {
+  return httpGet<RoleVo[]>(SERVICE.USERCENTER, `/permission/${permissionId}/roles`)
+}
+
+export interface PermissionRemoveRoleRequest {
+  permissionId: number
+  roleId: number
+}
+
+/**
+ * 移除权限与角色的关联
+ */
+export function removeRoleFromPermission(payload: PermissionRemoveRoleRequest): Promise<void> {
+  return httpPost<void>(SERVICE.USERCENTER, '/permission/remove-role', payload)
 }
 
 

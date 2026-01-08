@@ -7,8 +7,11 @@ import {
   updatePermission,
   deletePermission,
   switchPermissionStatus,
+  getPermissionRoles,
+  removeRoleFromPermission,
   type PermissionTreeVo,
 } from '@/api/system/permission/permission.ts'
+import type { RoleVo } from '@/api/system/role/role'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dict.ts'
 
@@ -45,6 +48,13 @@ const form = reactive({
   status: 1,
   remark: '',
 })
+
+// 查看角色关联
+const roleDialogVisible = ref(false)
+const viewingPermissionId = ref<number | null>(null)
+const viewingPermissionName = ref('')
+const roleList = ref<RoleVo[]>([])
+const roleListLoading = ref(false)
 
 const resetForm = () => {
   editingId.value = null
@@ -227,6 +237,46 @@ const handleSubmit = async () => {
   }
 }
 
+// 查看角色关联
+const handleViewRoles = async (node: PermissionTreeVo) => {
+  viewingPermissionId.value = node.id
+  viewingPermissionName.value = node.permissionName
+  roleDialogVisible.value = true
+  await loadPermissionRoles(node.id)
+}
+
+const loadPermissionRoles = async (permissionId: number) => {
+  roleListLoading.value = true
+  try {
+    roleList.value = await getPermissionRoles(permissionId)
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    roleListLoading.value = false
+  }
+}
+
+const handleRemoveRole = async (role: RoleVo) => {
+  if (!viewingPermissionId.value) return
+  try {
+    await ElMessageBox.confirm(
+      `确定要将角色【${role.roleName || role.roleCode}】与权限【${viewingPermissionName.value}】解除关联吗？`,
+      '提示',
+      { type: 'warning' }
+    )
+    await removeRoleFromPermission({
+      permissionId: viewingPermissionId.value,
+      roleId: role.id,
+    })
+    ElMessage.success('已解除关联')
+    await loadPermissionRoles(viewingPermissionId.value)
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
 </script>
 
 <template>
@@ -310,6 +360,7 @@ const handleSubmit = async () => {
                 <el-button link type="primary" @click.stop="handleCreateChild(data, 'button')">新按钮</el-button>
               </template>
               <el-button link type="primary" @click.stop="handleEdit(data)">编辑</el-button>
+              <el-button link type="info" @click.stop="handleViewRoles(data)">查看角色</el-button>
               <el-button link type="primary" @click.stop="handleToggleStatus(data)">
                 {{ data.status === 1 ? '禁用' : '启用' }}
               </el-button>
@@ -390,6 +441,46 @@ const handleSubmit = async () => {
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmit">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 查看角色关联弹窗 -->
+    <el-dialog
+      v-model="roleDialogVisible"
+      :title="`查看角色 - ${viewingPermissionName}`"
+      width="880px"
+      destroy-on-close
+    >
+      <div v-loading="roleListLoading" style="min-height: 260px">
+        <el-table v-if="roleList.length" :data="roleList" border stripe>
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="roleCode" label="角色编码" min-width="140" />
+          <el-table-column prop="roleName" label="角色名称" min-width="140" />
+          <el-table-column prop="roleType" label="角色类型" min-width="110">
+            <template #default="{ row }">
+              <span>{{ row.roleType || '-' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'info'">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" fixed="right" width="120">
+            <template #default="{ row }">
+              <el-button type="danger" link @click="handleRemoveRole(row)">解除关联</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-else description="暂无关联角色" />
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="roleDialogVisible = false">关 闭</el-button>
         </span>
       </template>
     </el-dialog>
