@@ -439,7 +439,11 @@ const handleRemoveUser = async (user: UserVo) => {
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="520px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="角色编码" required>
-          <el-input v-model="form.roleCode" placeholder="请输入角色编码" />
+          <el-input
+            v-model="form.roleCode"
+            placeholder="请输入角色编码"
+            :disabled="!!editingRoleId"
+          />
         </el-form-item>
         <el-form-item label="角色名称" required>
           <el-input v-model="form.roleName" placeholder="请输入角色名称" />

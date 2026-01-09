@@ -40,29 +40,35 @@ const handleSubmit = async () => {
 
 <template>
   <main class="login-page">
-    <div class="login-panel">
-      <section class="login-left">
-        <h1 class="system-title">My Management System</h1>
-        <p class="system-subtitle">通用后台管理系统 · 用户 / 角色 / 菜单 / 参数管理</p>
-        <ul class="feature-list">
-          <li>基于 Vue3 + Vite + TypeScript</li>
-          <li>后端 Spring Boot 微服务架构</li>
-          <li>支持 JWT 双 Token 认证</li>
-        </ul>
-      </section>
-
+    <div class="login-container">
       <section class="login-card">
+        <header class="login-header">
+          <div class="logo-circle">
+            <span class="logo-dot"></span>
+          </div>
+          <div class="login-header-text">
+            <h1 class="system-title">My Management System</h1>
+            <p class="system-subtitle">通用后台管理系统 · 轻量 · 高效 · 易用</p>
+          </div>
+        </header>
+
         <h2 class="title">账号登录</h2>
         <p class="title-sub">请输入用户名和密码登录系统</p>
 
         <form class="form" @submit.prevent="handleSubmit">
           <label class="field">
-            <span>用户名</span>
-            <input v-model="form.username" type="text" autocomplete="username" placeholder="请输入用户名" required />
+            <span class="field-label">用户名</span>
+            <input
+              v-model="form.username"
+              type="text"
+              autocomplete="username"
+              placeholder="请输入用户名"
+              required
+            />
           </label>
 
           <label class="field">
-            <span>密码</span>
+            <span class="field-label">密码</span>
             <input
               v-model="form.password"
               type="password"
@@ -73,9 +79,14 @@ const handleSubmit = async () => {
           </label>
 
           <button class="submit" type="submit" :disabled="loading">
-            {{ loading ? '登录中...' : '登 录' }}
+            <span v-if="!loading">登 录</span>
+            <span v-else>登录中...</span>
           </button>
         </form>
+
+        <footer class="login-footer">
+          <span>© {{ new Date().getFullYear() }} My Management System</span>
+        </footer>
       </section>
     </div>
   </main>
@@ -88,69 +99,85 @@ const handleSubmit = async () => {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  background: radial-gradient(circle at top left, #1d4ed8, #0f172a 55%, #020617);
+  background: radial-gradient(circle at top, #eff6ff, #e5e7eb 55%, #dbeafe);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.login-panel {
+.login-container {
   width: 100%;
-  max-width: 1080px;
-  margin: 32px auto;
-  padding: 32px 40px;
-  border-radius: 22px;
-  background: radial-gradient(circle at top left, #0f172a, #020617 65%);
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.9);
-  display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: 32px;
-  color: #e5e7eb;
-}
-
-.login-left {
-  border-right: 1px solid rgba(75, 85, 99, 0.6);
-  padding-right: 32px;
-}
-
-.system-title {
-  margin: 0 0 8px;
-  font-size: 26px;
-  font-weight: 700;
-  color: #e5e7eb;
-}
-
-.system-subtitle {
-  margin: 0 0 20px;
-  font-size: 14px;
-  color: #9ca3af;
-}
-
-.feature-list {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  color: #9ca3af;
-  line-height: 1.7;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-card {
-  padding-left: 8px;
+  width: 100%;
+  padding: 28px 26px 24px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff, #f3f4f6);
+  box-shadow:
+    0 18px 40px rgba(148, 163, 184, 0.35),
+    0 0 0 1px rgba(229, 231, 235, 0.9);
+}
+
+.login-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.logo-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 20%, #bfdbfe, #60a5fa);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7);
+}
+
+.login-header-text {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.18), transparent 55%);
+}
+
+.system-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.system-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .title {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #f9fafb;
+  color: #111827;
 }
 
 .title-sub {
   margin: 6px 0 18px;
   font-size: 13px;
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .form {
@@ -163,20 +190,23 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   font-size: 13px;
-  color: #374151;
+  color: #111827;
 }
 
-.field span {
+.field-label {
   margin-bottom: 4px;
 }
 
 .field input {
-  padding: 9px 11px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
   outline: none;
   font-size: 14px;
   transition: all 0.15s ease;
+  background: #f9fafb;
+  color: #111827;
 }
 
 .field input::placeholder {
@@ -185,24 +215,28 @@ const handleSubmit = async () => {
 
 .field input:focus {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.4),
+    0 0 0 6px rgba(59, 130, 246, 0.18);
+  background: #ffffff;
 }
 
 .submit {
-  margin-top: 10px;
+  margin-top: 6px;
   padding: 9px 0;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
   color: #fff;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  box-shadow: 0 12px 26px rgba(59, 130, 246, 0.35);
 }
 
 .submit:hover:not(:disabled) {
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 16px 32px rgba(59, 130, 246, 0.45);
   transform: translateY(-1px);
 }
 
@@ -219,20 +253,26 @@ const handleSubmit = async () => {
   font-size: 13px;
 }
 
-@media (max-width: 900px) {
-  .login-panel {
-    width: 100%;
-    margin: 0 16px;
-    grid-template-columns: 1fr;
-    padding: 24px 22px;
+.login-footer {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
   }
 
-  .login-left {
-    border-right: none;
-    border-bottom: 1px solid #eef2ff;
-    padding-right: 0;
-    padding-bottom: 18px;
-    margin-bottom: 10px;
+  .login-card {
+    padding: 22px 18px 20px;
+  }
+
+  .system-title {
+    font-size: 16px;
   }
 }
 </style>

@@ -308,15 +308,9 @@ const handleRemoveRole = async (role: RoleVo) => {
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleCreateRoot()">新建根目录</el-button>
         </el-form-item>
       </el-form>
-    </div>
-
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <el-button type="primary" @click="handleCreateRoot()">新建根目录</el-button>
-      </div>
-      <div class="toolbar-tip">目录仅作为分组；目录下建菜单，菜单下建按钮</div>
     </div>
 
     <el-card class="tree-card" shadow="never">
@@ -407,9 +401,12 @@ const handleRemoveRole = async (role: RoleVo) => {
         <el-form-item label="编码" required>
           <div class="code-input">
             <el-input v-if="!editingId && codePrefix" v-model="codePrefix" disabled style="width: 160px" />
-            <el-input v-model="form.permissionCode" placeholder="请输入编码" />
+            <el-input
+              v-model="form.permissionCode"
+              placeholder="请输入编码"
+              :disabled="!!editingId"
+            />
           </div>
-          <div v-if="!editingId && codePrefix" class="code-tip">编码将生成为：{{ codePrefix }}{{ form.permissionCode }}</div>
         </el-form-item>
         <el-form-item v-if="form.permissionType === 'menu'" label="路由路径" required>
           <el-input v-model="form.path" placeholder="例如：/system/userPage" />
@@ -536,19 +533,6 @@ const handleRemoveRole = async (role: RoleVo) => {
 .toolbar-left {
   display: flex;
   gap: 12px;
-}
-
-.toolbar-tip {
-  color: #6b7280;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.toolbar-tip::before {
-  content: '💡';
-  font-size: 14px;
 }
 
 .tree-card {
@@ -713,13 +697,6 @@ const handleRemoveRole = async (role: RoleVo) => {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.code-tip {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #6b7280;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
 
 /* 响应式优化 */

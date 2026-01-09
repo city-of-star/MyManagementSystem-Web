@@ -70,7 +70,7 @@ const fetchData = async () => {
     query.pageNum = resp.current
     query.pageSize = resp.size
   } catch (error) {
-    handleErrorToast(error, '加载参数配置列表失败')
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
@@ -142,7 +142,7 @@ const handleDelete = async (row: ConfigVo) => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -162,7 +162,7 @@ const handleBatchDelete = async () => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -174,7 +174,7 @@ const handleToggleStatus = async (row: ConfigVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用配置' : '已禁用配置')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '切换配置状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -217,7 +217,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchData()
   } catch (error) {
-    handleErrorToast(error, editingId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
   }
 }
 </script>
@@ -343,7 +343,11 @@ const handleSubmit = async () => {
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" destroy-on-close>
       <el-form label-width="100px" class="dialog-form">
         <el-form-item label="配置键" required>
-          <el-input v-model="form.configKey" placeholder="请输入配置键，例如：system.name" />
+          <el-input
+            v-model="form.configKey"
+            placeholder="请输入配置键，例如：system.name"
+            :disabled="!!editingId"
+          />
         </el-form-item>
         <el-form-item label="配置名称" required>
           <el-input v-model="form.configName" placeholder="请输入配置名称" />

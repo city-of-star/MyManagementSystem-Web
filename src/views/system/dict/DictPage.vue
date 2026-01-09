@@ -684,7 +684,11 @@ const currentTypeName = computed(() => {
     <el-dialog v-model="typeDialogVisible" :title="typeDialogTitle" width="520px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="类型编码" required>
-          <el-input v-model="typeForm.dictTypeCode" placeholder="请输入字典类型编码" />
+          <el-input
+            v-model="typeForm.dictTypeCode"
+            placeholder="请输入字典类型编码"
+            :disabled="!!editingTypeId"
+          />
         </el-form-item>
         <el-form-item label="类型名称" required>
           <el-input v-model="typeForm.dictTypeName" placeholder="请输入字典类型名称" />
