@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
-  getUserPage,
-  type PageResult,
-  type UserVo,
-  type UserPageQuery,
-  createUser,
-  updateUser,
-  deleteUser,
+  assignUserRoles,
   batchDeleteUser,
-  switchUserStatus,
+  createUser,
+  deleteUser,
+  getUserPage,
+  getUserRoleIds,
   lockOrUnlockUser,
+  type PageResult,
   resetUserPassword,
-} from '@/api/user/user'
-import { handleErrorToast } from '@/utils/http'
+  switchUserStatus,
+  updateUser,
+  type UserPageQuery,
+  type UserVo,
+} from '@/api/system/user/user.ts'
+import {getRolePage, type RoleVo} from '@/api/system/role/role.ts'
+import {handleErrorToast} from '@/utils/http'
+import {useDict} from '@/utils/base/dict.ts'
 
 // 查询条件
 const query = reactive<UserPageQuery>({
@@ -25,6 +29,11 @@ const query = reactive<UserPageQuery>({
   phone: '',
   status: null,
 })
+
+// 字典：通用状态、性别、锁定状态
+const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
+const {options: genderOptions, load: loadGenderDict} = useDict('user_gender')
+const {options: lockStatusOptions, load: loadLockStatusDict} = useDict('user_lock_status')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -38,6 +47,14 @@ const multipleSelection = ref<UserVo[]>([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建用户')
 const editingUserId = ref<number | null>(null)
+
+// 分配角色相关
+const roleDialogVisible = ref(false)
+const assigningUserId = ref<number | null>(null)
+const assigningUserName = ref('')
+const allRoles = ref<RoleVo[]>([])
+const checkedRoleIds = ref<number[]>([])
+const roleLoading = ref(false)
 
 // 表单（用于新增/编辑）
 const form = reactive({
@@ -75,14 +92,19 @@ const fetchData = async () => {
     query.pageNum = resp.current
     query.pageSize = resp.size
   } catch (error) {
-    handleErrorToast(error, '加载用户列表失败')
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
 }
 
 onMounted(() => {
+  // 加载列表
   fetchData()
+  // 加载字典
+  loadStatusDict()
+  loadGenderDict()
+  loadLockStatusDict()
 })
 
 // 搜索
@@ -152,7 +174,7 @@ const handleDelete = async (row: UserVo) => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -173,7 +195,7 @@ const handleBatchDelete = async () => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -186,7 +208,7 @@ const handleToggleStatus = async (row: UserVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '切换用户状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -202,7 +224,7 @@ const handleToggleLock = async (row: UserVo) => {
     ElMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '锁定/解锁用户失败')
+    handleErrorToast(error)
   }
 }
 
@@ -217,7 +239,7 @@ const handleResetPassword = async (row: UserVo) => {
     ElMessage.success('密码已重置为 123456')
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '重置密码失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -263,7 +285,58 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchData()
   } catch (error) {
-    handleErrorToast(error, editingUserId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
+  }
+}
+
+// 分配角色相关函数
+const handleAssignRoles = async (row: UserVo) => {
+  assigningUserId.value = row.id
+  assigningUserName.value = row.username
+  roleDialogVisible.value = true
+  await loadAllRoles()
+  await loadUserRoles(row.id)
+}
+
+const loadAllRoles = async () => {
+  roleLoading.value = true
+  try {
+    const resp = await getRolePage({
+      pageNum: 1,
+      pageSize: 1000,
+      status: 1, // 只加载启用的角色
+    })
+    allRoles.value = resp.records
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    roleLoading.value = false
+  }
+}
+
+const loadUserRoles = async (userId: number) => {
+  try {
+    checkedRoleIds.value = await getUserRoleIds(userId)
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+const handleSubmitRoles = async () => {
+  if (!assigningUserId.value) return
+  if (checkedRoleIds.value.length === 0) {
+    ElMessage.warning('请至少选择一个角色')
+    return
+  }
+  try {
+    await assignUserRoles({
+      userId: assigningUserId.value,
+      roleIds: checkedRoleIds.value,
+    })
+    ElMessage.success('分配角色成功')
+    roleDialogVisible.value = false
+  } catch (error) {
+    handleErrorToast(error)
   }
 }
 </script>
@@ -286,8 +359,12 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -318,6 +395,14 @@ const handleSubmit = async () => {
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="nickname" label="昵称" min-width="120" />
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
+      <el-table-column prop="gender" label="性别" width="90">
+        <template #default="{ row }">
+          {{
+            genderOptions.find((opt) => opt.value === String(row.gender ?? 0))?.label ||
+            '未知'
+          }}
+        </template>
+      </el-table-column>
       <el-table-column prop="phone" label="手机号" min-width="130" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
       <el-table-column label="状态" width="100">
@@ -330,25 +415,31 @@ const handleSubmit = async () => {
       <el-table-column label="锁定" width="100">
         <template #default="{ row }">
           <el-tag :type="row.locked === 1 ? 'danger' : 'success'">
-            {{ row.locked === 1 ? '已锁定' : '未锁定' }}
+            {{
+              lockStatusOptions.find((opt) => opt.value === String(row.locked))?.label ||
+              (row.locked === 1 ? '已锁定' : '未锁定')
+            }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="260">
+      <el-table-column label="操作" fixed="right" width="200">
         <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button type="primary" link @click="handleToggleStatus(row)">
-            {{ row.status === 1 ? '禁用' : '启用' }}
-          </el-button>
-          <el-button type="primary" link @click="handleToggleLock(row)">
-            {{ row.locked === 1 ? '解锁' : '锁定' }}
-          </el-button>
-          <el-button type="primary" link @click="handleResetPassword(row)">
-            重置密码
-          </el-button>
-          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+          <div class="action-buttons">
+            <el-button type="primary" link @click="handleEdit(row)" style="margin-left: 12px">编辑</el-button>
+            <el-button type="success" link @click="handleAssignRoles(row)">分配角色</el-button>
+            <el-button type="primary" link @click="handleToggleStatus(row)">
+              {{ row.status === 1 ? '禁用' : '启用' }}
+            </el-button>
+            <el-button type="primary" link @click="handleToggleLock(row)">
+              {{ row.locked === 1 ? '解锁' : '锁定' }}
+            </el-button>
+            <el-button type="primary" link @click="handleResetPassword(row)">
+              重置密码
+            </el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -395,8 +486,12 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
@@ -408,6 +503,42 @@ const handleSubmit = async () => {
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmit">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 分配角色弹窗 -->
+    <el-dialog
+      v-model="roleDialogVisible"
+      :title="`分配角色 - ${assigningUserName}`"
+      width="500px"
+      destroy-on-close
+    >
+      <div v-loading="roleLoading" style="min-height: 300px">
+        <el-checkbox-group v-model="checkedRoleIds" style="display: flex; flex-direction: column; gap: 12px">
+          <el-checkbox
+            v-for="role in allRoles"
+            :key="role.id"
+            :label="role.id"
+            style="height: 32px; display: flex; align-items: center"
+          >
+            <span style="display: flex; align-items: center; gap: 8px">
+              <span>{{ role.roleName }}</span>
+              <el-tag v-if="role.roleType" size="small" type="info">
+                {{ role.roleType === 'system' ? '系统角色' : '自定义角色' }}
+              </el-tag>
+            </span>
+          </el-checkbox>
+        </el-checkbox-group>
+        <div v-if="allRoles.length === 0 && !roleLoading" style="text-align: center; color: #999; padding: 40px 0">
+          暂无可用角色
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="roleDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleSubmitRoles">确 定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -456,6 +587,20 @@ const handleSubmit = async () => {
 
 .dialog-form {
   padding-top: 8px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.action-buttons .el-button {
+  flex: 0 0 calc(33.333% - 3px);
+  min-width: 0;
+  padding: 0 8px;
+  text-align: center;
 }
 </style>
 

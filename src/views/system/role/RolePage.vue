@@ -1,18 +1,26 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import type {ElTree} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
-  getRolePage,
-  type PageResult,
-  type RoleVo,
-  type RolePageQuery,
-  createRole,
-  updateRole,
-  deleteRole,
+  assignRolePermissions,
   batchDeleteRole,
+  createRole,
+  deleteRole,
+  getRolePage,
+  getRolePermissionIds,
+  getRoleUsers,
+  removeUserFromRole,
+  type PageResult,
+  type RolePageQuery,
+  type RoleVo,
   switchRoleStatus,
-} from '@/api/role/role'
-import { handleErrorToast } from '@/utils/http'
+  updateRole,
+} from '@/api/system/role/role.ts'
+import type { UserVo } from '@/api/system/user/user'
+import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
+import {handleErrorToast} from '@/utils/http'
+import {useDict} from '@/utils/base/dict.ts'
 
 const query = reactive<RolePageQuery>({
   pageNum: 1,
@@ -23,6 +31,10 @@ const query = reactive<RolePageQuery>({
   status: null,
 })
 
+// 字典：通用状态、角色类型
+const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
+const {options: roleTypeOptions, load: loadRoleTypeDict} = useDict('role_type')
+
 const loading = ref(false)
 const tableData = ref<RoleVo[]>([])
 const total = ref(0)
@@ -31,6 +43,22 @@ const multipleSelection = ref<RoleVo[]>([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建角色')
 const editingRoleId = ref<number | null>(null)
+
+// 分配权限相关
+const permissionDialogVisible = ref(false)
+const assigningRoleId = ref<number | null>(null)
+const assigningRoleName = ref('')
+const permissionTree = ref<PermissionTreeVo[]>([])
+const checkedPermissionIds = ref<number[]>([])
+const permissionTreeLoading = ref(false)
+const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
+
+// 查看用户相关
+const userDialogVisible = ref(false)
+const viewingRoleId = ref<number | null>(null)
+const viewingRoleName = ref('')
+const userList = ref<UserVo[]>([])
+const userListLoading = ref(false)
 
 const form = reactive({
   roleCode: '',
@@ -61,7 +89,7 @@ const fetchData = async () => {
     query.pageNum = resp.current
     query.pageSize = resp.size
   } catch (error) {
-    handleErrorToast(error, '加载角色列表失败')
+    handleErrorToast(error)
   } finally {
     loading.value = false
   }
@@ -69,6 +97,8 @@ const fetchData = async () => {
 
 onMounted(() => {
   fetchData()
+  loadStatusDict()
+  loadRoleTypeDict()
 })
 
 const handleSearch = () => {
@@ -128,7 +158,7 @@ const handleDelete = async (row: RoleVo) => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -148,7 +178,7 @@ const handleBatchDelete = async () => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      handleErrorToast(error, '批量删除失败')
+      handleErrorToast(error)
     }
   }
 }
@@ -160,7 +190,7 @@ const handleToggleStatus = async (row: RoleVo) => {
     ElMessage.success(targetStatus === 1 ? '已启用角色' : '已禁用角色')
     fetchData()
   } catch (error) {
-    handleErrorToast(error, '切换角色状态失败')
+    handleErrorToast(error)
   }
 }
 
@@ -201,7 +231,104 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchData()
   } catch (error) {
-    handleErrorToast(error, editingRoleId.value ? '更新失败' : '创建失败')
+    handleErrorToast(error)
+  }
+}
+
+// 分配权限相关函数
+const handleAssignPermissions = async (row: RoleVo) => {
+  assigningRoleId.value = row.id
+  assigningRoleName.value = row.roleName
+  permissionDialogVisible.value = true
+  await loadPermissionTree()
+  await loadRolePermissions(row.id)
+}
+
+const loadPermissionTree = async () => {
+  permissionTreeLoading.value = true
+  try {
+    permissionTree.value = await getPermissionTree({
+      status: 1,
+    })
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    permissionTreeLoading.value = false
+  }
+}
+
+const loadRolePermissions = async (roleId: number) => {
+  try {
+    checkedPermissionIds.value = await getRolePermissionIds(roleId)
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+const handlePermissionTreeChange = () => {
+  // 更新选中的权限ID列表
+  checkedPermissionIds.value = permissionTreeRef.value?.getCheckedKeys() as number[] || []
+}
+
+const handleSubmitPermissions = async () => {
+  if (!assigningRoleId.value) return
+  // 获取所有选中的节点（不包括半选中的父节点）
+  const checkedKeys = permissionTreeRef.value?.getCheckedKeys() as number[] || []
+  if (checkedKeys.length === 0) {
+    ElMessage.warning('请至少选择一个权限')
+    return
+  }
+  try {
+    await assignRolePermissions({
+      roleId: assigningRoleId.value,
+      permissionIds: checkedKeys,
+    })
+    ElMessage.success('分配权限成功')
+    permissionDialogVisible.value = false
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+// 查看用户相关函数
+const handleViewUsers = async (row: RoleVo) => {
+  viewingRoleId.value = row.id
+  viewingRoleName.value = row.roleName
+  userDialogVisible.value = true
+  await loadRoleUsers(row.id)
+}
+
+const loadRoleUsers = async (roleId: number) => {
+  userListLoading.value = true
+  try {
+    userList.value = await getRoleUsers(roleId)
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    userListLoading.value = false
+  }
+}
+
+const handleRemoveUser = async (user: UserVo) => {
+  if (!viewingRoleId.value) return
+  try {
+    await ElMessageBox.confirm(
+      `确定要从角色【${viewingRoleName.value}】中移除用户【${user.username || user.realName || user.nickname}】吗？`,
+      '提示',
+      {
+        type: 'warning',
+      }
+    )
+    await removeUserFromRole({
+      roleId: viewingRoleId.value,
+      userId: user.id,
+    })
+    ElMessage.success('移除成功')
+    await loadRoleUsers(viewingRoleId.value)
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
   }
 }
 </script>
@@ -220,14 +347,22 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="角色类型">
           <el-select v-model="query.roleType" placeholder="全部" clearable style="width: 140px">
-            <el-option label="系统角色" value="system" />
-            <el-option label="自定义角色" value="custom" />
+            <el-option
+              v-for="opt in roleTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -257,7 +392,13 @@ const handleSubmit = async () => {
       <el-table-column prop="roleName" label="角色名称" min-width="140" />
       <el-table-column prop="roleType" label="角色类型" min-width="110">
         <template #default="{ row }">
-          {{ row.roleType === 'system' ? '系统角色' : '自定义角色' }}
+          <span>
+            {{
+              roleTypeOptions.find((opt) => opt.value === row.roleType)?.label ||
+              row.roleType ||
+              '-'
+            }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="80" />
@@ -269,9 +410,11 @@ const handleSubmit = async () => {
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="220">
+      <el-table-column label="操作" fixed="right" width="380">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button type="success" link @click="handleAssignPermissions(row)">分配权限</el-button>
+          <el-button type="info" link @click="handleViewUsers(row)">查看用户</el-button>
           <el-button type="primary" link @click="handleToggleStatus(row)">
             {{ row.status === 1 ? '禁用' : '启用' }}
           </el-button>
@@ -296,15 +439,23 @@ const handleSubmit = async () => {
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="520px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="角色编码" required>
-          <el-input v-model="form.roleCode" placeholder="请输入角色编码" />
+          <el-input
+            v-model="form.roleCode"
+            placeholder="请输入角色编码"
+            :disabled="!!editingRoleId"
+          />
         </el-form-item>
         <el-form-item label="角色名称" required>
           <el-input v-model="form.roleName" placeholder="请输入角色名称" />
         </el-form-item>
         <el-form-item label="角色类型">
           <el-select v-model="form.roleType" style="width: 160px">
-            <el-option label="系统角色" value="system" />
-            <el-option label="自定义角色" value="custom" />
+            <el-option
+              v-for="opt in roleTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="排序">
@@ -312,8 +463,12 @@ const handleSubmit = async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
@@ -325,6 +480,81 @@ const handleSubmit = async () => {
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmit">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 分配权限弹窗 -->
+    <el-dialog
+      v-model="permissionDialogVisible"
+      :title="`分配权限 - ${assigningRoleName}`"
+      width="600px"
+      destroy-on-close
+    >
+      <div v-loading="permissionTreeLoading" style="min-height: 300px">
+        <el-tree
+          ref="permissionTreeRef"
+          :data="permissionTree"
+          :props="{ children: 'children', label: 'permissionName' }"
+          show-checkbox
+          node-key="id"
+          :default-checked-keys="checkedPermissionIds"
+          @check="handlePermissionTreeChange"
+          style="max-height: 400px; overflow-y: auto"
+        >
+          <template #default="{ data }">
+            <span style="display: flex; align-items: center; gap: 8px">
+              <span>{{ data.permissionName }}</span>
+              <el-tag v-if="data.permissionType" size="small" type="info">
+                {{ data.permissionType === 'catalog' ? '目录' : data.permissionType === 'menu' ? '菜单' : '按钮' }}
+              </el-tag>
+            </span>
+          </template>
+        </el-tree>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="permissionDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleSubmitPermissions">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 查看用户弹窗 -->
+    <el-dialog
+      v-model="userDialogVisible"
+      :title="`查看用户 - ${viewingRoleName}`"
+      width="1000px"
+      destroy-on-close
+    >
+      <div v-loading="userListLoading" style="min-height: 300px">
+        <el-table :data="userList" border stripe v-if="userList.length > 0">
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="username" label="用户名" min-width="120" />
+          <el-table-column prop="realName" label="真实姓名" min-width="100" />
+          <el-table-column prop="nickname" label="昵称" min-width="100" />
+          <el-table-column prop="email" label="邮箱" min-width="160" />
+          <el-table-column prop="phone" label="手机号" min-width="120" />
+          <el-table-column label="状态" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'info'">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" fixed="right" width="100">
+            <template #default="{ row }">
+              <el-button type="danger" link @click="handleRemoveUser(row)">移除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-else description="该角色暂未分配用户" />
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="userDialogVisible = false">关 闭</el-button>
         </span>
       </template>
     </el-dialog>

@@ -3,7 +3,9 @@ import { RouterView, useRouter } from 'vue-router'
 import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth/auth'
 import { useMenuStore } from '@/store/menu/menu'
-import { logout } from '@/api/auth/auth'
+import { useTabsStore } from '@/store/tabs/tabs'
+import { resetDynamicRoutesState } from '@/router'
+import { logout } from '@/api/system/auth/auth.ts'
 import { handleErrorSilent } from '@/utils/http'
 import LayoutHeader from '@/layouts/LayoutHeader.vue'
 import LayoutSidebar from '@/layouts/LayoutSidebar.vue'
@@ -12,6 +14,7 @@ import LayoutTabs from '@/layouts/LayoutTabs.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const menuStore = useMenuStore()
+const tabsStore = useTabsStore()
 
 // 使用动态菜单
 const menus = computed(() => menuStore.menus)
@@ -28,6 +31,8 @@ const handleLogout = async () => {
   } finally {
     authStore.clearTokens()
     menuStore.clearMenus()
+    tabsStore.closeAllTabs()
+    resetDynamicRoutesState()
     await router.push({ name: 'login' })
   }
 }

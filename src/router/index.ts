@@ -3,10 +3,10 @@ import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
-import { getPermissionTree } from '@/api/permission/permission'
+import { getCurrentUserPermissionTree } from '@/api/system/permission/permission.ts'
 import { convertPermissionToMenu, loadComponent } from '@/utils/menu/menuUtils'
 import { handleErrorSilent } from '@/utils/http'
-import type { PermissionTreeVo } from '@/api/permission/permission'
+import type { PermissionTreeVo } from '@/api/system/permission/permission.ts'
 
 // 基础路由（不需要权限）
 const baseRoutes: RouteRecordRaw[] = [
@@ -31,34 +31,38 @@ let dynamicRoutesLoaded = false
 
 /**
  * 将权限树转换为路由配置
- * 如果某个组件加载失败，会跳过该路由但继续处理其他路由
+ * 目录用于拼接路径前缀，菜单用于实际生成路由；组件加载失败时跳过但继续处理子级
  */
 function convertPermissionToRoutes(permissions: PermissionTreeVo[], parentPath = ''): RouteRecordRaw[] {
   const routes: RouteRecordRaw[] = []
 
+  const buildFullPath = (base: string, path?: string) => {
+    if (!path) return base
+    if (path.startsWith('/')) return path
+    if (!base) return path.startsWith('/') ? path : `/${path}`
+    return base.endsWith('/') ? `${base}${path}` : `${base}/${path}`
+  }
+
   for (const permission of permissions) {
-    // 只处理菜单类型，且状态为启用，可见性为显示
-    if (permission.permissionType !== 'menu' || permission.status !== 1 || permission.visible !== 1) {
+    // 仅处理启用且可见
+    if (permission.status !== 1 || permission.visible !== 1) {
       continue
     }
 
-    // 构建完整路径
-    const fullPath = permission.path ? (parentPath + permission.path) : ''
-    
-    // 如果有组件路径，创建路由
-    if (permission.component && fullPath) {
+    const currentPath = buildFullPath(parentPath, permission.path)
+
+    // 菜单：有组件且有路径才生成路由
+    if (permission.permissionType === 'menu' && permission.component && currentPath) {
       try {
-        // 先处理子路由
         let childRoutes: RouteRecordRaw[] = []
         if (permission.children && permission.children.length > 0) {
-          childRoutes = convertPermissionToRoutes(permission.children, fullPath)
+          childRoutes = convertPermissionToRoutes(permission.children, currentPath)
         }
 
-        // 尝试加载组件，如果失败则跳过该路由
         const componentLoader = loadComponent(permission.component)
 
         const route: RouteRecordRaw = {
-          path: fullPath,
+          path: currentPath,
           name: permission.permissionCode || `route_${permission.id}`,
           component: componentLoader,
           meta: {
@@ -70,17 +74,17 @@ function convertPermissionToRoutes(permissions: PermissionTreeVo[], parentPath =
 
         routes.push(route)
       } catch (error) {
-        // 组件加载失败，记录错误但继续处理其他路由
-        console.warn(`[动态路由] 跳过路由 ${fullPath}，组件加载失败:`, error)
-        // 即使组件加载失败，也尝试处理子路由（可能子路由的组件是存在的）
+        console.warn(`[动态路由] 跳过路由 ${currentPath}，组件加载失败:`, error)
         if (permission.children && permission.children.length > 0) {
           const childRoutes = convertPermissionToRoutes(permission.children, parentPath)
           routes.push(...childRoutes)
         }
       }
-    } else if (permission.children && permission.children.length > 0) {
-      // 如果没有组件但有子菜单，递归处理子菜单
-      const childRoutes = convertPermissionToRoutes(permission.children, parentPath)
+    }
+
+    // 目录或无组件的菜单：继续向下处理子级，携带路径前缀
+    if (permission.children && permission.children.length > 0) {
+      const childRoutes = convertPermissionToRoutes(permission.children, currentPath)
       routes.push(...childRoutes)
     }
   }
@@ -97,9 +101,8 @@ async function loadDynamicRoutes() {
   }
 
   try {
-    // 获取权限树（只获取菜单类型，启用状态，可见的）
-    const permissionTree = await getPermissionTree({
-      permissionType: 'menu',
+    // 获取当前用户有权限的权限树（目录+菜单），仅保留启用且可见
+    const permissionTree = await getCurrentUserPermissionTree({
       status: 1,
       visible: 1,
     })
@@ -149,6 +152,16 @@ async function loadDynamicRoutes() {
     handleErrorSilent(error)
     console.error('加载动态菜单失败:', error)
   }
+}
+
+// 对外暴露，便于登录后主动加载动态路由
+export async function ensureDynamicRoutesLoaded() {
+  await loadDynamicRoutes()
+}
+
+// 重置动态路由状态（登出时调用）
+export function resetDynamicRoutesState() {
+  dynamicRoutesLoaded = false
 }
 
 // 路由守卫：处理登录和动态路由加载

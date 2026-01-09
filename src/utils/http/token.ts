@@ -1,6 +1,6 @@
 /**
  * Token 刷新相关逻辑
- * 
+ *
  * 包含：
  * - Token 刷新队列管理（防止并发刷新）
  * - Token 刷新逻辑
@@ -8,7 +8,7 @@
  */
 
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { refreshToken } from '@/api/auth/auth'
+import { refreshToken } from '@/api/system/auth/auth.ts'
 import { useAuthStore } from '@/store/auth/auth'
 import type { HttpResponse } from './types'
 
@@ -126,7 +126,7 @@ async function performTokenRefresh(currentRefreshToken: string): Promise<TokenRe
 
 /**
  * 使用新 token 重试请求
- * 
+ *
  * @param httpInstance Axios 实例（通过参数传入避免循环依赖）
  * @param config 原始请求配置
  * @param refreshResult Token 刷新结果

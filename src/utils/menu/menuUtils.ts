@@ -1,36 +1,46 @@
-import type { MenuItem } from '@/config/menu/menuConfig'
-import type { PermissionTreeVo } from '@/api/permission/permission'
+import type { PermissionTreeVo } from '@/api/system/permission/permission.ts'
+
+// 菜单项类型，供菜单转换与 store 复用
+export interface MenuItem {
+  path?: string
+  label: string
+  icon?: string
+  children?: MenuItem[]
+}
 
 /**
  * 将后端权限树转换为前端菜单项
  */
 export function convertPermissionToMenu(permissions: PermissionTreeVo[]): MenuItem[] {
   return permissions
-    .filter(permission => {
-      // 只处理菜单类型，且状态为启用，可见性为显示
-      return (
-        permission.permissionType === 'menu' &&
-        permission.status === 1 &&
-        permission.visible === 1
-      )
-    })
-    .map(permission => {
+    .flatMap(permission => {
+      // 目录/菜单，且启用可见
+      const isAllowedType = permission.permissionType === 'menu' || permission.permissionType === 'catalog'
+      if (!isAllowedType || permission.status !== 1 || permission.visible !== 1) {
+        return []
+      }
+
+      const children = permission.children ? convertPermissionToMenu(permission.children) : []
+
+      // 目录：仅作为分组，即使没有子项也展示，不设置 path（避免被当作普通菜单重复渲染）
+      if (permission.permissionType === 'catalog') {
+        return [{
+          label: permission.permissionName,
+          icon: permission.icon,
+          children,
+        }]
+      }
+
+      // 菜单：保留 path，附带子菜单
       const menuItem: MenuItem = {
         label: permission.permissionName,
         icon: permission.icon,
+        path: permission.path,
       }
-
-      // 如果有路径，则设置路径
-      if (permission.path) {
-        menuItem.path = permission.path
+      if (children.length) {
+        menuItem.children = children
       }
-
-      // 如果有子菜单，递归转换
-      if (permission.children && permission.children.length > 0) {
-        menuItem.children = convertPermissionToMenu(permission.children)
-      }
-
-      return menuItem
+      return [menuItem]
     })
 }
 
@@ -50,6 +60,8 @@ function normalizePathForMatch(path: string): string {
   normalized = normalized.replace(/\.vue$/, '')
   // 统一使用正斜杠
   normalized = normalized.replace(/\\/g, '/')
+  // 去掉开头的斜杠，兼容后端返回类似 "/system/user/UserPage" 的写法
+  normalized = normalized.replace(/^\/+/, '')
   // 转换为小写用于匹配（但保留原始路径用于实际导入）
   return normalized.toLowerCase()
 }
@@ -75,26 +87,26 @@ function extractRelativePath(fullPath: string): string {
 export function loadComponent(component: string) {
   // 移除 .vue 后缀（如果有）
   const componentPath = component.replace(/\.vue$/, '').trim()
-  
+
   // 如果路径为空，抛出错误
   if (!componentPath) {
     throw new Error('组件路径不能为空')
   }
-  
+
   // 标准化目标路径（用于匹配）
   const normalizedTarget = normalizePathForMatch(componentPath)
-  
+
   // 查找匹配的组件模块（大小写不敏感）
   const moduleKey = Object.keys(componentModules).find(key => {
     const normalizedKey = normalizePathForMatch(key)
     return normalizedKey === normalizedTarget
   })
-  
+
   if (moduleKey && componentModules[moduleKey]) {
     // 返回动态导入函数
     return componentModules[moduleKey] as () => Promise<any>
   }
-  
+
   // 如果找不到，输出调试信息并抛出错误
   const availablePaths = Object.keys(componentModules).map(k => extractRelativePath(k))
   console.error(`[动态路由] 组件未找到: ${componentPath}`)
