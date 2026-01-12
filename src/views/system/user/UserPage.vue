@@ -462,7 +462,7 @@ const handleSubmitRoles = async () => {
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="用户名" required>
-          <el-input v-model="form.username" placeholder="请输入用户名" />
+          <el-input v-model="form.username" placeholder="请输入用户名" :disabled="!!editingUserId"/>
         </el-form-item>
         <el-form-item v-if="!editingUserId" label="密码" required>
           <el-input
