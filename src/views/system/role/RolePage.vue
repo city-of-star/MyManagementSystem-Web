@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
+import {onMounted, reactive, ref, nextTick} from 'vue'
 import type {ElTree} from 'element-plus'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
@@ -49,7 +49,6 @@ const permissionDialogVisible = ref(false)
 const assigningRoleId = ref<number | null>(null)
 const assigningRoleName = ref('')
 const permissionTree = ref<PermissionTreeVo[]>([])
-const checkedPermissionIds = ref<number[]>([])
 const permissionTreeLoading = ref(false)
 const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
 
@@ -240,16 +239,51 @@ const handleAssignPermissions = async (row: RoleVo) => {
   assigningRoleId.value = row.id
   assigningRoleName.value = row.roleName
   permissionDialogVisible.value = true
-  await loadPermissionTree()
-  await loadRolePermissions(row.id)
+  await loadPermissionTree(row.id)
 }
 
-const loadPermissionTree = async () => {
+const loadPermissionTree = async (roleId: number) => {
   permissionTreeLoading.value = true
   try {
-    permissionTree.value = await getPermissionTree({
-      status: 1,
-    })
+    // 并行加载权限树和角色已分配的权限ID列表
+    const [treeData, permissionIds] = await Promise.all([
+      getPermissionTree(), // 不传参数，返回所有的权限
+      getRolePermissionIds(roleId),
+    ])
+
+    permissionTree.value = treeData
+
+    // 等待 DOM 更新后，根据权限ID列表设置树组件的选中状态
+    await nextTick()
+    if (permissionTreeRef.value) {
+      // 先清空所有选中状态，避免残留
+      permissionTreeRef.value.setCheckedKeys([])
+      await nextTick()
+
+      // 将权限ID列表转换为 Set，便于快速查找
+      const permissionIdSet = new Set(permissionIds)
+
+      // 只收集叶子节点（没有子节点的节点）中在权限ID列表中的权限ID
+      // Tree 组件会自动处理父子关联，父节点会自动变成半选中状态
+      const checkedIds: number[] = []
+      const collectLeafCheckedIds = (nodes: PermissionTreeVo[]) => {
+        nodes.forEach(node => {
+          if (!node.children || node.children.length === 0) {
+            // 叶子节点：如果在权限ID列表中，则加入
+            if (permissionIdSet.has(node.id)) {
+              checkedIds.push(node.id)
+            }
+          } else {
+            // 非叶子节点：继续递归处理子节点
+            collectLeafCheckedIds(node.children)
+          }
+        })
+      }
+      collectLeafCheckedIds(permissionTree.value)
+
+      // 设置选中状态（只设置叶子节点，父节点会自动变成半选中状态）
+      permissionTreeRef.value.setCheckedKeys(checkedIds)
+    }
   } catch (error) {
     handleErrorToast(error)
   } finally {
@@ -257,31 +291,25 @@ const loadPermissionTree = async () => {
   }
 }
 
-const loadRolePermissions = async (roleId: number) => {
-  try {
-    checkedPermissionIds.value = await getRolePermissionIds(roleId)
-  } catch (error) {
-    handleErrorToast(error)
-  }
-}
-
-const handlePermissionTreeChange = () => {
-  // 更新选中的权限ID列表
-  checkedPermissionIds.value = permissionTreeRef.value?.getCheckedKeys() as number[] || []
-}
-
 const handleSubmitPermissions = async () => {
   if (!assigningRoleId.value) return
-  // 获取所有选中的节点（不包括半选中的父节点）
+
+  // 获取所有选中的节点（包括完全选中和半选中的）
   const checkedKeys = permissionTreeRef.value?.getCheckedKeys() as number[] || []
-  if (checkedKeys.length === 0) {
+  const halfCheckedKeys = permissionTreeRef.value?.getHalfCheckedKeys() as number[] || []
+
+  // 合并完全选中和半选中的节点，传给后端
+  const allPermissionIds = [...new Set([...checkedKeys, ...halfCheckedKeys])]
+
+  if (allPermissionIds.length === 0) {
     ElMessage.warning('请至少选择一个权限')
     return
   }
+
   try {
     await assignRolePermissions({
       roleId: assigningRoleId.value,
-      permissionIds: checkedKeys,
+      permissionIds: allPermissionIds,
     })
     ElMessage.success('分配权限成功')
     permissionDialogVisible.value = false
@@ -498,8 +526,6 @@ const handleRemoveUser = async (user: UserVo) => {
           :props="{ children: 'children', label: 'permissionName' }"
           show-checkbox
           node-key="id"
-          :default-checked-keys="checkedPermissionIds"
-          @check="handlePermissionTreeChange"
           style="max-height: 400px; overflow-y: auto"
         >
           <template #default="{ data }">

@@ -29,7 +29,7 @@ const handleSubmit = async () => {
     // 先加载动态路由，避免路由未注册导致跳转报错
     await ensureDynamicRoutesLoaded()
     // 跳转到用户管理页面
-    await router.push({name: 'system:user:manage'})
+    await router.push('/system/userPage')
   } catch (error) {
     handleErrorToast(error)
   } finally {
