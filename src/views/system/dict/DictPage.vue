@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch, unref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   batchDeleteDictData,
@@ -28,7 +28,14 @@ import {
 } from '@/api/system/dict/dictType.ts'
 import {type PageResult} from '@/api/common/types.ts'
 import { handleErrorToast } from '@/utils/http'
-import { clearDictCache } from '@/utils/base/dictUtils'
+import { clearDictCache, useDict } from '@/utils/base/dictUtils.ts'
+
+const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
+
+const getStatusLabel = (status: number | null | undefined) => {
+  const list = unref(statusOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
+}
 
 // ====== 字典类型（左侧） ======
 
@@ -539,6 +546,7 @@ const loadEnabledDictTypes = async () => {
 onMounted(() => {
   fetchTypeData()
   loadEnabledDictTypes()
+  loadStatusDict()
 })
 
 // 表格行类名函数
@@ -591,8 +599,12 @@ const currentTypeName = computed(() => {
                 clearable
                 style="width: 120px"
               >
-                <el-option label="启用" :value="1" />
-                <el-option label="禁用" :value="0" />
+                <el-option
+                  v-for="opt in statusOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="Number(opt.value)"
+                />
               </el-select>
             </el-form-item>
             <el-form-item>
@@ -619,7 +631,7 @@ const currentTypeName = computed(() => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ row.status === 1 ? '启用' : '禁用' }}
+                {{ getStatusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -628,7 +640,7 @@ const currentTypeName = computed(() => {
             <template #default="{ row }">
               <el-button type="primary" link @click.stop="handleTypeEdit(row)">编辑</el-button>
               <el-button type="primary" link @click.stop="handleTypeToggleStatus(row)">
-                {{ row.status === 1 ? '禁用' : '启用' }}
+                {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
               </el-button>
               <el-button type="danger" link @click.stop="handleTypeDelete(row)">删除</el-button>
             </template>
@@ -686,8 +698,12 @@ const currentTypeName = computed(() => {
                 clearable
                 style="width: 120px"
               >
-                <el-option label="启用" :value="1" />
-                <el-option label="禁用" :value="0" />
+                <el-option
+                  v-for="opt in statusOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="Number(opt.value)"
+                />
               </el-select>
             </el-form-item>
             <el-form-item>
@@ -718,7 +734,7 @@ const currentTypeName = computed(() => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ row.status === 1 ? '启用' : '禁用' }}
+                {{ getStatusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -727,7 +743,7 @@ const currentTypeName = computed(() => {
             <template #default="{ row }">
               <el-button type="primary" link @click="handleDataEdit(row)">编辑</el-button>
               <el-button type="primary" link @click="handleDataToggleStatus(row)">
-                {{ row.status === 1 ? '禁用' : '启用' }}
+                {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
               </el-button>
               <el-button type="danger" link @click="handleDataDelete(row)">删除</el-button>
             </template>

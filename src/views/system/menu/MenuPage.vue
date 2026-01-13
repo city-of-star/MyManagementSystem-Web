@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, unref } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getPermissionTree,
@@ -23,6 +23,16 @@ const query = reactive({
 // 字典：通用状态、菜单显示状态
 const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
 const { options: visibleOptions, load: loadVisibleDict } = useDict('menu_visible')
+
+const getStatusLabel = (status: number | null | undefined) => {
+  const list = unref(statusOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
+}
+
+const getVisibleLabel = (visible: number | null | undefined) => {
+  const list = unref(visibleOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(visible))?.label || ''
+}
 
 const loading = ref(false)
 const treeData = ref<PermissionTreeVo[]>([])
@@ -347,10 +357,10 @@ const handleRemoveRole = async (role: RoleVo) => {
             </div>
             <div class="node-meta">
               <el-tag size="small" :type="data.status === 1 ? 'success' : 'info'" class="status-tag">
-                {{ data.status === 1 ? '启用' : '禁用' }}
+                {{ getStatusLabel(data.status) }}
               </el-tag>
               <el-tag size="small" :type="data.visible === 1 ? 'success' : 'info'" class="status-tag">
-                {{ data.visible === 1 ? '显示' : '隐藏' }}
+                {{ getVisibleLabel(data.visible) }}
               </el-tag>
             </div>
             <div class="node-actions">
@@ -367,7 +377,7 @@ const handleRemoveRole = async (role: RoleVo) => {
               <el-button link type="primary" size="small" @click.stop="handleEdit(data)">编辑</el-button>
               <el-button link type="info" size="small" @click.stop="handleViewRoles(data)">查看角色</el-button>
               <el-button link type="primary" size="small" @click.stop="handleToggleStatus(data)">
-                {{ data.status === 1 ? '禁用' : '启用' }}
+                {{ getStatusLabel(data.status === 1 ? 0 : 1) }}
               </el-button>
               <el-button link type="danger" size="small" @click.stop="handleDelete(data)">删除</el-button>
             </div>

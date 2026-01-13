@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref, nextTick} from 'vue'
+import {onMounted, reactive, ref, nextTick, unref} from 'vue'
 import type {ElTree} from 'element-plus'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
@@ -34,6 +34,11 @@ const query = reactive<RolePageQuery>({
 // 字典：通用状态、角色类型
 const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
 const {options: roleTypeOptions, load: loadRoleTypeDict} = useDict('role_type')
+
+const getStatusLabel = (status: number | null | undefined) => {
+  const list = unref(statusOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
+}
 
 const loading = ref(false)
 const tableData = ref<RoleVo[]>([])
@@ -433,7 +438,7 @@ const handleRemoveUser = async (user: UserVo) => {
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? '启用' : '禁用' }}
+            {{ getStatusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -444,7 +449,7 @@ const handleRemoveUser = async (user: UserVo) => {
           <el-button type="success" link @click="handleAssignPermissions(row)">分配权限</el-button>
           <el-button type="info" link @click="handleViewUsers(row)">查看用户</el-button>
           <el-button type="primary" link @click="handleToggleStatus(row)">
-            {{ row.status === 1 ? '禁用' : '启用' }}
+            {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
           </el-button>
           <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
         </template>
@@ -565,7 +570,7 @@ const handleRemoveUser = async (user: UserVo) => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ row.status === 1 ? '启用' : '禁用' }}
+                {{ getStatusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>

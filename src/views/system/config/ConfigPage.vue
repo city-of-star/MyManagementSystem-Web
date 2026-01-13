@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, unref } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getConfigPage,
@@ -29,6 +29,16 @@ const query = reactive<ConfigPageQuery>({
 const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
 const { options: yesNoOptions, load: loadYesNoDict } = useDict('yes_no')
 const { options: configTypeOptions, load: loadConfigTypeDict } = useDict('config_type')
+
+const getStatusLabel = (status: number | null | undefined) => {
+  const list = unref(statusOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
+}
+
+const getYesNoLabel = (val: number | null | undefined) => {
+  const list = unref(yesNoOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(val))?.label || ''
+}
 
 const loading = ref(false)
 const tableData = ref<ConfigVo[]>([])
@@ -304,14 +314,14 @@ const handleSubmit = async () => {
       <el-table-column label="可编辑" width="90">
         <template #default="{ row }">
           <el-tag :type="row.editable === 1 ? 'success' : 'info'">
-            {{ row.editable === 1 ? '是' : '否' }}
+            {{ getYesNoLabel(row.editable) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? '启用' : '禁用' }}
+            {{ getStatusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -320,7 +330,7 @@ const handleSubmit = async () => {
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
           <el-button type="primary" link @click="handleToggleStatus(row)">
-            {{ row.status === 1 ? '禁用' : '启用' }}
+            {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
           </el-button>
           <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
         </template>

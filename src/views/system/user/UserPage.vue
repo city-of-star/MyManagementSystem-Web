@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
+import {onMounted, reactive, ref, unref} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   assignUserRoles,
@@ -34,6 +34,12 @@ const query = reactive<UserPageQuery>({
 const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
 const {options: genderOptions, load: loadGenderDict} = useDict('user_gender')
 const {options: lockStatusOptions, load: loadLockStatusDict} = useDict('user_lock_status')
+
+// 查找状态文本
+const getStatusLabel = (status: number | null | undefined) => {
+  const list = unref(statusOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
+}
 
 // 列表 & 分页
 const loading = ref(false)
@@ -408,7 +414,7 @@ const handleSubmitRoles = async () => {
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? '启用' : '禁用' }}
+        {{ getStatusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -430,7 +436,7 @@ const handleSubmitRoles = async () => {
             <el-button type="primary" link @click="handleEdit(row)" style="margin-left: 12px">编辑</el-button>
             <el-button type="success" link @click="handleAssignRoles(row)">分配角色</el-button>
             <el-button type="primary" link @click="handleToggleStatus(row)">
-              {{ row.status === 1 ? '禁用' : '启用' }}
+          {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
             </el-button>
             <el-button type="primary" link @click="handleToggleLock(row)">
               {{ row.locked === 1 ? '解锁' : '锁定' }}
