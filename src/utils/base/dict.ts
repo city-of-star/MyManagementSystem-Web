@@ -5,7 +5,7 @@
  *
  * 使用示例：
  * ```typescript
- * import { useDict } from '@/utils/base/dict.ts'
+ * import { useDict } from '@/utils/base/dictData.ts'
  *
  * // 在组件中使用
  * const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
@@ -27,7 +27,7 @@
  */
 
 import { ref } from 'vue'
-import { getDictDataListByTypeCode, type DictDataVo } from '@/api/system/dict/dict.ts'
+import { getDictDataListByTypeCode, type DictDataVo } from '@/api/system/dict/dictData.ts'
 import { handleErrorToast } from '@/utils/http'
 
 /**

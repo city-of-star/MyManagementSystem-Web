@@ -3,28 +3,30 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   batchDeleteDictData,
-  batchDeleteDictType,
   createDictData,
-  createDictType,
   deleteDictData,
-  deleteDictType,
   getDictDataPage,
-  getDictTypePage,
-  listAllEnabledDictTypes,
   switchDictDataStatus,
-  switchDictTypeStatus,
   updateDictData,
-  updateDictType,
   type DictDataCreateRequest,
   type DictDataPageQuery,
   type DictDataUpdateRequest,
   type DictDataVo,
+} from '@/api/system/dict/dictData.ts'
+import {
+  batchDeleteDictType,
+  createDictType,
+  deleteDictType,
+  getDictTypePage,
+  listAllEnabledDictTypes,
+  switchDictTypeStatus,
+  updateDictType,
   type DictTypeCreateRequest,
   type DictTypePageQuery,
   type DictTypeUpdateRequest,
   type DictTypeVo,
   type PageResult,
-} from '@/api/system/dict/dict'
+} from '@/api/system/dict/dictType.ts'
 import { handleErrorToast } from '@/utils/http'
 
 // ====== 字典类型（左侧） ======
