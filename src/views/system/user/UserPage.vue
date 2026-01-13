@@ -31,15 +31,9 @@ const query = reactive<UserPageQuery>({
 })
 
 // 字典：通用状态、性别、锁定状态
-const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
-const {options: genderOptions, load: loadGenderDict} = useDict('user_gender')
-const {options: lockStatusOptions, load: loadLockStatusDict} = useDict('user_lock_status')
-
-// 查找状态文本
-const getStatusLabel = (status: number | null | undefined) => {
-  const list = unref(statusOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
-}
+const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
+const {options: genderOptions, findLabel: genderFindLabel, load: loadGenderDict} = useDict('user_gender')
+const {options: lockStatusOptions,findLabel: lockStatusFindLabel, load: loadLockStatusDict} = useDict('user_lock_status')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -403,10 +397,7 @@ const handleSubmitRoles = async () => {
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
       <el-table-column prop="gender" label="性别" width="90">
         <template #default="{ row }">
-          {{
-            genderOptions.find((opt) => opt.value === String(row.gender ?? 0))?.label ||
-            '未知'
-          }}
+          {{ genderFindLabel(row.status) }}
         </template>
       </el-table-column>
       <el-table-column prop="phone" label="手机号" min-width="130" />
@@ -414,17 +405,14 @@ const handleSubmitRoles = async () => {
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-        {{ getStatusLabel(row.status) }}
+            {{ statusFindLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="锁定" width="100">
         <template #default="{ row }">
           <el-tag :type="row.locked === 1 ? 'danger' : 'success'">
-            {{
-              lockStatusOptions.find((opt) => opt.value === String(row.locked))?.label ||
-              (row.locked === 1 ? '已锁定' : '未锁定')
-            }}
+            {{ lockStatusFindLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -436,7 +424,7 @@ const handleSubmitRoles = async () => {
             <el-button type="primary" link @click="handleEdit(row)" style="margin-left: 12px">编辑</el-button>
             <el-button type="success" link @click="handleAssignRoles(row)">分配角色</el-button>
             <el-button type="primary" link @click="handleToggleStatus(row)">
-          {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
+              {{ statusFindLabel(row.status === 1 ? 0 : 1) }}
             </el-button>
             <el-button type="primary" link @click="handleToggleLock(row)">
               {{ row.locked === 1 ? '解锁' : '锁定' }}

@@ -156,6 +156,11 @@ export function useDict(dictTypeCode: string) {
     }
   }
 
+  // 基于当前 options 的同步查找
+  const findLabel = (
+    value: string | number | null | undefined,
+  ) => findDictLabel(optionsRef.value, value)
+
   return {
     /** 字典选项列表 */
     options: optionsRef,
@@ -163,11 +168,13 @@ export function useDict(dictTypeCode: string) {
     loading: loadingRef,
     /** 加载字典数据的方法 */
     load,
+    /** 将字典值翻译成字典标签 */
+    findLabel
   }
 }
 
 /**
- * 根据字典值获取标签文本
+ * 根据字典值获取标签文本（异步）
  *
  * @param dictTypeCode 字典类型编码
  * @param value 字典值
@@ -180,6 +187,22 @@ export async function getDictLabel(
   const options = await fetchDictOptions(dictTypeCode)
   const option = options.find((opt) => opt.value === String(value))
   return option?.label ?? String(value)
+}
+
+/**
+ * 从字典选项中同步查找标签文本（同步）
+ *
+ * @param options 字典选项列表
+ * @param value 字典值
+ * @returns 标签文本，如果找不到则返回空字符串
+ */
+export function findDictLabel(
+  options: DictOption[],
+  value: string | number | null | undefined
+): string {
+  if (value === null || value === undefined) return ''
+  const option = options.find((opt) => opt.value === String(value))
+  return option?.label || ''
 }
 
 /**
@@ -202,38 +225,3 @@ export function clearDictCache(dictTypeCode?: string) {
     dictLoadingPromises.clear()
   }
 }
-
-/**
- * 从字典选项中同步查找标签文本（用于模板中）
- *
- * @param options 字典选项列表
- * @param value 字典值
- * @returns 标签文本，如果找不到则返回空字符串
- */
-export function findDictLabel(
-  options: DictOption[],
-  value: string | number | null | undefined
-): string {
-  if (value === null || value === undefined) return ''
-  const option = options.find((opt) => opt.value === String(value))
-  return option?.label || ''
-}
-
-/**
- * 从字典选项中同步查找标签文本（带默认值）
- *
- * @param options 字典选项列表
- * @param value 字典值
- * @param defaultValue 默认值，如果找不到则返回此值
- * @returns 标签文本
- */
-export function findDictLabelWithDefault(
-  options: DictOption[],
-  value: string | number | null | undefined,
-  defaultValue: string = ''
-): string {
-  if (value === null || value === undefined) return defaultValue
-  const option = options.find((opt) => opt.value === String(value))
-  return option?.label || defaultValue
-}
-
