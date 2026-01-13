@@ -3,7 +3,6 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getConfigPage,
-  type PageResult,
   type ConfigVo,
   type ConfigPageQuery,
   createConfig,
@@ -12,8 +11,9 @@ import {
   batchDeleteConfig,
   switchConfigStatus,
 } from '@/api/system/config/config.ts'
+import {type PageResult} from '@/api/common/types.ts'
 import { handleErrorToast } from '@/utils/http'
-import { useDict } from '@/utils/base/dict.ts'
+import { useDict } from '@/utils/base/dictUtils.ts'
 
 const query = reactive<ConfigPageQuery>({
   pageNum: 1,

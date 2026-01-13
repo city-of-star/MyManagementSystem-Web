@@ -80,7 +80,7 @@ export function getDictDataListByTypeId(dictTypeId: number): Promise<DictDataVo[
 }
 
 /**
- * 通过字典类型编码查询启用的数据列表（常用于下拉）
+ * 通过字典类型编码查询启用的数据列表
  */
 export function getDictDataListByTypeCode(dictTypeCode: string): Promise<DictDataVo[]> {
   return httpGet<DictDataVo[]>(SERVICE.BASE, `/dict-data/type-code/${dictTypeCode}`)

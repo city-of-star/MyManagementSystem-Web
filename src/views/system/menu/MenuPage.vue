@@ -13,7 +13,7 @@ import {
 } from '@/api/system/permission/permission.ts'
 import type { RoleVo } from '@/api/system/role/role'
 import { handleErrorToast } from '@/utils/http'
-import { useDict } from '@/utils/base/dict.ts'
+import { useDict } from '@/utils/base/dictUtils.ts'
 
 const query = reactive({
   status: null as number | null,

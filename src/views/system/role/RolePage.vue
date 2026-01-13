@@ -11,16 +11,16 @@ import {
   getRolePermissionIds,
   getRoleUsers,
   removeUserFromRole,
-  type PageResult,
   type RolePageQuery,
   type RoleVo,
   switchRoleStatus,
   updateRole,
 } from '@/api/system/role/role.ts'
+import {type PageResult} from '@/api/common/types.ts'
 import type { UserVo } from '@/api/system/user/user'
 import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
 import {handleErrorToast} from '@/utils/http'
-import {useDict} from '@/utils/base/dict.ts'
+import {useDict} from '@/utils/base/dictUtils.ts'
 
 const query = reactive<RolePageQuery>({
   pageNum: 1,

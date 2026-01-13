@@ -9,16 +9,16 @@ import {
   getUserPage,
   getUserRoleIds,
   lockOrUnlockUser,
-  type PageResult,
   resetUserPassword,
   switchUserStatus,
   updateUser,
   type UserPageQuery,
   type UserVo,
 } from '@/api/system/user/user.ts'
+import {type PageResult} from '@/api/common/types.ts'
 import {getRolePage, type RoleVo} from '@/api/system/role/role.ts'
 import {handleErrorToast} from '@/utils/http'
-import {useDict} from '@/utils/base/dict.ts'
+import {useDict} from '@/utils/base/dictUtils.ts'
 
 // 查询条件
 const query = reactive<UserPageQuery>({

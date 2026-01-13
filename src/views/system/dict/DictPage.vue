@@ -25,9 +25,10 @@ import {
   type DictTypePageQuery,
   type DictTypeUpdateRequest,
   type DictTypeVo,
-  type PageResult,
 } from '@/api/system/dict/dictType.ts'
+import {type PageResult} from '@/api/common/types.ts'
 import { handleErrorToast } from '@/utils/http'
+import { clearDictCache } from '@/utils/base/dictUtils'
 
 // ====== 字典类型（左侧） ======
 
@@ -156,6 +157,8 @@ const handleTypeDelete = async (row: DictTypeVo) => {
     })
     await deleteDictType(row.id)
     ElMessage.success('删除成功')
+    // 清除对应字典类型的缓存
+    clearDictCache(row.dictTypeCode)
     if (currentTypeId.value === row.id) {
       currentTypeId.value = null
     }
@@ -181,8 +184,12 @@ const handleTypeBatchDelete = async () => {
       },
     )
     const ids = typeMultipleSelection.value.map((t) => t.id)
+    // 保存要删除的字典类型编码，用于清除缓存
+    const dictTypeCodes = typeMultipleSelection.value.map((t) => t.dictTypeCode)
     await batchDeleteDictType({ dictTypeIds: ids })
     ElMessage.success('批量删除成功')
+    // 清除所有被删除字典类型的缓存
+    dictTypeCodes.forEach((code) => clearDictCache(code))
     if (currentTypeId.value && ids.includes(currentTypeId.value)) {
       currentTypeId.value = null
     }
@@ -199,6 +206,8 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
   try {
     await switchDictTypeStatus({ dictTypeId: row.id, status: targetStatus })
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    // 清除对应字典类型的缓存（状态变更可能影响字典数据的可用性）
+    clearDictCache(row.dictTypeCode)
     fetchTypeData()
   } catch (error) {
     handleErrorToast(error)
@@ -207,7 +216,8 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
 
 const handleTypeSubmit = async () => {
   try {
-    if (!typeForm.dictTypeCode) {
+    // 新增时验证编码，编辑时编码不可修改，不需要验证
+    if (!editingTypeId.value && !typeForm.dictTypeCode) {
       ElMessage.warning('请填写字典类型编码')
       return
     }
@@ -217,9 +227,18 @@ const handleTypeSubmit = async () => {
     }
 
     if (editingTypeId.value) {
+      // 编辑时，字典类型编码不可修改，使用原有的编码
+      const oldType = typeTableData.value.find((t) => t.id === editingTypeId.value)
+      const dictTypeCode = oldType?.dictTypeCode
+      
+      if (!dictTypeCode) {
+        ElMessage.error('无法获取字典类型编码')
+        return
+      }
+      
       const payload: DictTypeUpdateRequest = {
         id: editingTypeId.value,
-        dictTypeCode: typeForm.dictTypeCode,
+        // 编辑时不需要传递 dictTypeCode（编码不可修改）
         dictTypeName: typeForm.dictTypeName,
         status: typeForm.status,
         sortOrder: typeForm.sortOrder,
@@ -227,6 +246,9 @@ const handleTypeSubmit = async () => {
       }
       await updateDictType(payload)
       ElMessage.success('更新成功')
+      
+      // 清除对应字典类型的缓存（编码不会改变，直接清除当前编码的缓存）
+      clearDictCache(dictTypeCode)
     } else {
       const payload: DictTypeCreateRequest = {
         dictTypeCode: typeForm.dictTypeCode,
@@ -237,6 +259,7 @@ const handleTypeSubmit = async () => {
       }
       await createDictType(payload)
       ElMessage.success('创建成功')
+      // 新增不需要清除缓存（之前没有这个字典的缓存）
     }
     typeDialogVisible.value = false
     fetchTypeData()
@@ -265,8 +288,7 @@ const dataDialogVisible = ref(false)
 const dataDialogTitle = ref('新建字典数据')
 const editingDataId = ref<number | null>(null)
 
-const dataForm = reactive<DictDataCreateRequest & { id?: number }>({
-  dictTypeId: 0,
+const dataForm = reactive<Omit<DictDataCreateRequest, 'dictTypeId'> & { id?: number }>({
   dictLabel: '',
   dictValue: '',
   dictSort: 0,
@@ -278,7 +300,7 @@ const dataForm = reactive<DictDataCreateRequest & { id?: number }>({
 const resetDataForm = () => {
   editingDataId.value = null
   dataDialogTitle.value = '新建字典数据'
-  dataForm.dictTypeId = currentTypeId.value || 0
+  // 字典类型使用当前选择的类型，不需要在表单中设置
   dataForm.dictLabel = ''
   dataForm.dictValue = ''
   dataForm.dictSort = 0
@@ -343,16 +365,19 @@ const handleDataCreate = () => {
     return
   }
   resetDataForm()
-  dataForm.dictTypeId = currentTypeId.value
   dataDialogTitle.value = '新建字典数据'
   dataDialogVisible.value = true
 }
 
 const handleDataEdit = (row: DictDataVo) => {
+  if (!currentTypeId.value) {
+    ElMessage.warning('请先选择左侧字典类型')
+    return
+  }
   resetDataForm()
   dataDialogTitle.value = '编辑字典数据'
   editingDataId.value = row.id
-  dataForm.dictTypeId = row.dictTypeId
+  // 字典类型使用当前选择的类型，不需要从 row 中获取
   dataForm.dictLabel = row.dictLabel
   dataForm.dictValue = row.dictValue
   dataForm.dictSort = row.dictSort ?? 0
@@ -369,6 +394,10 @@ const handleDataDelete = async (row: DictDataVo) => {
     })
     await deleteDictData(row.id)
     ElMessage.success('删除成功')
+    // 清除对应字典类型的缓存
+    if (row.dictTypeCode) {
+      clearDictCache(row.dictTypeCode)
+    }
     fetchDataData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -387,8 +416,15 @@ const handleDataBatchDelete = async () => {
       type: 'warning',
     })
     const ids = dataMultipleSelection.value.map((d) => d.id)
+    // 保存要删除的字典类型编码，用于清除缓存
+    const dictTypeCodes = dataMultipleSelection.value
+      .map((d) => d.dictTypeCode)
+      .filter((code): code is string => !!code)
     await batchDeleteDictData({ dictDataIds: ids })
     ElMessage.success('批量删除成功')
+    // 清除所有被删除字典数据对应的字典类型缓存（去重）
+    const uniqueDictTypeCodes = [...new Set(dictTypeCodes)]
+    uniqueDictTypeCodes.forEach((code) => clearDictCache(code))
     fetchDataData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -402,6 +438,10 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
   try {
     await switchDictDataStatus({ dictDataId: row.id, status: targetStatus })
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    // 清除对应字典类型的缓存（状态变更影响过滤结果，只显示启用的）
+    if (row.dictTypeCode) {
+      clearDictCache(row.dictTypeCode)
+    }
     fetchDataData()
   } catch (error) {
     handleErrorToast(error)
@@ -410,8 +450,9 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
 
 const handleDataSubmit = async () => {
   try {
-    if (!dataForm.dictTypeId) {
-      ElMessage.warning('字典类型不能为空')
+    // 使用当前选择的字典类型
+    if (!currentTypeId.value) {
+      ElMessage.warning('请先选择左侧字典类型')
       return
     }
     if (!dataForm.dictLabel) {
@@ -423,10 +464,24 @@ const handleDataSubmit = async () => {
       return
     }
 
+    // 获取字典类型编码，用于清除缓存
+    const dictType = enabledDictTypes.value.find((t) => t.id === currentTypeId.value)
+    const dictTypeCode = dictType?.dictTypeCode
+
     if (editingDataId.value) {
+      // 编辑时，需要获取旧的字典类型编码（如果类型改变了，需要清除旧的缓存）
+      const oldData = dataTableData.value.find((d) => d.id === editingDataId.value)
+      let oldDictTypeCode = oldData?.dictTypeCode
+
+      // 如果 oldData.dictTypeCode 不存在，从 enabledDictTypes 中查找
+      if (!oldDictTypeCode && oldData?.dictTypeId) {
+        const oldType = enabledDictTypes.value.find((t) => t.id === oldData.dictTypeId)
+        oldDictTypeCode = oldType?.dictTypeCode
+      }
+
       const payload: DictDataUpdateRequest = {
         id: editingDataId.value,
-        dictTypeId: dataForm.dictTypeId,
+        dictTypeId: currentTypeId.value, // 使用当前选择的字典类型
         dictLabel: dataForm.dictLabel,
         dictValue: dataForm.dictValue,
         dictSort: dataForm.dictSort,
@@ -436,9 +491,17 @@ const handleDataSubmit = async () => {
       }
       await updateDictData(payload)
       ElMessage.success('更新成功')
+
+      // 清除缓存：如果类型改变了，清除旧的；无论如何都清除新的
+      if (oldDictTypeCode && oldDictTypeCode !== dictTypeCode) {
+        clearDictCache(oldDictTypeCode)
+      }
+      if (dictTypeCode) {
+        clearDictCache(dictTypeCode)
+      }
     } else {
       const payload: DictDataCreateRequest = {
-        dictTypeId: dataForm.dictTypeId,
+        dictTypeId: currentTypeId.value, // 使用当前选择的字典类型
         dictLabel: dataForm.dictLabel,
         dictValue: dataForm.dictValue,
         dictSort: dataForm.dictSort,
@@ -448,6 +511,10 @@ const handleDataSubmit = async () => {
       }
       await createDictData(payload)
       ElMessage.success('创建成功')
+      // 新增时也清除缓存，确保下次获取最新数据（包含新增的数据）
+      if (dictTypeCode) {
+        clearDictCache(dictTypeCode)
+      }
     }
     dataDialogVisible.value = false
     fetchDataData()
@@ -720,19 +787,8 @@ const currentTypeName = computed(() => {
     <!-- 字典数据弹窗 -->
     <el-dialog v-model="dataDialogVisible" :title="dataDialogTitle" width="560px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
-        <el-form-item label="所属类型" required>
-          <el-select
-            v-model="dataForm.dictTypeId"
-            placeholder="请选择字典类型"
-            style="width: 220px"
-          >
-            <el-option
-              v-for="item in enabledDictTypes"
-              :key="item.id"
-              :label="`${item.dictTypeName}（${item.dictTypeCode}）`"
-              :value="item.id"
-            />
-          </el-select>
+        <el-form-item label="所属类型">
+          <el-input :value="currentTypeName" disabled style="width: 220px" />
         </el-form-item>
         <el-form-item label="字典标签" required>
           <el-input v-model="dataForm.dictLabel" placeholder="请输入字典标签（显示文本）" />
