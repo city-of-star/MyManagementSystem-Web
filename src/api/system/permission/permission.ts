@@ -1,6 +1,8 @@
 import { httpGet, httpPost, httpPut, httpDelete, SERVICE } from '@/utils/http'
 import type { RoleVo } from '@/api/system/role/role'
+import type { PageResult } from '@/api/common/types'
 
+// 分页查询请求 DTO
 export interface PermissionPageQuery {
   pageNum?: number
   pageSize?: number
@@ -12,13 +14,7 @@ export interface PermissionPageQuery {
   visible?: number | null
 }
 
-export interface PageResult<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-}
-
+// 权限信息 VO
 export interface PermissionVo {
   id: number
   parentId?: number
@@ -36,6 +32,7 @@ export interface PermissionVo {
   remark?: string
 }
 
+// 创建权限请求 DTO
 export interface PermissionCreateRequest {
   parentId?: number
   permissionType: string
@@ -52,6 +49,7 @@ export interface PermissionCreateRequest {
   remark?: string
 }
 
+// 更新权限请求 DTO
 export interface PermissionUpdateRequest {
   id: number
   parentId?: number
@@ -69,21 +67,24 @@ export interface PermissionUpdateRequest {
   remark?: string
 }
 
+// 切换权限状态请求 DTO
 export interface PermissionStatusSwitchRequest {
   permissionId: number
   status: number
 }
 
+// 批量删除权限请求 DTO
 export interface PermissionBatchDeleteRequest {
   permissionIds: number[]
 }
 
+// 权限移除角色请求 DTO
 export interface PermissionRemoveRoleRequest {
   permissionId: number
   roleId: number
 }
 
-// 扩展 PermissionVo 以支持 children
+// 权限树 VO（扩展 PermissionVo 以支持 children）
 export interface PermissionTreeVo extends PermissionVo {
   children?: PermissionTreeVo[]
 }
@@ -144,7 +145,9 @@ export function removeRoleFromPermission(payload: PermissionRemoveRoleRequest): 
   return httpPost<void>(SERVICE.USERCENTER, '/permission/remove-role', payload)
 }
 
-// 获取权限树（全量，用于管理场景如角色分配）
+/**
+ * 获取权限树（全量，用于管理场景如角色分配）
+ */
 export function getPermissionTree(params?: {
   permissionType?: string
   status?: number
@@ -158,7 +161,9 @@ export function getPermissionTree(params?: {
   return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree', Object.keys(queryParams).length > 0 ? queryParams : undefined)
 }
 
-// 获取当前用户的权限树（用于前端菜单展示）
+/**
+ * 获取当前用户的权限树（用于前端菜单展示）
+ */
 export function getCurrentUserPermissionTree(params?: {
   permissionType?: string
   status?: number

@@ -1,6 +1,8 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
 import type { UserVo } from '@/api/system/user/user'
+import type { PageResult } from '@/api/common/types'
 
+// 分页查询请求 DTO
 export interface RolePageQuery {
   pageNum?: number
   pageSize?: number
@@ -10,13 +12,7 @@ export interface RolePageQuery {
   status?: number | null
 }
 
-export interface PageResult<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-}
-
+// 角色信息 VO
 export interface RoleVo {
   id: number
   roleCode: string
@@ -27,6 +23,7 @@ export interface RoleVo {
   remark?: string
 }
 
+// 创建角色请求 DTO
 export interface RoleCreateRequest {
   roleCode: string
   roleName: string
@@ -37,6 +34,7 @@ export interface RoleCreateRequest {
   permissionIds?: number[]
 }
 
+// 更新角色请求 DTO
 export interface RoleUpdateRequest {
   id: number
   roleCode?: string
@@ -48,20 +46,24 @@ export interface RoleUpdateRequest {
   permissionIds?: number[]
 }
 
+// 切换角色状态请求 DTO
 export interface RoleStatusSwitchRequest {
   roleId: number
   status: number
 }
 
+// 批量删除角色请求 DTO
 export interface RoleBatchDeleteRequest {
   roleIds: number[]
 }
 
+// 角色分配权限请求 DTO
 export interface RoleAssignPermissionRequest {
   roleId: number
   permissionIds: number[]
 }
 
+// 角色移除用户请求 DTO
 export interface RoleRemoveUserRequest {
   roleId: number
   userId: number
