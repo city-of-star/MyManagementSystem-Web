@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref, unref} from 'vue'
+import {onMounted, reactive, ref} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   assignUserRoles,
@@ -32,8 +32,8 @@ const query = reactive<UserPageQuery>({
 
 // 字典：通用状态、性别、锁定状态
 const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
-const {options: genderOptions, findLabel: genderFindLabel, load: loadGenderDict} = useDict('user_gender')
-const {options: lockStatusOptions,findLabel: lockStatusFindLabel, load: loadLockStatusDict} = useDict('user_lock_status')
+const {findLabel: genderFindLabel, load: loadGenderDict} = useDict('user_gender')
+const {findLabel: lockStatusFindLabel, load: loadLockStatusDict} = useDict('user_lock_status')
 
 // 列表 & 分页
 const loading = ref(false)

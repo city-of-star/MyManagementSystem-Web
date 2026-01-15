@@ -8,13 +8,13 @@
  * import { useDict } from '@/utils/base/dictUtils.ts'
  *
  * // 在组件中使用
- * const { options: statusOptions, load: loadStatusDict, loading } = useDict('common_status')
+ * const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
  *
  * onMounted(() => {
  *   loadStatusDict()
  * })
  *
- * // 在模板中使用
+ * // 在模板中使用（下拉框）
  * <el-select v-model="query.status" :loading="loading">
  *   <el-option
  *     v-for="opt in statusOptions"
@@ -23,6 +23,13 @@
  *     :value="Number(opt.value)"
  *   />
  * </el-select>
+ *
+ * // 在模板中使用（表格里面根据值获取标签）
+ * <el-table-column prop="gender" label="性别" width="90">
+ *   <template #default="{ row }">
+ *     {{ genderFindLabel(row.status) }}
+ *   </template>
+ * </el-table-column>
  * ```
  */
 
