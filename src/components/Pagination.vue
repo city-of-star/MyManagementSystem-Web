@@ -17,14 +17,12 @@
 <script setup lang="ts">
 import type { BasePageQuery } from '@/api/common/types'
 
-interface Props {
+const props = withDefaults(defineProps<{
   total: number // 总记录数
   query: BasePageQuery // 分页查询对象
-  pageSizes?: number[] // 每页显示条数选项
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  pageSizes: () => [10, 20, 50, 100] // 默认为 [10, 20, 50, 100]
+  pageSizes?: number[] // 每页显示条数选项，默认为 [10, 20, 50, 100]
+}>(), {
+  pageSizes: () => [10, 20, 50, 100],
 })
 
 const emit = defineEmits<{

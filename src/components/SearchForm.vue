@@ -14,6 +14,8 @@
   </SearchForm>
 -->
 <script setup lang="ts">
+import PrimaryButton from '@/components/button/PrimaryButton.vue'
+
 const emit = defineEmits<{
   search: []
   reset: []
@@ -43,8 +45,8 @@ const handleReset = () => {
     <div class="divider"></div>
     <!-- 按钮区域：最右侧 -->
     <div class="button-group">
-      <el-button type="primary" @click="handleSearch">查询</el-button>
-      <el-button @click="handleReset">重置</el-button>
+      <PrimaryButton type="primary" icon="Search" @click="handleSearch">查询</PrimaryButton>
+      <PrimaryButton type="info" icon="Refresh" @click="handleReset">重置</PrimaryButton>
     </div>
   </div>
 </template>

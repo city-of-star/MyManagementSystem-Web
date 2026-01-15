@@ -23,6 +23,8 @@ import SearchForm from '@/components/SearchForm.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
 import Toolbar from '@/components/Toolbar.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
 // 查询条件
 const query = reactive<UserPageQuery>({
@@ -343,13 +345,13 @@ const handleSubmitRoles = async () => {
     <!-- 查询区域 -->
     <SearchForm @search="handleSearch" @reset="handleReset">
       <el-form-item label="用户名">
-        <el-input v-model="query.username" placeholder="用户名" clearable />
+        <el-input v-model="query.username" placeholder="请输入用户名" clearable />
+      </el-form-item>
+      <el-form-item label="昵称">
+        <el-input v-model="query.nickname" placeholder="请输入昵称" clearable />
       </el-form-item>
       <el-form-item label="手机号">
-        <el-input v-model="query.nickname" placeholder="昵称" clearable />
-      </el-form-item>
-      <el-form-item label="手机号">
-        <el-input v-model="query.phone" placeholder="手机号" clearable />
+        <el-input v-model="query.phone" placeholder="请输入手机号" clearable />
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="query.status" placeholder="全部" clearable >
@@ -365,16 +367,20 @@ const handleSubmitRoles = async () => {
 
     <!-- 操作栏 -->
     <Toolbar>
-      <el-button type="primary" @click="handleCreate">新建用户</el-button>
-      <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
+      <PrimaryButton icon="Plus" type="primary" @click="handleCreate">
+        新建用户
+      </PrimaryButton>
+      <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
         批量删除
-      </el-button>
+      </PrimaryButton>
     </Toolbar>
 
     <!-- 表格 -->
     <DataTable
       :data="tableData"
       :loading="loading"
+      :page-num="query.pageNum"
+      :page-size="query.pageSize"
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="48" />
@@ -404,22 +410,24 @@ const handleSubmitRoles = async () => {
       </el-table-column>
       <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="200">
+      <el-table-column label="操作" fixed="right" width="130">
         <template #default="{ row }">
-          <div class="action-buttons">
-            <el-button type="primary" link @click="handleEdit(row)" style="margin-left: 12px">编辑</el-button>
-            <el-button type="success" link @click="handleAssignRoles(row)">分配角色</el-button>
-            <el-button type="primary" link @click="handleToggleStatus(row)">
-              {{ statusFindLabel(row.status === 1 ? 0 : 1) }}
-            </el-button>
-            <el-button type="primary" link @click="handleToggleLock(row)">
-              {{ row.locked === 1 ? '解锁' : '锁定' }}
-            </el-button>
-            <el-button type="primary" link @click="handleResetPassword(row)">
-              重置密码
-            </el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
-          </div>
+          <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)"/>
+          <IconButton type="success" icon="User" tooltip="分配角色" @click="handleAssignRoles(row)"/>
+          <IconButton
+            type="primary"
+            :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
+            :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+            @click="handleToggleStatus(row)"
+          />
+          <IconButton
+            type="primary"
+            :icon="row.locked === 1 ? 'Unlock' : 'Lock'"
+            :tooltip="row.locked === 1 ? '解锁' : '锁定'"
+            @click="handleToggleLock(row)"
+          />
+          <IconButton type="primary" icon="Key" tooltip="重置密码" @click="handleResetPassword(row)"/>
+          <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)"/>
         </template>
       </el-table-column>
     </DataTable>
@@ -537,20 +545,6 @@ const handleSubmitRoles = async () => {
 
 .dialog-form {
   padding-top: 8px;
-}
-
-.action-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  width: 100%;
-}
-
-.action-buttons .el-button {
-  flex: 0 0 calc(33.333% - 3px);
-  min-width: 0;
-  padding: 0 8px;
-  text-align: center;
 }
 </style>
 
