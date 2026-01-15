@@ -17,16 +17,38 @@ defineProps<{
   data: any[] // 表格数据数组
   loading?: boolean // 是否显示加载状态
 }>()
+
+// 表头样式：背景色加深 + 文字居中
+const headerCellStyle = {
+  backgroundColor: '#f5f7fa',
+  color: '#303133',
+  textAlign: 'center',
+}
+
+// 单元格内容居中
+const cellStyle = {
+  textAlign: 'center',
+}
 </script>
 
 <template>
   <el-table
     v-loading="loading"
     :data="data"
+    :header-cell-style="headerCellStyle"
+    :cell-style="cellStyle"
     border
     stripe
     v-bind="$attrs"
   >
+    <!-- 序号列（从 1 开始，固定显示） -->
+    <el-table-column
+      type="index"
+      label="序号"
+      width="70"
+      :index="(index: number) => index + 1"
+    />
     <slot />
   </el-table>
 </template>
+
