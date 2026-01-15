@@ -340,8 +340,6 @@ const handleSubmitRoles = async () => {
 
 <template>
   <div class="user-page">
-    <h2 class="page-title">用户管理</h2>
-
     <!-- 查询区域 -->
     <SearchForm @search="handleSearch" @reset="handleReset">
       <el-form-item label="用户名">
@@ -528,14 +526,6 @@ const handleSubmitRoles = async () => {
   flex-direction: column;
   gap: 16px;
 }
-
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2933;
-}
-
 
 .dialog-footer {
   display: flex;

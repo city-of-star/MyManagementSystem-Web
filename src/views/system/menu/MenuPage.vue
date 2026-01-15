@@ -14,6 +14,10 @@ import {
 import type { RoleVo } from '@/api/system/role/role'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
+import SearchForm from '@/components/SearchForm.vue'
+import Toolbar from '@/components/Toolbar.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
 const query = reactive({
   status: null as number | null,
@@ -291,37 +295,36 @@ const handleRemoveRole = async (role: RoleVo) => {
 
 <template>
   <div class="menu-page">
-    <h2 class="page-title">菜单管理</h2>
+    <!-- 查询区域 -->
+    <SearchForm @search="handleSearch" @reset="handleReset">
+      <el-form-item label="状态">
+        <el-select v-model="query.status" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in statusOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="Number(opt.value)"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="显示状态">
+        <el-select v-model="query.visible" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in visibleOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="Number(opt.value)"
+          />
+        </el-select>
+      </el-form-item>
+    </SearchForm>
 
-    <div class="search-card">
-      <el-form :inline="true" label-width="80px">
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="显示状态">
-          <el-select v-model="query.visible" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="opt in visibleOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-          <el-button type="primary" @click="handleCreateRoot()">新建根目录</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
+    <!-- 操作栏 -->
+    <Toolbar>
+      <PrimaryButton icon="Plus" type="primary" @click="handleCreateRoot">
+        新建根目录
+      </PrimaryButton>
+    </Toolbar>
 
     <el-card class="tree-card" shadow="never">
       <el-tree
@@ -514,37 +517,6 @@ const handleRemoveRole = async (role: RoleVo) => {
   overflow: hidden;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: #1f2937;
-  letter-spacing: -0.02em;
-  flex-shrink: 0;
-}
-
-.search-card {
-  padding: 20px 24px 8px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  flex-shrink: 0;
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 12px;
-}
-
 .tree-card {
   padding: 20px;
   background: #ffffff;
@@ -688,7 +660,7 @@ const handleRemoveRole = async (role: RoleVo) => {
   margin-left: auto;
 }
 
-.node-actions .el-button {
+.node-actions :deep(.el-button) {
   padding: 4px 8px;
   font-size: 12px;
 }

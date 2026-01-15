@@ -21,6 +21,12 @@ import type { UserVo } from '@/api/system/user/user'
 import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
 import {handleErrorToast} from '@/utils/http'
 import {useDict} from '@/utils/base/dictUtils.ts'
+import SearchForm from '@/components/SearchForm.vue'
+import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
+import Toolbar from '@/components/Toolbar.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
 const query = reactive<RolePageQuery>({
   pageNum: 1,
@@ -119,15 +125,6 @@ const handleReset = () => {
   fetchData()
 }
 
-const handleSizeChange = (size: number) => {
-  query.pageSize = size
-  fetchData()
-}
-
-const handleCurrentChange = (page: number) => {
-  query.pageNum = page
-  fetchData()
-}
 
 const handleSelectionChange = (rows: RoleVo[]) => {
   multipleSelection.value = rows
@@ -368,59 +365,55 @@ const handleRemoveUser = async (user: UserVo) => {
 
 <template>
   <div class="role-page">
-    <h2 class="page-title">角色管理</h2>
+    <!-- 查询区域 -->
+    <SearchForm @search="handleSearch" @reset="handleReset">
+      <el-form-item label="角色编码">
+        <el-input v-model="query.roleCode" placeholder="请输入角色编码" clearable />
+      </el-form-item>
+      <el-form-item label="角色名称">
+        <el-input v-model="query.roleName" placeholder="请输入角色名称" clearable />
+      </el-form-item>
+      <el-form-item label="角色类型">
+        <el-select v-model="query.roleType" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in roleTypeOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select v-model="query.status" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in statusOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="Number(opt.value)"
+          />
+        </el-select>
+      </el-form-item>
+    </SearchForm>
 
-    <div class="search-card">
-      <el-form :inline="true" label-width="70px">
-        <el-form-item label="角色编码">
-          <el-input v-model="query.roleCode" placeholder="角色编码" clearable />
-        </el-form-item>
-        <el-form-item label="角色名称">
-          <el-input v-model="query.roleName" placeholder="角色名称" clearable />
-        </el-form-item>
-        <el-form-item label="角色类型">
-          <el-select v-model="query.roleType" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="opt in roleTypeOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
-    <div class="toolbar">
-      <el-button type="primary" @click="handleCreate">新建角色</el-button>
-      <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
+    <!-- 操作栏 -->
+    <Toolbar>
+      <PrimaryButton icon="Plus" type="primary" @click="handleCreate">
+        新建角色
+      </PrimaryButton>
+      <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
         批量删除
-      </el-button>
-    </div>
+      </PrimaryButton>
+    </Toolbar>
 
-    <el-table
-      v-loading="loading"
+    <!-- 表格 -->
+    <DataTable
       :data="tableData"
-      border
-      stripe
+      :loading="loading"
+      :page-num="query.pageNum"
+      :page-size="query.pageSize"
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="48" />
-      <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="roleCode" label="角色编码" min-width="120" />
       <el-table-column prop="roleName" label="角色名称" min-width="140" />
       <el-table-column prop="roleType" label="角色类型" min-width="110">
@@ -443,31 +436,24 @@ const handleRemoveUser = async (user: UserVo) => {
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="380">
+      <el-table-column label="操作" fixed="right" width="280">
         <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button type="success" link @click="handleAssignPermissions(row)">分配权限</el-button>
-          <el-button type="info" link @click="handleViewUsers(row)">查看用户</el-button>
-          <el-button type="primary" link @click="handleToggleStatus(row)">
-            {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
-          </el-button>
-          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+          <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)" />
+          <IconButton type="success" icon="Key" tooltip="分配权限" @click="handleAssignPermissions(row)" />
+          <IconButton type="info" icon="User" tooltip="查看用户" @click="handleViewUsers(row)" />
+          <IconButton
+            type="primary"
+            :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
+            :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+            @click="handleToggleStatus(row)"
+          />
+          <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
         </template>
       </el-table-column>
-    </el-table>
+    </DataTable>
 
-    <div class="pagination">
-      <el-pagination
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        :page-size="query.pageSize || 10"
-        :current-page="query.pageNum || 1"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-    </div>
+    <!-- 分页 -->
+    <Pagination :query="query" :total="total" @change="fetchData" />
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="520px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
@@ -597,33 +583,6 @@ const handleRemoveUser = async (user: UserVo) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2933;
-}
-
-.search-card {
-  padding: 16px 20px 4px;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-}
-
-.pagination {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
 }
 
 .dialog-footer {

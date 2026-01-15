@@ -14,6 +14,12 @@ import {
 import {type PageResult} from '@/api/common/types.ts'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
+import SearchForm from '@/components/SearchForm.vue'
+import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
+import Toolbar from '@/components/Toolbar.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
 const query = reactive<ConfigPageQuery>({
   pageNum: 1,
@@ -108,15 +114,6 @@ const handleReset = () => {
   fetchData()
 }
 
-const handleSizeChange = (size: number) => {
-  query.pageSize = size
-  fetchData()
-}
-
-const handleCurrentChange = (page: number) => {
-  query.pageNum = page
-  fetchData()
-}
 
 const handleSelectionChange = (rows: ConfigVo[]) => {
   multipleSelection.value = rows
@@ -233,70 +230,66 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="param-page">
-    <h2 class="page-title">参数管理</h2>
+  <div class="config-page">
+    <!-- 查询区域 -->
+    <SearchForm @search="handleSearch" @reset="handleReset">
+      <el-form-item label="配置键">
+        <el-input v-model="query.configKey" placeholder="请输入配置键" clearable />
+      </el-form-item>
+      <el-form-item label="配置名称">
+        <el-input v-model="query.configName" placeholder="请输入配置名称" clearable />
+      </el-form-item>
+      <el-form-item label="类型">
+        <el-select v-model="query.configType" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in configTypeOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select v-model="query.status" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in statusOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="Number(opt.value)"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="可编辑">
+        <el-select v-model="query.editable" placeholder="全部" clearable>
+          <el-option
+            v-for="opt in yesNoOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="Number(opt.value)"
+          />
+        </el-select>
+      </el-form-item>
+    </SearchForm>
 
-    <div class="search-card">
-      <el-form :inline="true" label-width="80px">
-        <el-form-item label="配置键">
-          <el-input v-model="query.configKey" placeholder="配置键" clearable />
-        </el-form-item>
-        <el-form-item label="配置名称">
-          <el-input v-model="query.configName" placeholder="配置名称" clearable />
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="query.configType" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="opt in configTypeOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="可编辑">
-          <el-select v-model="query.editable" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="opt in yesNoOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
-    <div class="toolbar">
-      <el-button type="primary" @click="handleCreate">新建配置</el-button>
-      <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
+    <!-- 操作栏 -->
+    <Toolbar>
+      <PrimaryButton icon="Plus" type="primary" @click="handleCreate">
+        新建配置
+      </PrimaryButton>
+      <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
         批量删除
-      </el-button>
-    </div>
+      </PrimaryButton>
+    </Toolbar>
 
-    <el-table
-        v-loading="loading"
-        :data="tableData"
-        border
-        stripe
-        @selection-change="handleSelectionChange"
+    <!-- 表格 -->
+    <DataTable
+      :data="tableData"
+      :loading="loading"
+      :page-num="query.pageNum"
+      :page-size="query.pageSize"
+      @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="48" />
-      <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="configKey" label="配置键" min-width="180" />
       <el-table-column prop="configName" label="配置名称" min-width="180" />
       <el-table-column prop="configType" label="类型" width="100">
@@ -326,29 +319,22 @@ const handleSubmit = async () => {
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="220">
+      <el-table-column label="操作" fixed="right" width="200">
         <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button type="primary" link @click="handleToggleStatus(row)">
-            {{ getStatusLabel(row.status === 1 ? 0 : 1) }}
-          </el-button>
-          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+          <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)" />
+          <IconButton
+            type="primary"
+            :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
+            :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+            @click="handleToggleStatus(row)"
+          />
+          <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
         </template>
       </el-table-column>
-    </el-table>
+    </DataTable>
 
-    <div class="pagination">
-      <el-pagination
-          background
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          :page-size="query.pageSize || 10"
-          :current-page="query.pageNum || 1"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-      />
-    </div>
+    <!-- 分页 -->
+    <Pagination :query="query" :total="total" @change="fetchData" />
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" destroy-on-close>
       <el-form label-width="100px" class="dialog-form">
@@ -416,37 +402,10 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-.param-page {
+.config-page {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2933;
-}
-
-.search-card {
-  padding: 16px 20px 4px;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-}
-
-.pagination {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
 }
 
 .dialog-footer {
