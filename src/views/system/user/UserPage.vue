@@ -72,21 +72,33 @@ const form = reactive({
   remark: '',
 })
 
-// 重置表单
-const resetForm = () => {
-  editingUserId.value = null
-  dialogTitle.value = '新建用户'
-  form.username = ''
-  form.password = ''
-  form.nickname = ''
-  form.realName = ''
-  form.email = ''
-  form.phone = ''
-  form.status = 1
-  form.remark = ''
+// 初始化
+onMounted(() => {
+  // 加载列表数据
+  fetchData()
+  // 加载字典
+  loadStatusDict()
+  loadGenderDict()
+  loadLockStatusDict()
+})
+
+// 查询按钮
+const handleSearch = () => {
+  query.pageNum = 1
+  fetchData()
 }
 
-// 查询列表
+// 重置按钮
+const handleReset = () => {
+  query.pageNum = 1
+  query.username = ''
+  query.nickname = ''
+  query.phone = ''
+  query.status = null
+  fetchData()
+}
+
+// 分页查询用户列表数据
 const fetchData = async () => {
   loading.value = true
   try {
@@ -102,55 +114,19 @@ const fetchData = async () => {
   }
 }
 
-onMounted(() => {
-  // 加载列表
-  fetchData()
-  // 加载字典
-  loadStatusDict()
-  loadGenderDict()
-  loadLockStatusDict()
-})
-
-// 搜索
-const handleSearch = () => {
-  query.pageNum = 1
-  fetchData()
-}
-
-// 重置搜索
-const handleReset = () => {
-  query.pageNum = 1
-  query.username = ''
-  query.nickname = ''
-  query.phone = ''
-  query.status = null
-  fetchData()
-}
-
-// 分页事件
-const handleSizeChange = (size: number) => {
-  query.pageSize = size
-  fetchData()
-}
-
-const handleCurrentChange = (page: number) => {
-  query.pageNum = page
-  fetchData()
-}
-
 // 选中行变化
 const handleSelectionChange = (rows: UserVo[]) => {
   multipleSelection.value = rows
 }
 
-// 新建
+// 新建按钮
 const handleCreate = () => {
   resetForm()
   dialogTitle.value = '新建用户'
   dialogVisible.value = true
 }
 
-// 编辑
+// 编辑按钮
 const handleEdit = (row: UserVo) => {
   resetForm()
   dialogTitle.value = '编辑用户'
@@ -162,93 +138,10 @@ const handleEdit = (row: UserVo) => {
   form.phone = row.phone || ''
   form.status = row.status ?? 1
   form.remark = row.remark || ''
-  // 编辑时不展示密码字段，由后端保留原密码
-  form.password = ''
   dialogVisible.value = true
 }
 
-// 删除
-const handleDelete = async (row: UserVo) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除用户【${row.username}】吗？`, '提示', {
-      type: 'warning',
-    })
-    await deleteUser(row.id)
-    ElMessage.success('删除成功')
-    fetchData()
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-// 批量删除
-const handleBatchDelete = async () => {
-  if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的用户')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个用户吗？`, '提示', {
-      type: 'warning',
-    })
-    const ids = multipleSelection.value.map((u) => u.id)
-    await batchDeleteUser(ids)
-    ElMessage.success('批量删除成功')
-    fetchData()
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-// 启用 / 禁用
-const handleToggleStatus = async (row: UserVo) => {
-  const targetStatus = row.status === 1 ? 0 : 1
-  try {
-    await switchUserStatus({ userId: row.id, status: targetStatus })
-    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
-    fetchData()
-  } catch (error) {
-    handleErrorToast(error)
-  }
-}
-
-// 锁定 / 解锁
-const handleToggleLock = async (row: UserVo) => {
-  const targetLocked = row.locked === 1 ? 0 : 1
-  try {
-    await lockOrUnlockUser({
-      userId: row.id,
-      locked: targetLocked,
-      lockReason: targetLocked === 1 ? '后台锁定' : undefined,
-    })
-    ElMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
-    fetchData()
-  } catch (error) {
-    handleErrorToast(error)
-  }
-}
-
-// 重置密码
-const handleResetPassword = async (row: UserVo) => {
-  try {
-    await ElMessageBox.confirm(`确定要重置用户【${row.username}】的密码吗？`, '提示', {
-      type: 'warning',
-    })
-    // 简单演示：重置为固定密码；实际可弹窗输入新密码
-    await resetUserPassword({ userId: row.id, newPassword: '123456' })
-    ElMessage.success('密码已重置为 123456')
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-// 提交表单
+// （新建/编辑）确定按钮
 const handleSubmit = async () => {
   try {
     if (!form.username) {
@@ -293,7 +186,102 @@ const handleSubmit = async () => {
   }
 }
 
-// 分配角色相关函数
+// 重置（新增/编辑）表单
+const resetForm = () => {
+  editingUserId.value = null
+  dialogTitle.value = '新建用户'
+  form.username = ''
+  form.password = ''
+  form.nickname = ''
+  form.realName = ''
+  form.email = ''
+  form.phone = ''
+  form.status = 1
+  form.remark = ''
+}
+
+// 删除按钮
+const handleDelete = async (row: UserVo) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除用户【${row.username}】吗？`, '提示', {
+      type: 'warning',
+    })
+    await deleteUser(row.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 批量删除按钮
+const handleBatchDelete = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.info('请先选择要删除的用户')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个用户吗？`, '提示', {
+      type: 'warning',
+    })
+    const ids = multipleSelection.value.map((u) => u.id)
+    await batchDeleteUser(ids)
+    ElMessage.success('批量删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 启用按钮 / 禁用按钮
+const handleToggleStatus = async (row: UserVo) => {
+  const targetStatus = row.status === 1 ? 0 : 1
+  try {
+    await switchUserStatus({ userId: row.id, status: targetStatus })
+    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    fetchData()
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+// 锁定按钮 / 解锁按钮
+const handleToggleLock = async (row: UserVo) => {
+  const targetLocked = row.locked === 1 ? 0 : 1
+  try {
+    await lockOrUnlockUser({
+      userId: row.id,
+      locked: targetLocked,
+      lockReason: targetLocked === 1 ? '后台锁定' : undefined,
+    })
+    ElMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
+    fetchData()
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+// 重置密码按钮
+const handleResetPassword = async (row: UserVo) => {
+  try {
+    await ElMessageBox.confirm(`确定要重置用户【${row.username}】的密码吗？`, '提示', {
+      type: 'warning',
+    })
+    // 简单演示：重置为固定密码；实际可弹窗输入新密码
+    await resetUserPassword({ userId: row.id, newPassword: '123456' })
+    ElMessage.success('密码已重置为 123456')
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 分配角色按钮（加载数据并打开弹窗）
 const handleAssignRoles = async (row: UserVo) => {
   assigningUserId.value = row.id
   assigningUserName.value = row.username
@@ -302,6 +290,7 @@ const handleAssignRoles = async (row: UserVo) => {
   await loadUserRoles(row.id)
 }
 
+// 获取角色列表（所有启用的角色）
 const loadAllRoles = async () => {
   roleLoading.value = true
   try {
@@ -318,6 +307,7 @@ const loadAllRoles = async () => {
   }
 }
 
+// 获取指定用户拥有的角色列表
 const loadUserRoles = async (userId: number) => {
   try {
     checkedRoleIds.value = await getUserRoleIds(userId)
@@ -326,6 +316,7 @@ const loadUserRoles = async (userId: number) => {
   }
 }
 
+// 分配角色确定按钮（给用户分配角色）
 const handleSubmitRoles = async () => {
   if (!assigningUserId.value) return
   if (checkedRoleIds.value.length === 0) {
@@ -435,13 +426,7 @@ const handleSubmitRoles = async () => {
     </DataTable>
 
     <!-- 分页 -->
-    <Pagination
-      :total="total"
-      :page-size="query.pageSize || 10"
-      :current-page="query.pageNum || 1"
-      @size-change="handleSizeChange"
-      @current-change="handleCurrentChange"
-    />
+    <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>

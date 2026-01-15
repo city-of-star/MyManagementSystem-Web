@@ -15,9 +15,3 @@ export interface BasePageQuery {
   pageNum?: number
   pageSize?: number
 }
-
-// 带时间范围的分页查询参数
-export interface PageQueryWithTimeRange extends BasePageQuery {
-  createTimeStart?: string | null
-  createTimeEnd?: string | null
-}
