@@ -8,7 +8,7 @@
  */
 
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { refreshToken } from '@/api/system/auth/auth.ts'
+import { refreshToken } from '@/api/auth/auth.ts'
 import { useAuthStore } from '@/store/auth/auth'
 import type { HttpResponse } from './types'
 

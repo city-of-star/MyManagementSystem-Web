@@ -20,3 +20,13 @@ declare module '*.vue' {
   export default component
 }
 
+/**
+ * 声明 Element Plus 语言包模块类型
+ *
+ * 作用：让 TypeScript 能够识别 Element Plus 语言包的导入
+ */
+declare module 'element-plus/dist/locale/zh-cn.mjs' {
+  const zhCn: any
+  export default zhCn
+}
+

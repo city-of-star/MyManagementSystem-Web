@@ -1,31 +1,47 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch, unref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   batchDeleteDictData,
-  batchDeleteDictType,
   createDictData,
-  createDictType,
   deleteDictData,
-  deleteDictType,
   getDictDataPage,
-  getDictTypePage,
-  listAllEnabledDictTypes,
   switchDictDataStatus,
-  switchDictTypeStatus,
   updateDictData,
-  updateDictType,
   type DictDataCreateRequest,
   type DictDataPageQuery,
   type DictDataUpdateRequest,
   type DictDataVo,
+} from '@/api/system/dict/dictData.ts'
+import {
+  batchDeleteDictType,
+  createDictType,
+  deleteDictType,
+  getDictTypePage,
+  listAllEnabledDictTypes,
+  switchDictTypeStatus,
+  updateDictType,
   type DictTypeCreateRequest,
   type DictTypePageQuery,
   type DictTypeUpdateRequest,
   type DictTypeVo,
-  type PageResult,
-} from '@/api/system/dict/dict'
+} from '@/api/system/dict/dictType.ts'
+import {type PageResult} from '@/api/common/types.ts'
 import { handleErrorToast } from '@/utils/http'
+import { clearDictCache, useDict } from '@/utils/base/dictUtils.ts'
+import SearchForm from '@/components/SearchForm.vue'
+import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
+import Toolbar from '@/components/Toolbar.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import PrimaryButton from '@/components/button/PrimaryButton.vue'
+
+const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
+
+const getStatusLabel = (status: number | null | undefined) => {
+  const list = unref(statusOptions) || []
+  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
+}
 
 // ====== 字典类型（左侧） ======
 
@@ -98,16 +114,6 @@ const handleTypeReset = () => {
   fetchTypeData()
 }
 
-const handleTypeSizeChange = (size: number) => {
-  typeQuery.pageSize = size
-  fetchTypeData()
-}
-
-const handleTypeCurrentChange = (page: number) => {
-  typeQuery.pageNum = page
-  fetchTypeData()
-}
-
 const handleTypeSelectionChange = (rows: DictTypeVo[]) => {
   typeMultipleSelection.value = rows
 }
@@ -154,6 +160,8 @@ const handleTypeDelete = async (row: DictTypeVo) => {
     })
     await deleteDictType(row.id)
     ElMessage.success('删除成功')
+    // 清除对应字典类型的缓存
+    clearDictCache(row.dictTypeCode)
     if (currentTypeId.value === row.id) {
       currentTypeId.value = null
     }
@@ -179,8 +187,12 @@ const handleTypeBatchDelete = async () => {
       },
     )
     const ids = typeMultipleSelection.value.map((t) => t.id)
+    // 保存要删除的字典类型编码，用于清除缓存
+    const dictTypeCodes = typeMultipleSelection.value.map((t) => t.dictTypeCode)
     await batchDeleteDictType({ dictTypeIds: ids })
     ElMessage.success('批量删除成功')
+    // 清除所有被删除字典类型的缓存
+    dictTypeCodes.forEach((code) => clearDictCache(code))
     if (currentTypeId.value && ids.includes(currentTypeId.value)) {
       currentTypeId.value = null
     }
@@ -197,6 +209,8 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
   try {
     await switchDictTypeStatus({ dictTypeId: row.id, status: targetStatus })
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    // 清除对应字典类型的缓存（状态变更可能影响字典数据的可用性）
+    clearDictCache(row.dictTypeCode)
     fetchTypeData()
   } catch (error) {
     handleErrorToast(error)
@@ -205,7 +219,8 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
 
 const handleTypeSubmit = async () => {
   try {
-    if (!typeForm.dictTypeCode) {
+    // 新增时验证编码，编辑时编码不可修改，不需要验证
+    if (!editingTypeId.value && !typeForm.dictTypeCode) {
       ElMessage.warning('请填写字典类型编码')
       return
     }
@@ -215,9 +230,18 @@ const handleTypeSubmit = async () => {
     }
 
     if (editingTypeId.value) {
+      // 编辑时，字典类型编码不可修改，使用原有的编码
+      const oldType = typeTableData.value.find((t) => t.id === editingTypeId.value)
+      const dictTypeCode = oldType?.dictTypeCode
+
+      if (!dictTypeCode) {
+        ElMessage.error('无法获取字典类型编码')
+        return
+      }
+
       const payload: DictTypeUpdateRequest = {
         id: editingTypeId.value,
-        dictTypeCode: typeForm.dictTypeCode,
+        // 编辑时不需要传递 dictTypeCode（编码不可修改）
         dictTypeName: typeForm.dictTypeName,
         status: typeForm.status,
         sortOrder: typeForm.sortOrder,
@@ -225,6 +249,9 @@ const handleTypeSubmit = async () => {
       }
       await updateDictType(payload)
       ElMessage.success('更新成功')
+
+      // 清除对应字典类型的缓存（编码不会改变，直接清除当前编码的缓存）
+      clearDictCache(dictTypeCode)
     } else {
       const payload: DictTypeCreateRequest = {
         dictTypeCode: typeForm.dictTypeCode,
@@ -235,6 +262,7 @@ const handleTypeSubmit = async () => {
       }
       await createDictType(payload)
       ElMessage.success('创建成功')
+      // 新增不需要清除缓存（之前没有这个字典的缓存）
     }
     typeDialogVisible.value = false
     fetchTypeData()
@@ -263,8 +291,7 @@ const dataDialogVisible = ref(false)
 const dataDialogTitle = ref('新建字典数据')
 const editingDataId = ref<number | null>(null)
 
-const dataForm = reactive<DictDataCreateRequest & { id?: number }>({
-  dictTypeId: 0,
+const dataForm = reactive<Omit<DictDataCreateRequest, 'dictTypeId'> & { id?: number }>({
   dictLabel: '',
   dictValue: '',
   dictSort: 0,
@@ -276,7 +303,7 @@ const dataForm = reactive<DictDataCreateRequest & { id?: number }>({
 const resetDataForm = () => {
   editingDataId.value = null
   dataDialogTitle.value = '新建字典数据'
-  dataForm.dictTypeId = currentTypeId.value || 0
+  // 字典类型使用当前选择的类型，不需要在表单中设置
   dataForm.dictLabel = ''
   dataForm.dictValue = ''
   dataForm.dictSort = 0
@@ -321,15 +348,6 @@ const handleDataReset = () => {
   fetchDataData()
 }
 
-const handleDataSizeChange = (size: number) => {
-  dataQuery.pageSize = size
-  fetchDataData()
-}
-
-const handleDataCurrentChange = (page: number) => {
-  dataQuery.pageNum = page
-  fetchDataData()
-}
 
 const handleDataSelectionChange = (rows: DictDataVo[]) => {
   dataMultipleSelection.value = rows
@@ -341,16 +359,19 @@ const handleDataCreate = () => {
     return
   }
   resetDataForm()
-  dataForm.dictTypeId = currentTypeId.value
   dataDialogTitle.value = '新建字典数据'
   dataDialogVisible.value = true
 }
 
 const handleDataEdit = (row: DictDataVo) => {
+  if (!currentTypeId.value) {
+    ElMessage.warning('请先选择左侧字典类型')
+    return
+  }
   resetDataForm()
   dataDialogTitle.value = '编辑字典数据'
   editingDataId.value = row.id
-  dataForm.dictTypeId = row.dictTypeId
+  // 字典类型使用当前选择的类型，不需要从 row 中获取
   dataForm.dictLabel = row.dictLabel
   dataForm.dictValue = row.dictValue
   dataForm.dictSort = row.dictSort ?? 0
@@ -367,6 +388,10 @@ const handleDataDelete = async (row: DictDataVo) => {
     })
     await deleteDictData(row.id)
     ElMessage.success('删除成功')
+    // 清除对应字典类型的缓存
+    if (row.dictTypeCode) {
+      clearDictCache(row.dictTypeCode)
+    }
     fetchDataData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -385,8 +410,15 @@ const handleDataBatchDelete = async () => {
       type: 'warning',
     })
     const ids = dataMultipleSelection.value.map((d) => d.id)
+    // 保存要删除的字典类型编码，用于清除缓存
+    const dictTypeCodes = dataMultipleSelection.value
+      .map((d) => d.dictTypeCode)
+      .filter((code): code is string => !!code)
     await batchDeleteDictData({ dictDataIds: ids })
     ElMessage.success('批量删除成功')
+    // 清除所有被删除字典数据对应的字典类型缓存（去重）
+    const uniqueDictTypeCodes = [...new Set(dictTypeCodes)]
+    uniqueDictTypeCodes.forEach((code) => clearDictCache(code))
     fetchDataData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -400,6 +432,10 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
   try {
     await switchDictDataStatus({ dictDataId: row.id, status: targetStatus })
     ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    // 清除对应字典类型的缓存（状态变更影响过滤结果，只显示启用的）
+    if (row.dictTypeCode) {
+      clearDictCache(row.dictTypeCode)
+    }
     fetchDataData()
   } catch (error) {
     handleErrorToast(error)
@@ -408,8 +444,9 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
 
 const handleDataSubmit = async () => {
   try {
-    if (!dataForm.dictTypeId) {
-      ElMessage.warning('字典类型不能为空')
+    // 使用当前选择的字典类型
+    if (!currentTypeId.value) {
+      ElMessage.warning('请先选择左侧字典类型')
       return
     }
     if (!dataForm.dictLabel) {
@@ -421,10 +458,24 @@ const handleDataSubmit = async () => {
       return
     }
 
+    // 获取字典类型编码，用于清除缓存
+    const dictType = enabledDictTypes.value.find((t) => t.id === currentTypeId.value)
+    const dictTypeCode = dictType?.dictTypeCode
+
     if (editingDataId.value) {
+      // 编辑时，需要获取旧的字典类型编码（如果类型改变了，需要清除旧的缓存）
+      const oldData = dataTableData.value.find((d) => d.id === editingDataId.value)
+      let oldDictTypeCode = oldData?.dictTypeCode
+
+      // 如果 oldData.dictTypeCode 不存在，从 enabledDictTypes 中查找
+      if (!oldDictTypeCode && oldData?.dictTypeId) {
+        const oldType = enabledDictTypes.value.find((t) => t.id === oldData.dictTypeId)
+        oldDictTypeCode = oldType?.dictTypeCode
+      }
+
       const payload: DictDataUpdateRequest = {
         id: editingDataId.value,
-        dictTypeId: dataForm.dictTypeId,
+        dictTypeId: currentTypeId.value, // 使用当前选择的字典类型
         dictLabel: dataForm.dictLabel,
         dictValue: dataForm.dictValue,
         dictSort: dataForm.dictSort,
@@ -434,9 +485,17 @@ const handleDataSubmit = async () => {
       }
       await updateDictData(payload)
       ElMessage.success('更新成功')
+
+      // 清除缓存：如果类型改变了，清除旧的；无论如何都清除新的
+      if (oldDictTypeCode && oldDictTypeCode !== dictTypeCode) {
+        clearDictCache(oldDictTypeCode)
+      }
+      if (dictTypeCode) {
+        clearDictCache(dictTypeCode)
+      }
     } else {
       const payload: DictDataCreateRequest = {
-        dictTypeId: dataForm.dictTypeId,
+        dictTypeId: currentTypeId.value, // 使用当前选择的字典类型
         dictLabel: dataForm.dictLabel,
         dictValue: dataForm.dictValue,
         dictSort: dataForm.dictSort,
@@ -446,6 +505,10 @@ const handleDataSubmit = async () => {
       }
       await createDictData(payload)
       ElMessage.success('创建成功')
+      // 新增时也清除缓存，确保下次获取最新数据（包含新增的数据）
+      if (dictTypeCode) {
+        clearDictCache(dictTypeCode)
+      }
     }
     dataDialogVisible.value = false
     fetchDataData()
@@ -470,6 +533,7 @@ const loadEnabledDictTypes = async () => {
 onMounted(() => {
   fetchTypeData()
   loadEnabledDictTypes()
+  loadStatusDict()
 })
 
 // 表格行类名函数
@@ -487,62 +551,59 @@ const currentTypeName = computed(() => {
 
 <template>
   <div class="dict-page">
-    <h2 class="page-title">数据字典管理</h2>
-
     <div class="dict-layout">
       <!-- 左侧：字典类型 -->
       <div class="dict-panel">
         <div class="panel-header">
           <div class="panel-title">字典类型</div>
-          <div class="panel-actions">
-            <el-button type="primary" size="small" @click="handleTypeCreate">新建类型</el-button>
-            <el-button
-              type="danger"
-              size="small"
-              :disabled="!typeMultipleSelection.length"
-              @click="handleTypeBatchDelete"
-            >
-              批量删除
-            </el-button>
-          </div>
         </div>
 
-        <div class="search-card">
-          <el-form :inline="true" label-width="80px">
-            <el-form-item label="类型编码">
-              <el-input v-model="typeQuery.dictTypeCode" placeholder="类型编码" clearable />
-            </el-form-item>
-            <el-form-item label="类型名称">
-              <el-input v-model="typeQuery.dictTypeName" placeholder="类型名称" clearable />
-            </el-form-item>
-            <el-form-item label="状态">
-              <el-select
-                v-model="typeQuery.status"
-                placeholder="全部"
-                clearable
-                style="width: 120px"
-              >
-                <el-option label="启用" :value="1" />
-                <el-option label="禁用" :value="0" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="handleTypeSearch">查询</el-button>
-              <el-button @click="handleTypeReset">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+        <!-- 查询区域 -->
+        <SearchForm @search="handleTypeSearch" @reset="handleTypeReset">
+          <el-form-item label="类型编码">
+            <el-input v-model="typeQuery.dictTypeCode" placeholder="请输入类型编码" clearable />
+          </el-form-item>
+          <el-form-item label="类型名称">
+            <el-input v-model="typeQuery.dictTypeName" placeholder="请输入类型名称" clearable />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="typeQuery.status" placeholder="全部" clearable>
+              <el-option
+                v-for="opt in statusOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="Number(opt.value)"
+              />
+            </el-select>
+          </el-form-item>
+        </SearchForm>
 
-        <el-table
-          v-loading="typeLoading"
+        <!-- 操作栏 -->
+        <Toolbar>
+          <PrimaryButton icon="Plus" type="primary" @click="handleTypeCreate">
+            新建类型
+          </PrimaryButton>
+          <PrimaryButton
+            icon="Delete"
+            type="danger"
+            :disabled="!typeMultipleSelection.length"
+            @click="handleTypeBatchDelete"
+          >
+            批量删除
+          </PrimaryButton>
+        </Toolbar>
+
+        <!-- 表格 -->
+        <DataTable
           :data="typeTableData"
-          border
-          stripe
-          height="430"
-          highlight-current-row
+          :loading="typeLoading"
+          :page-num="typeQuery.pageNum"
+          :page-size="typeQuery.pageSize"
           @selection-change="handleTypeSelectionChange"
+          highlight-current-row
           @row-click="handleTypeRowClick"
           :row-class-name="getTypeRowClassName"
+          height="430"
         >
           <el-table-column type="selection" width="48" />
           <el-table-column prop="dictTypeCode" label="类型编码" min-width="100" show-overflow-tooltip />
@@ -550,34 +611,27 @@ const currentTypeName = computed(() => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ row.status === 1 ? '启用' : '禁用' }}
+                {{ getStatusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="sortOrder" label="排序" width="70" />
-          <el-table-column label="操作" fixed="right" width="160">
+          <el-table-column label="操作" fixed="right" width="120">
             <template #default="{ row }">
-              <el-button type="primary" link @click.stop="handleTypeEdit(row)">编辑</el-button>
-              <el-button type="primary" link @click.stop="handleTypeToggleStatus(row)">
-                {{ row.status === 1 ? '禁用' : '启用' }}
-              </el-button>
-              <el-button type="danger" link @click.stop="handleTypeDelete(row)">删除</el-button>
+              <IconButton type="primary" icon="Edit" tooltip="编辑" @click.stop="handleTypeEdit(row)" />
+              <IconButton
+                type="primary"
+                :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
+                :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+                @click.stop="handleTypeToggleStatus(row)"
+              />
+              <IconButton type="danger" icon="Delete" tooltip="删除" @click.stop="handleTypeDelete(row)" />
             </template>
           </el-table-column>
-        </el-table>
+        </DataTable>
 
-        <div class="pagination">
-          <el-pagination
-            background
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="typeTotal"
-            :page-sizes="[10, 20, 50, 100]"
-            :page-size="typeQuery.pageSize || 10"
-            :current-page="typeQuery.pageNum || 1"
-            @size-change="handleTypeSizeChange"
-            @current-change="handleTypeCurrentChange"
-          />
-        </div>
+        <!-- 分页 -->
+        <Pagination :query="typeQuery" :total="typeTotal" @change="fetchTypeData" />
       </div>
 
       <!-- 右侧：字典数据 -->
@@ -589,52 +643,51 @@ const currentTypeName = computed(() => {
               （当前类型：{{ currentTypeName }}）
             </span>
           </div>
-          <div class="panel-actions">
-            <el-button type="primary" size="small" @click="handleDataCreate">新建数据</el-button>
-            <el-button
-              type="danger"
-              size="small"
-              :disabled="!dataMultipleSelection.length"
-              @click="handleDataBatchDelete"
-            >
-              批量删除
-            </el-button>
-          </div>
         </div>
 
-        <div class="search-card">
-          <el-form :inline="true" label-width="80px">
-            <el-form-item label="字典标签">
-              <el-input v-model="dataQuery.dictLabel" placeholder="字典标签" clearable />
-            </el-form-item>
-            <el-form-item label="字典值">
-              <el-input v-model="dataQuery.dictValue" placeholder="字典值" clearable />
-            </el-form-item>
-            <el-form-item label="状态">
-              <el-select
-                v-model="dataQuery.status"
-                placeholder="全部"
-                clearable
-                style="width: 120px"
-              >
-                <el-option label="启用" :value="1" />
-                <el-option label="禁用" :value="0" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="handleDataSearch">查询</el-button>
-              <el-button @click="handleDataReset">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+        <!-- 查询区域 -->
+        <SearchForm @search="handleDataSearch" @reset="handleDataReset">
+          <el-form-item label="字典标签">
+            <el-input v-model="dataQuery.dictLabel" placeholder="请输入字典标签" clearable />
+          </el-form-item>
+          <el-form-item label="字典值">
+            <el-input v-model="dataQuery.dictValue" placeholder="请输入字典值" clearable />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="dataQuery.status" placeholder="全部" clearable>
+              <el-option
+                v-for="opt in statusOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="Number(opt.value)"
+              />
+            </el-select>
+          </el-form-item>
+        </SearchForm>
 
-        <el-table
-          v-loading="dataLoading"
+        <!-- 操作栏 -->
+        <Toolbar>
+          <PrimaryButton icon="Plus" type="primary" @click="handleDataCreate">
+            新建数据
+          </PrimaryButton>
+          <PrimaryButton
+            icon="Delete"
+            type="danger"
+            :disabled="!dataMultipleSelection.length"
+            @click="handleDataBatchDelete"
+          >
+            批量删除
+          </PrimaryButton>
+        </Toolbar>
+
+        <!-- 表格 -->
+        <DataTable
           :data="dataTableData"
-          border
-          stripe
-          height="430"
+          :loading="dataLoading"
+          :page-num="dataQuery.pageNum"
+          :page-size="dataQuery.pageSize"
           @selection-change="handleDataSelectionChange"
+          height="430"
         >
           <el-table-column type="selection" width="48" />
           <el-table-column prop="dictLabel" label="字典标签" min-width="100" show-overflow-tooltip />
@@ -649,34 +702,27 @@ const currentTypeName = computed(() => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ row.status === 1 ? '启用' : '禁用' }}
+                {{ getStatusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
-          <el-table-column label="操作" fixed="right" width="180">
+          <el-table-column label="操作" fixed="right" width="120">
             <template #default="{ row }">
-              <el-button type="primary" link @click="handleDataEdit(row)">编辑</el-button>
-              <el-button type="primary" link @click="handleDataToggleStatus(row)">
-                {{ row.status === 1 ? '禁用' : '启用' }}
-              </el-button>
-              <el-button type="danger" link @click="handleDataDelete(row)">删除</el-button>
+              <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleDataEdit(row)" />
+              <IconButton
+                type="primary"
+                :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
+                :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+                @click="handleDataToggleStatus(row)"
+              />
+              <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDataDelete(row)" />
             </template>
           </el-table-column>
-        </el-table>
+        </DataTable>
 
-        <div class="pagination">
-          <el-pagination
-            background
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="dataTotal"
-            :page-sizes="[10, 20, 50, 100]"
-            :page-size="dataQuery.pageSize || 10"
-            :current-page="dataQuery.pageNum || 1"
-            @size-change="handleDataSizeChange"
-            @current-change="handleDataCurrentChange"
-          />
-        </div>
+        <!-- 分页 -->
+        <Pagination :query="dataQuery" :total="dataTotal" @change="fetchDataData" />
       </div>
     </div>
 
@@ -718,19 +764,8 @@ const currentTypeName = computed(() => {
     <!-- 字典数据弹窗 -->
     <el-dialog v-model="dataDialogVisible" :title="dataDialogTitle" width="560px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
-        <el-form-item label="所属类型" required>
-          <el-select
-            v-model="dataForm.dictTypeId"
-            placeholder="请选择字典类型"
-            style="width: 220px"
-          >
-            <el-option
-              v-for="item in enabledDictTypes"
-              :key="item.id"
-              :label="`${item.dictTypeName}（${item.dictTypeCode}）`"
-              :value="item.id"
-            />
-          </el-select>
+        <el-form-item label="所属类型">
+          <el-input :value="currentTypeName" disabled style="width: 220px" />
         </el-form-item>
         <el-form-item label="字典标签" required>
           <el-input v-model="dataForm.dictLabel" placeholder="请输入字典标签（显示文本）" />
@@ -777,16 +812,9 @@ const currentTypeName = computed(() => {
   overflow: hidden;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2933;
-}
-
 .dict-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.5fr);
   gap: 16px;
   width: 100%;
   min-width: 0;
@@ -834,19 +862,6 @@ const currentTypeName = computed(() => {
   gap: 8px;
 }
 
-.search-card {
-  padding: 10px 12px 2px;
-  background: #ffffff;
-  border-radius: 6px;
-  border: 1px solid #edf1f7;
-  margin-bottom: 8px;
-}
-
-.pagination {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
 
 .dialog-footer {
   display: flex;

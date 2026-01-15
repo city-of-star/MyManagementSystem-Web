@@ -1,4 +1,5 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
+import type { PageResult } from '@/api/common/types'
 
 // 分页查询请求 DTO（与后端 UserPageQueryDto 字段对齐，日期用字符串承载）
 export interface UserPageQuery {
@@ -14,14 +15,6 @@ export interface UserPageQuery {
   gender?: number | null
   createTimeStart?: string | null
   createTimeEnd?: string | null
-}
-
-// 后端使用 MyBatis-Plus Page，前端只关心这几个字段
-export interface PageResult<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
 }
 
 // 用户信息 VO（与后端 UserVo 字段对齐，时间字段统一用字符串）
@@ -79,29 +72,35 @@ export interface UserUpdateRequest {
   remark?: string
 }
 
-// 切换状态
+// 切换用户状态请求 DTO
 export interface UserStatusSwitchRequest {
   userId: number
   status: number
 }
 
-// 锁定/解锁
+// 锁定/解锁用户请求 DTO
 export interface UserLockRequest {
   userId: number
   locked: number
   lockReason?: string
 }
 
-// 重置密码
+// 重置用户密码请求 DTO
 export interface UserPasswordResetRequest {
   userId: number
   newPassword: string
 }
 
-// 修改密码（当前页面主要用于管理员操作，留接口备用）
+// 修改密码请求 DTO（当前页面主要用于管理员操作，留接口备用）
 export interface UserPasswordChangeRequest {
   oldPassword: string
   newPassword: string
+}
+
+// 用户分配角色请求 DTO
+export interface UserAssignRoleRequest {
+  userId: number
+  roleIds: number[]
 }
 
 /**
@@ -158,12 +157,6 @@ export function lockOrUnlockUser(payload: UserLockRequest): Promise<void> {
  */
 export function resetUserPassword(payload: UserPasswordResetRequest): Promise<void> {
   return httpPost<void>(SERVICE.USERCENTER, '/user/reset-password', payload)
-}
-
-// 用户分配角色
-export interface UserAssignRoleRequest {
-  userId: number
-  roleIds: number[]
 }
 
 /**

@@ -81,7 +81,7 @@ function extractRelativePath(fullPath: string): string {
 
 /**
  * 根据组件路径动态导入组件
- * component 格式示例: "system/user/UserPage" 或 "system/user/UserPage.vue"
+ * component 格式示例: "/system/user/UserPage" 或 "/system/user/UserPage.vue"
  * 支持大小写不敏感匹配
  */
 export function loadComponent(component: string) {
@@ -115,7 +115,7 @@ export function loadComponent(component: string) {
   throw new Error(
     `无法加载组件: ${componentPath}\n` +
     `请检查后端权限配置中的 component 字段是否正确。\n` +
-    `格式应为: "system/user/UserPage" (相对于 @/views/ 目录)\n` +
+    `格式应为: "/system/user/UserPage.vue" (相对于 @/views 目录)\n` +
     `可用的组件: ${availablePaths.join(', ')}`
   )
 }

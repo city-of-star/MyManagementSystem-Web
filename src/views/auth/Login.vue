@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ensureDynamicRoutesLoaded } from '@/router'
-import { login, type LoginRequest } from '@/api/system/auth/auth.ts'
+import { login, type LoginRequest } from '@/api/auth/auth.ts'
 import { useAuthStore } from '@/store/auth/auth'
 import { handleErrorToast } from '@/utils/http'
 
