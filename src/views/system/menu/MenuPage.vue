@@ -391,12 +391,12 @@ const handleRemoveRole = async (role: RoleVo) => {
             <div class="node-actions">
               <template v-if="data.permissionType === 'catalog'">
                 <el-button link type="primary" size="small" @click.stop="handleCreateChild(data, 'menu')">
-                  新菜单
+                  新建子菜单
                 </el-button>
               </template>
               <template v-else-if="data.permissionType === 'menu'">
                 <el-button link type="primary" size="small" @click.stop="handleCreateChild(data, 'button')">
-                  新按钮
+                  新增按钮
                 </el-button>
               </template>
               <el-button link type="primary" size="small" @click.stop="handleEdit(data)">编辑</el-button>
