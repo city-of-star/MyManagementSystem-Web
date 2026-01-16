@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<{
 
 // 表头样式：背景色加深 + 文字居中
 const headerCellStyle = {
-  backgroundColor: '#f5f7fa',
+  backgroundColor: '#dedfe3',
   color: '#303133',
   textAlign: 'center',
 }

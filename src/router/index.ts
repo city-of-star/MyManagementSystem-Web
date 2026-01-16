@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
+import LovePage from '@/views/system/Love/LovePage.vue'
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
 import { getCurrentUserPermissionTree } from '@/api/system/permission/permission.ts'
@@ -18,6 +19,11 @@ const baseRoutes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: Login,
+  },
+  {
+    path: '/love',
+    name: 'love',
+    component: LovePage,
   },
 ]
 

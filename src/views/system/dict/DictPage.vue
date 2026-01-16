@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch, unref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   batchDeleteDictData,
   createDictData,
@@ -27,8 +27,8 @@ import {
   type DictTypeVo,
 } from '@/api/system/dict/dictType.ts'
 import {type PageResult} from '@/api/common/types.ts'
-import { handleErrorToast } from '@/utils/http'
-import { clearDictCache, useDict } from '@/utils/base/dictUtils.ts'
+import {handleErrorToast} from '@/utils/http'
+import {clearDictCache, useDict} from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/SearchForm.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
@@ -36,15 +36,12 @@ import Toolbar from '@/components/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
-const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
-
-const getStatusLabel = (status: number | null | undefined) => {
-  const list = unref(statusOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
-}
+// 字典：通用状态
+const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
 
 // ====== 字典类型（左侧） ======
 
+// 查询条件
 const typeQuery = reactive<DictTypePageQuery>({
   pageNum: 1,
   pageSize: 10,
@@ -53,16 +50,21 @@ const typeQuery = reactive<DictTypePageQuery>({
   status: null,
 })
 
+// 列表 & 分页
 const typeLoading = ref(false)
 const typeTableData = ref<DictTypeVo[]>([])
 const typeTotal = ref(0)
+
+// 选中行
 const typeMultipleSelection = ref<DictTypeVo[]>([])
 const currentTypeId = ref<number | null>(null)
 
+// 弹窗
 const typeDialogVisible = ref(false)
 const typeDialogTitle = ref('新建字典类型')
 const editingTypeId = ref<number | null>(null)
 
+// 表单（用于新增/编辑）
 const typeForm = reactive<DictTypeCreateRequest & { id?: number }>({
   dictTypeCode: '',
   dictTypeName: '',
@@ -71,16 +73,32 @@ const typeForm = reactive<DictTypeCreateRequest & { id?: number }>({
   remark: '',
 })
 
-const resetTypeForm = () => {
-  editingTypeId.value = null
-  typeDialogTitle.value = '新建字典类型'
-  typeForm.dictTypeCode = ''
-  typeForm.dictTypeName = ''
-  typeForm.status = 1
-  typeForm.sortOrder = 0
-  typeForm.remark = ''
+// 初始化
+onMounted(() => {
+  // 加载字典类型列表数据
+  fetchTypeData()
+  // 加载启用的字典类型列表
+  loadEnabledDictTypes()
+  // 加载字典
+  loadStatusDict()
+})
+
+// 查询按钮
+const handleTypeSearch = () => {
+  typeQuery.pageNum = 1
+  fetchTypeData()
 }
 
+// 重置按钮
+const handleTypeReset = () => {
+  typeQuery.pageNum = 1
+  typeQuery.dictTypeCode = ''
+  typeQuery.dictTypeName = ''
+  typeQuery.status = null
+  fetchTypeData()
+}
+
+// 分页查询字典类型列表数据
 const fetchTypeData = async (): Promise<void> => {
   typeLoading.value = true
   try {
@@ -101,28 +119,18 @@ const fetchTypeData = async (): Promise<void> => {
   }
 }
 
-const handleTypeSearch = () => {
-  typeQuery.pageNum = 1
-  fetchTypeData()
-}
-
-const handleTypeReset = () => {
-  typeQuery.pageNum = 1
-  typeQuery.dictTypeCode = ''
-  typeQuery.dictTypeName = ''
-  typeQuery.status = null
-  fetchTypeData()
-}
-
+// 选中行变化
 const handleTypeSelectionChange = (rows: DictTypeVo[]) => {
   typeMultipleSelection.value = rows
 }
 
+// 表格行点击
 const handleTypeRowClick = (row: DictTypeVo) => {
   if (currentTypeId.value === row.id) return
   currentTypeId.value = row.id
 }
 
+// 监听当前选中的字典类型ID，切换时加载对应的字典数据
 watch(currentTypeId, (val) => {
   // 切换字典类型时重置并加载右侧字典数据
   if (val) {
@@ -135,12 +143,14 @@ watch(currentTypeId, (val) => {
   }
 })
 
+// 新建按钮
 const handleTypeCreate = () => {
   resetTypeForm()
   typeDialogTitle.value = '新建字典类型'
   typeDialogVisible.value = true
 }
 
+// 编辑按钮
 const handleTypeEdit = (row: DictTypeVo) => {
   resetTypeForm()
   typeDialogTitle.value = '编辑字典类型'
@@ -153,6 +163,7 @@ const handleTypeEdit = (row: DictTypeVo) => {
   typeDialogVisible.value = true
 }
 
+// 删除按钮
 const handleTypeDelete = async (row: DictTypeVo) => {
   try {
     await ElMessageBox.confirm(`确定要删除字典类型【${row.dictTypeName || row.dictTypeCode}】吗？`, '提示', {
@@ -173,6 +184,7 @@ const handleTypeDelete = async (row: DictTypeVo) => {
   }
 }
 
+// 批量删除按钮
 const handleTypeBatchDelete = async () => {
   if (!typeMultipleSelection.value.length) {
     ElMessage.info('请先选择要删除的字典类型')
@@ -204,6 +216,7 @@ const handleTypeBatchDelete = async () => {
   }
 }
 
+// 启用按钮 / 禁用按钮
 const handleTypeToggleStatus = async (row: DictTypeVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
@@ -217,6 +230,7 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
   }
 }
 
+// （新建/编辑）确定按钮
 const handleTypeSubmit = async () => {
   try {
     // 新增时验证编码，编辑时编码不可修改，不需要验证
@@ -273,6 +287,7 @@ const handleTypeSubmit = async () => {
 
 // ====== 字典数据（右侧） ======
 
+// 查询条件
 const dataQuery = reactive<DictDataPageQuery>({
   pageNum: 1,
   pageSize: 10,
@@ -282,15 +297,20 @@ const dataQuery = reactive<DictDataPageQuery>({
   status: null,
 })
 
+// 列表 & 分页
 const dataLoading = ref(false)
 const dataTableData = ref<DictDataVo[]>([])
 const dataTotal = ref(0)
+
+// 选中行
 const dataMultipleSelection = ref<DictDataVo[]>([])
 
+// 弹窗
 const dataDialogVisible = ref(false)
 const dataDialogTitle = ref('新建字典数据')
 const editingDataId = ref<number | null>(null)
 
+// 表单（用于新增/编辑）
 const dataForm = reactive<Omit<DictDataCreateRequest, 'dictTypeId'> & { id?: number }>({
   dictLabel: '',
   dictValue: '',
@@ -300,6 +320,18 @@ const dataForm = reactive<Omit<DictDataCreateRequest, 'dictTypeId'> & { id?: num
   remark: '',
 })
 
+// 重置（新增/编辑）表单
+const resetTypeForm = () => {
+  editingTypeId.value = null
+  typeDialogTitle.value = '新建字典类型'
+  typeForm.dictTypeCode = ''
+  typeForm.dictTypeName = ''
+  typeForm.status = 1
+  typeForm.sortOrder = 0
+  typeForm.remark = ''
+}
+
+// 重置（新增/编辑）表单
 const resetDataForm = () => {
   editingDataId.value = null
   dataDialogTitle.value = '新建字典数据'
@@ -312,6 +344,22 @@ const resetDataForm = () => {
   dataForm.remark = ''
 }
 
+// 查询按钮
+const handleDataSearch = () => {
+  dataQuery.pageNum = 1
+  fetchDataData()
+}
+
+// 重置按钮
+const handleDataReset = () => {
+  dataQuery.pageNum = 1
+  dataQuery.dictLabel = ''
+  dataQuery.dictValue = ''
+  dataQuery.status = null
+  fetchDataData()
+}
+
+// 分页查询字典数据列表数据
 const fetchDataData = async (): Promise<void> => {
   if (!currentTypeId.value) {
     dataTableData.value = []
@@ -335,24 +383,12 @@ const fetchDataData = async (): Promise<void> => {
   }
 }
 
-const handleDataSearch = () => {
-  dataQuery.pageNum = 1
-  fetchDataData()
-}
-
-const handleDataReset = () => {
-  dataQuery.pageNum = 1
-  dataQuery.dictLabel = ''
-  dataQuery.dictValue = ''
-  dataQuery.status = null
-  fetchDataData()
-}
-
-
+// 选中行变化
 const handleDataSelectionChange = (rows: DictDataVo[]) => {
   dataMultipleSelection.value = rows
 }
 
+// 新建按钮
 const handleDataCreate = () => {
   if (!currentTypeId.value) {
     ElMessage.warning('请先选择左侧字典类型')
@@ -363,6 +399,7 @@ const handleDataCreate = () => {
   dataDialogVisible.value = true
 }
 
+// 编辑按钮
 const handleDataEdit = (row: DictDataVo) => {
   if (!currentTypeId.value) {
     ElMessage.warning('请先选择左侧字典类型')
@@ -381,6 +418,7 @@ const handleDataEdit = (row: DictDataVo) => {
   dataDialogVisible.value = true
 }
 
+// 删除按钮
 const handleDataDelete = async (row: DictDataVo) => {
   try {
     await ElMessageBox.confirm(`确定要删除字典数据【${row.dictLabel}】吗？`, '提示', {
@@ -400,6 +438,7 @@ const handleDataDelete = async (row: DictDataVo) => {
   }
 }
 
+// 批量删除按钮
 const handleDataBatchDelete = async () => {
   if (!dataMultipleSelection.value.length) {
     ElMessage.info('请先选择要删除的字典数据')
@@ -427,6 +466,7 @@ const handleDataBatchDelete = async () => {
   }
 }
 
+// 启用按钮 / 禁用按钮
 const handleDataToggleStatus = async (row: DictDataVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
@@ -442,6 +482,7 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
   }
 }
 
+// （新建/编辑）确定按钮
 const handleDataSubmit = async () => {
   try {
     // 使用当前选择的字典类型
@@ -520,6 +561,7 @@ const handleDataSubmit = async () => {
 // 下拉中需要用到的字典类型列表（可扩展用作过滤等）
 const enabledDictTypes = ref<DictTypeVo[]>([])
 
+// 获取所有启用的字典类型列表
 const loadEnabledDictTypes = async () => {
   try {
     enabledDictTypes.value = await listAllEnabledDictTypes()
@@ -528,13 +570,6 @@ const loadEnabledDictTypes = async () => {
     console.error(error)
   }
 }
-
-// 合并的 onMounted
-onMounted(() => {
-  fetchTypeData()
-  loadEnabledDictTypes()
-  loadStatusDict()
-})
 
 // 表格行类名函数
 const getTypeRowClassName = ({ row }: { row: DictTypeVo; rowIndex: number }) => {
@@ -567,7 +602,7 @@ const currentTypeName = computed(() => {
             <el-input v-model="typeQuery.dictTypeName" placeholder="请输入类型名称" clearable />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="typeQuery.status" placeholder="全部" clearable>
+            <el-select v-model="typeQuery.status" placeholder="全部" clearable >
               <el-option
                 v-for="opt in statusOptions"
                 :key="opt.value"
@@ -611,7 +646,7 @@ const currentTypeName = computed(() => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ getStatusLabel(row.status) }}
+                {{ statusFindLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -622,7 +657,7 @@ const currentTypeName = computed(() => {
               <IconButton
                 type="primary"
                 :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-                :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+                :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
                 @click.stop="handleTypeToggleStatus(row)"
               />
               <IconButton type="danger" icon="Delete" tooltip="删除" @click.stop="handleTypeDelete(row)" />
@@ -654,7 +689,7 @@ const currentTypeName = computed(() => {
             <el-input v-model="dataQuery.dictValue" placeholder="请输入字典值" clearable />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="dataQuery.status" placeholder="全部" clearable>
+            <el-select v-model="dataQuery.status" placeholder="全部" clearable >
               <el-option
                 v-for="opt in statusOptions"
                 :key="opt.value"
@@ -702,7 +737,7 @@ const currentTypeName = computed(() => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ getStatusLabel(row.status) }}
+                {{ statusFindLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -713,7 +748,7 @@ const currentTypeName = computed(() => {
               <IconButton
                 type="primary"
                 :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-                :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+                :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
                 @click="handleDataToggleStatus(row)"
               />
               <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDataDelete(row)" />
@@ -726,7 +761,7 @@ const currentTypeName = computed(() => {
       </div>
     </div>
 
-    <!-- 字典类型弹窗 -->
+    <!-- 新增/编辑弹窗（字典类型） -->
     <el-dialog v-model="typeDialogVisible" :title="typeDialogTitle" width="520px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="类型编码" required>
@@ -761,7 +796,7 @@ const currentTypeName = computed(() => {
       </template>
     </el-dialog>
 
-    <!-- 字典数据弹窗 -->
+    <!-- 新增/编辑弹窗（字典数据） -->
     <el-dialog v-model="dataDialogVisible" :title="dataDialogTitle" width="560px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="所属类型">
@@ -857,12 +892,6 @@ const currentTypeName = computed(() => {
   margin-left: 4px;
 }
 
-.panel-actions {
-  display: flex;
-  gap: 8px;
-}
-
-
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -875,5 +904,9 @@ const currentTypeName = computed(() => {
 
 .dict-type-row--active > td {
   background-color: #ecf5ff !important;
+}
+
+.dict-layout > .dict-panel:first-child :deep(.el-table__body tr) {
+  cursor: pointer;
 }
 </style>
