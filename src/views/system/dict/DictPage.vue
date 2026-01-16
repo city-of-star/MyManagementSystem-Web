@@ -905,4 +905,8 @@ const currentTypeName = computed(() => {
 .dict-type-row--active > td {
   background-color: #ecf5ff !important;
 }
+
+.dict-layout > .dict-panel:first-child :deep(.el-table__body tr) {
+  cursor: pointer;
+}
 </style>

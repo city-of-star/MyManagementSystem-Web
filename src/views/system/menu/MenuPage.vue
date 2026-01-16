@@ -148,14 +148,27 @@ const handleCreateChild = (node: PermissionTreeVo, type: 'catalog' | 'menu' | 'b
   openCreateDialog(node, type, `在「${node.permissionName}」下新建${label}`)
 }
 
+// 查找父节点名称的辅助函数
+const findParentName = (parentId: number | null, nodes: PermissionTreeVo[]): string => {
+  if (!parentId || parentId === 0) return '根目录'
+  for (const node of nodes) {
+    if (node.id === parentId) return node.permissionName
+    if (node.children && node.children.length > 0) {
+      const found = findParentName(parentId, node.children)
+      if (found !== '根目录') return found
+    }
+  }
+  return '根目录'
+}
+
 // 编辑按钮
 const handleEdit = (node: PermissionTreeVo) => {
   resetForm()
-  dialogTitle.value = '编辑菜单'
+  dialogTitle.value = '编辑'
   editingId.value = node.id
   form.parentId = node.parentId ?? 0
   form.permissionType = (node.permissionType as 'catalog' | 'menu' | 'button') || 'catalog'
-  typeLocked.value = false
+  typeLocked.value = true // 编辑时类型不可修改
   form.permissionName = node.permissionName
   form.permissionCode = node.permissionCode
   form.path = node.path || ''
@@ -165,7 +178,7 @@ const handleEdit = (node: PermissionTreeVo) => {
   form.visible = node.visible ?? 1
   form.status = node.status ?? 1
   form.remark = node.remark || ''
-  parentLabel.value = node.parentId === 0 ? '根目录' : parentLabel.value
+  parentLabel.value = findParentName(node.parentId ?? 0, treeData.value)
   codePrefix.value = '' // 编辑不强制前缀
   dialogVisible.value = true
 }
@@ -205,7 +218,8 @@ const handleSubmit = async () => {
       ElMessage.warning('请填写名称')
       return
     }
-    if (!form.permissionCode) {
+    // 新建时编码必填，编辑时编码不是必填项
+    if (!editingId.value && !form.permissionCode) {
       ElMessage.warning('请填写编码')
       return
     }
@@ -400,7 +414,7 @@ const handleRemoveRole = async (role: RoleVo) => {
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="620px" destroy-on-close>
       <el-form label-width="96px" class="dialog-form">
-        <el-form-item label="类型" required>
+        <el-form-item label="类型">
           <template v-if="!typeLocked">
             <el-radio-group v-model="form.permissionType">
               <el-radio label="catalog">目录</el-radio>
@@ -420,7 +434,7 @@ const handleRemoveRole = async (role: RoleVo) => {
         <el-form-item label="名称" required>
           <el-input v-model="form.permissionName" placeholder="请输入名称" />
         </el-form-item>
-        <el-form-item label="编码" required>
+        <el-form-item label="编码" :required="!editingId">
           <div class="code-input">
             <el-input v-if="!editingId && codePrefix" v-model="codePrefix" disabled style="width: 160px" />
             <el-input
