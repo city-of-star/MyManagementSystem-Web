@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, unref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   getPermissionTree,
   createPermission,
@@ -11,37 +11,29 @@ import {
   removeRoleFromPermission,
   type PermissionTreeVo,
 } from '@/api/system/permission/permission.ts'
-import type { RoleVo } from '@/api/system/role/role'
-import { handleErrorToast } from '@/utils/http'
-import { useDict } from '@/utils/base/dictUtils.ts'
+import type {RoleVo} from '@/api/system/role/role'
+import {handleErrorToast} from '@/utils/http'
+import {useDict} from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/SearchForm.vue'
 import Toolbar from '@/components/Toolbar.vue'
-import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
+// 查询条件
 const query = reactive({
   status: null as number | null,
   visible: null as number | null,
 })
 
 // 字典：通用状态、菜单显示状态
-const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
-const { options: visibleOptions, load: loadVisibleDict } = useDict('menu_visible')
+const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
+const {options: visibleOptions, findLabel: visibleFindLabel, load: loadVisibleDict} = useDict('menu_visible')
 
-const getStatusLabel = (status: number | null | undefined) => {
-  const list = unref(statusOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
-}
-
-const getVisibleLabel = (visible: number | null | undefined) => {
-  const list = unref(visibleOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(visible))?.label || ''
-}
-
+// 列表
 const loading = ref(false)
 const treeData = ref<PermissionTreeVo[]>([])
 const expandedKeys = ref<number[]>([])
 
+// 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建菜单')
 const editingId = ref<number | null>(null)
@@ -49,6 +41,7 @@ const codePrefix = ref('')
 const parentLabel = ref('根目录')
 const typeLocked = ref(false)
 
+// 表单（用于新增/编辑）
 const form = reactive({
   parentId: 0 as number | null,
   permissionType: 'catalog' as 'catalog' | 'menu' | 'button',
@@ -63,30 +56,35 @@ const form = reactive({
   remark: '',
 })
 
-// 查看角色关联
+// 查看角色相关
 const roleDialogVisible = ref(false)
 const viewingPermissionId = ref<number | null>(null)
 const viewingPermissionName = ref('')
 const roleList = ref<RoleVo[]>([])
 const roleListLoading = ref(false)
 
-const resetForm = () => {
-  editingId.value = null
-  dialogTitle.value = '新建菜单'
-  form.parentId = 0
-  form.permissionType = 'catalog'
-  form.permissionName = ''
-  form.permissionCode = ''
-  form.path = ''
-  form.component = ''
-  form.icon = ''
-  form.sortOrder = 1
-  form.visible = 1
-  form.status = 1
-  form.remark = ''
-  typeLocked.value = false
+// 初始化
+onMounted(() => {
+  // 加载权限树数据
+  fetchTree()
+  // 加载字典
+  loadStatusDict()
+  loadVisibleDict()
+})
+
+// 查询按钮
+const handleSearch = () => {
+  fetchTree()
 }
 
+// 重置按钮
+const handleReset = () => {
+  query.status = null
+  query.visible = null
+  fetchTree()
+}
+
+// 获取权限树数据
 const fetchTree = async () => {
   loading.value = true
   try {
@@ -104,22 +102,25 @@ const fetchTree = async () => {
   }
 }
 
-onMounted(() => {
-  fetchTree()
-  loadStatusDict()
-  loadVisibleDict()
-})
-
-const handleSearch = () => {
-  fetchTree()
+// 重置（新增/编辑）表单
+const resetForm = () => {
+  editingId.value = null
+  dialogTitle.value = '新建菜单'
+  form.parentId = 0
+  form.permissionType = 'catalog'
+  form.permissionName = ''
+  form.permissionCode = ''
+  form.path = ''
+  form.component = ''
+  form.icon = ''
+  form.sortOrder = 1
+  form.visible = 1
+  form.status = 1
+  form.remark = ''
+  typeLocked.value = false
 }
 
-const handleReset = () => {
-  query.status = null
-  query.visible = null
-  fetchTree()
-}
-
+// 打开新建弹窗（新建目录、菜单、按钮）
 const openCreateDialog = (parent: PermissionTreeVo | null, type: 'catalog' | 'menu' | 'button', title?: string) => {
   resetForm()
   form.parentId = parent?.id ?? 0
@@ -131,11 +132,13 @@ const openCreateDialog = (parent: PermissionTreeVo | null, type: 'catalog' | 'me
   dialogVisible.value = true
 }
 
+// 新建根目录按钮
 const handleCreateRoot = () => {
   // 根只允许创建目录
   openCreateDialog(null, 'catalog', '新建根目录')
 }
 
+// （新菜单/新按钮）按钮
 const handleCreateChild = (node: PermissionTreeVo, type: 'catalog' | 'menu' | 'button') => {
   // 规则：目录下只能建菜单；菜单下只能建按钮；按钮下不能再建
   if (node.permissionType === 'catalog' && type !== 'menu') return
@@ -145,6 +148,7 @@ const handleCreateChild = (node: PermissionTreeVo, type: 'catalog' | 'menu' | 'b
   openCreateDialog(node, type, `在「${node.permissionName}」下新建${label}`)
 }
 
+// 编辑按钮
 const handleEdit = (node: PermissionTreeVo) => {
   resetForm()
   dialogTitle.value = '编辑菜单'
@@ -166,6 +170,7 @@ const handleEdit = (node: PermissionTreeVo) => {
   dialogVisible.value = true
 }
 
+// 删除按钮
 const handleDelete = async (node: PermissionTreeVo) => {
   try {
     await ElMessageBox.confirm(`确定要删除【${node.permissionName}】吗？`, '提示', {
@@ -181,6 +186,7 @@ const handleDelete = async (node: PermissionTreeVo) => {
   }
 }
 
+// 启用按钮 / 禁用按钮
 const handleToggleStatus = async (node: PermissionTreeVo) => {
   const targetStatus = node.status === 1 ? 0 : 1
   try {
@@ -192,6 +198,7 @@ const handleToggleStatus = async (node: PermissionTreeVo) => {
   }
 }
 
+// （新建/编辑）确定按钮
 const handleSubmit = async () => {
   try {
     if (!form.permissionName) {
@@ -251,7 +258,7 @@ const handleSubmit = async () => {
   }
 }
 
-// 查看角色关联
+// 查看角色按钮（加载数据并打开弹窗）
 const handleViewRoles = async (node: PermissionTreeVo) => {
   viewingPermissionId.value = node.id
   viewingPermissionName.value = node.permissionName
@@ -270,6 +277,7 @@ const loadPermissionRoles = async (permissionId: number) => {
   }
 }
 
+// 解除关联按钮
 const handleRemoveRole = async (role: RoleVo) => {
   if (!viewingPermissionId.value) return
   try {
@@ -298,7 +306,7 @@ const handleRemoveRole = async (role: RoleVo) => {
     <!-- 查询区域 -->
     <SearchForm @search="handleSearch" @reset="handleReset">
       <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable>
+        <el-select v-model="query.status" placeholder="全部" clearable >
           <el-option
             v-for="opt in statusOptions"
             :key="opt.value"
@@ -308,7 +316,7 @@ const handleRemoveRole = async (role: RoleVo) => {
         </el-select>
       </el-form-item>
       <el-form-item label="显示状态">
-        <el-select v-model="query.visible" placeholder="全部" clearable>
+        <el-select v-model="query.visible" placeholder="全部" clearable >
           <el-option
             v-for="opt in visibleOptions"
             :key="opt.value"
@@ -360,10 +368,10 @@ const handleRemoveRole = async (role: RoleVo) => {
             </div>
             <div class="node-meta">
               <el-tag size="small" :type="data.status === 1 ? 'success' : 'info'" class="status-tag">
-                {{ getStatusLabel(data.status) }}
+                {{ statusFindLabel(data.status) }}
               </el-tag>
               <el-tag size="small" :type="data.visible === 1 ? 'success' : 'info'" class="status-tag">
-                {{ getVisibleLabel(data.visible) }}
+                {{ visibleFindLabel(data.visible) }}
               </el-tag>
             </div>
             <div class="node-actions">
@@ -380,7 +388,7 @@ const handleRemoveRole = async (role: RoleVo) => {
               <el-button link type="primary" size="small" @click.stop="handleEdit(data)">编辑</el-button>
               <el-button link type="info" size="small" @click.stop="handleViewRoles(data)">查看角色</el-button>
               <el-button link type="primary" size="small" @click.stop="handleToggleStatus(data)">
-                {{ getStatusLabel(data.status === 1 ? 0 : 1) }}
+                {{ statusFindLabel(data.status === 1 ? 0 : 1) }}
               </el-button>
               <el-button link type="danger" size="small" @click.stop="handleDelete(data)">删除</el-button>
             </div>
@@ -389,6 +397,7 @@ const handleRemoveRole = async (role: RoleVo) => {
       </el-tree>
     </el-card>
 
+    <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="620px" destroy-on-close>
       <el-form label-width="96px" class="dialog-form">
         <el-form-item label="类型" required>
@@ -466,7 +475,7 @@ const handleRemoveRole = async (role: RoleVo) => {
       </template>
     </el-dialog>
 
-    <!-- 查看角色关联弹窗 -->
+    <!-- 查看角色弹窗 -->
     <el-dialog
       v-model="roleDialogVisible"
       :title="`查看角色 - ${viewingPermissionName}`"

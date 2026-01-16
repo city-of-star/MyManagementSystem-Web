@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, unref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   getConfigPage,
   type ConfigVo,
@@ -12,8 +12,8 @@ import {
   switchConfigStatus,
 } from '@/api/system/config/config.ts'
 import {type PageResult} from '@/api/common/types.ts'
-import { handleErrorToast } from '@/utils/http'
-import { useDict } from '@/utils/base/dictUtils.ts'
+import {handleErrorToast} from '@/utils/http'
+import {useDict} from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/SearchForm.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
@@ -21,6 +21,7 @@ import Toolbar from '@/components/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
+// 查询条件
 const query = reactive<ConfigPageQuery>({
   pageNum: 1,
   pageSize: 10,
@@ -32,29 +33,24 @@ const query = reactive<ConfigPageQuery>({
 })
 
 // 字典：通用状态、是否、配置类型
-const { options: statusOptions, load: loadStatusDict } = useDict('common_status')
-const { options: yesNoOptions, load: loadYesNoDict } = useDict('yes_no')
-const { options: configTypeOptions, load: loadConfigTypeDict } = useDict('config_type')
+const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
+const {options: yesNoOptions, findLabel: yesNoFindLabel, load: loadYesNoDict} = useDict('yes_no')
+const {options: configTypeOptions, findLabel: configTypeFindLabel, load: loadConfigTypeDict} = useDict('config_type')
 
-const getStatusLabel = (status: number | null | undefined) => {
-  const list = unref(statusOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
-}
-
-const getYesNoLabel = (val: number | null | undefined) => {
-  const list = unref(yesNoOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(val))?.label || ''
-}
-
+// 列表 & 分页
 const loading = ref(false)
 const tableData = ref<ConfigVo[]>([])
 const total = ref(0)
+
+// 选中行
 const multipleSelection = ref<ConfigVo[]>([])
 
+// 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建配置')
 const editingId = ref<number | null>(null)
 
+// 表单（用于新增/编辑）
 const form = reactive({
   configKey: '',
   configValue: '',
@@ -65,18 +61,34 @@ const form = reactive({
   remark: '',
 })
 
-const resetForm = () => {
-  editingId.value = null
-  dialogTitle.value = '新建配置'
-  form.configKey = ''
-  form.configValue = ''
-  form.configType = 'string'
-  form.configName = ''
-  form.status = 1
-  form.editable = 1
-  form.remark = ''
+// 初始化
+onMounted(() => {
+  // 加载列表数据
+  fetchData()
+  // 加载字典
+  loadStatusDict()
+  loadYesNoDict()
+  loadConfigTypeDict()
+})
+
+// 查询按钮
+const handleSearch = () => {
+  query.pageNum = 1
+  fetchData()
 }
 
+// 重置按钮
+const handleReset = () => {
+  query.pageNum = 1
+  query.configKey = ''
+  query.configName = ''
+  query.configType = ''
+  query.status = null
+  query.editable = null
+  fetchData()
+}
+
+// 分页查询配置列表数据
 const fetchData = async () => {
   loading.value = true
   try {
@@ -92,39 +104,19 @@ const fetchData = async () => {
   }
 }
 
-onMounted(() => {
-  fetchData()
-  loadStatusDict()
-  loadYesNoDict()
-  loadConfigTypeDict()
-})
-
-const handleSearch = () => {
-  query.pageNum = 1
-  fetchData()
-}
-
-const handleReset = () => {
-  query.pageNum = 1
-  query.configKey = ''
-  query.configName = ''
-  query.configType = ''
-  query.status = null
-  query.editable = null
-  fetchData()
-}
-
-
+// 选中行变化
 const handleSelectionChange = (rows: ConfigVo[]) => {
   multipleSelection.value = rows
 }
 
+// 新建按钮
 const handleCreate = () => {
   resetForm()
   dialogTitle.value = '新建配置'
   dialogVisible.value = true
 }
 
+// 编辑按钮
 const handleEdit = (row: ConfigVo) => {
   resetForm()
   dialogTitle.value = '编辑配置'
@@ -139,52 +131,7 @@ const handleEdit = (row: ConfigVo) => {
   dialogVisible.value = true
 }
 
-const handleDelete = async (row: ConfigVo) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除配置【${row.configKey}】吗？`, '提示', {
-      type: 'warning',
-    })
-    await deleteConfigApi(row.id)
-    ElMessage.success('删除成功')
-    fetchData()
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-const handleBatchDelete = async () => {
-  if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的配置')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`, '提示', {
-      type: 'warning',
-    })
-    const ids = multipleSelection.value.map((c) => c.id)
-    await batchDeleteConfig({ configIds: ids })
-    ElMessage.success('批量删除成功')
-    fetchData()
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-const handleToggleStatus = async (row: ConfigVo) => {
-  const targetStatus = row.status === 1 ? 0 : 1
-  try {
-    await switchConfigStatus({ configId: row.id, status: targetStatus })
-    ElMessage.success(targetStatus === 1 ? '已启用配置' : '已禁用配置')
-    fetchData()
-  } catch (error) {
-    handleErrorToast(error)
-  }
-}
-
+// （新建/编辑）确定按钮
 const handleSubmit = async () => {
   try {
     if (!form.configKey) {
@@ -220,8 +167,69 @@ const handleSubmit = async () => {
       })
       ElMessage.success('创建成功')
     }
-
     dialogVisible.value = false
+    fetchData()
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+// 重置（新增/编辑）表单
+const resetForm = () => {
+  editingId.value = null
+  dialogTitle.value = '新建配置'
+  form.configKey = ''
+  form.configValue = ''
+  form.configType = 'string'
+  form.configName = ''
+  form.status = 1
+  form.editable = 1
+  form.remark = ''
+}
+
+// 删除按钮
+const handleDelete = async (row: ConfigVo) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除配置【${row.configKey}】吗？`, '提示', {
+      type: 'warning',
+    })
+    await deleteConfigApi(row.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 批量删除按钮
+const handleBatchDelete = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.info('请先选择要删除的配置')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`, '提示', {
+      type: 'warning',
+    })
+    const ids = multipleSelection.value.map((c) => c.id)
+    await batchDeleteConfig({configIds: ids})
+    ElMessage.success('批量删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 启用按钮 / 禁用按钮
+const handleToggleStatus = async (row: ConfigVo) => {
+  const targetStatus = row.status === 1 ? 0 : 1
+  try {
+    await switchConfigStatus({configId: row.id, status: targetStatus})
+    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -240,7 +248,7 @@ const handleSubmit = async () => {
         <el-input v-model="query.configName" placeholder="请输入配置名称" clearable />
       </el-form-item>
       <el-form-item label="类型">
-        <el-select v-model="query.configType" placeholder="全部" clearable>
+        <el-select v-model="query.configType" placeholder="全部" clearable >
           <el-option
             v-for="opt in configTypeOptions"
             :key="opt.value"
@@ -250,7 +258,7 @@ const handleSubmit = async () => {
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable>
+        <el-select v-model="query.status" placeholder="全部" clearable >
           <el-option
             v-for="opt in statusOptions"
             :key="opt.value"
@@ -260,7 +268,7 @@ const handleSubmit = async () => {
         </el-select>
       </el-form-item>
       <el-form-item label="可编辑">
-        <el-select v-model="query.editable" placeholder="全部" clearable>
+        <el-select v-model="query.editable" placeholder="全部" clearable >
           <el-option
             v-for="opt in yesNoOptions"
             :key="opt.value"
@@ -294,27 +302,21 @@ const handleSubmit = async () => {
       <el-table-column prop="configName" label="配置名称" min-width="180" />
       <el-table-column prop="configType" label="类型" width="100">
         <template #default="{ row }">
-          <span>
-            {{
-              configTypeOptions.find((opt) => opt.value === row.configType)?.label ||
-              row.configType ||
-              '-'
-            }}
-          </span>
+          {{ configTypeFindLabel(row.configType) || row.configType || '-' }}
         </template>
       </el-table-column>
       <el-table-column prop="configValue" label="配置值" min-width="200" show-overflow-tooltip />
       <el-table-column label="可编辑" width="90">
         <template #default="{ row }">
           <el-tag :type="row.editable === 1 ? 'success' : 'info'">
-            {{ getYesNoLabel(row.editable) }}
+            {{ yesNoFindLabel(row.editable) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ getStatusLabel(row.status) }}
+            {{ statusFindLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -325,7 +327,7 @@ const handleSubmit = async () => {
           <IconButton
             type="primary"
             :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+            :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
             @click="handleToggleStatus(row)"
           />
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
@@ -336,6 +338,7 @@ const handleSubmit = async () => {
     <!-- 分页 -->
     <Pagination :query="query" :total="total" @change="fetchData" />
 
+    <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" destroy-on-close>
       <el-form label-width="100px" class="dialog-form">
         <el-form-item label="配置键" required>

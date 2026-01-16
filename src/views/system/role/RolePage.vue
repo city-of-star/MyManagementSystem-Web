@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref, nextTick, unref} from 'vue'
+import {onMounted, reactive, ref, nextTick} from 'vue'
 import type {ElTree} from 'element-plus'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
@@ -17,7 +17,7 @@ import {
   updateRole,
 } from '@/api/system/role/role.ts'
 import {type PageResult} from '@/api/common/types.ts'
-import type { UserVo } from '@/api/system/user/user'
+import type {UserVo} from '@/api/system/user/user'
 import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
 import {handleErrorToast} from '@/utils/http'
 import {useDict} from '@/utils/base/dictUtils.ts'
@@ -28,6 +28,7 @@ import Toolbar from '@/components/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
+// 查询条件
 const query = reactive<RolePageQuery>({
   pageNum: 1,
   pageSize: 10,
@@ -38,19 +39,18 @@ const query = reactive<RolePageQuery>({
 })
 
 // 字典：通用状态、角色类型
-const {options: statusOptions, load: loadStatusDict} = useDict('common_status')
-const {options: roleTypeOptions, load: loadRoleTypeDict} = useDict('role_type')
+const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
+const {options: roleTypeOptions, findLabel: roleTypeFindLable, load: loadRoleTypeDict} = useDict('role_type')
 
-const getStatusLabel = (status: number | null | undefined) => {
-  const list = unref(statusOptions) || []
-  return list.find((opt) => Number(opt.value) === Number(status))?.label || ''
-}
-
+// 列表 & 分页
 const loading = ref(false)
 const tableData = ref<RoleVo[]>([])
 const total = ref(0)
+
+// 选中行
 const multipleSelection = ref<RoleVo[]>([])
 
+// 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建角色')
 const editingRoleId = ref<number | null>(null)
@@ -70,6 +70,7 @@ const viewingRoleName = ref('')
 const userList = ref<UserVo[]>([])
 const userListLoading = ref(false)
 
+// 表单（用于新增/编辑）
 const form = reactive({
   roleCode: '',
   roleName: '',
@@ -79,17 +80,32 @@ const form = reactive({
   remark: '',
 })
 
-const resetForm = () => {
-  editingRoleId.value = null
-  dialogTitle.value = '新建角色'
-  form.roleCode = ''
-  form.roleName = ''
-  form.roleType = 'custom'
-  form.sortOrder = 1
-  form.status = 1
-  form.remark = ''
+// 初始化
+onMounted(() => {
+  // 加载列表数据
+  fetchData()
+  // 加载字典
+  loadStatusDict()
+  loadRoleTypeDict()
+})
+
+// 查询按钮
+const handleSearch = () => {
+  query.pageNum = 1
+  fetchData()
 }
 
+// 重置按钮
+const handleReset = () => {
+  query.pageNum = 1
+  query.roleCode = ''
+  query.roleName = ''
+  query.roleType = ''
+  query.status = null
+  fetchData()
+}
+
+// 分页查询角色列表数据
 const fetchData = async () => {
   loading.value = true
   try {
@@ -105,37 +121,19 @@ const fetchData = async () => {
   }
 }
 
-onMounted(() => {
-  fetchData()
-  loadStatusDict()
-  loadRoleTypeDict()
-})
-
-const handleSearch = () => {
-  query.pageNum = 1
-  fetchData()
-}
-
-const handleReset = () => {
-  query.pageNum = 1
-  query.roleCode = ''
-  query.roleName = ''
-  query.roleType = ''
-  query.status = null
-  fetchData()
-}
-
-
+// 选中行变化
 const handleSelectionChange = (rows: RoleVo[]) => {
   multipleSelection.value = rows
 }
 
+// 新建按钮
 const handleCreate = () => {
   resetForm()
   dialogTitle.value = '新建角色'
   dialogVisible.value = true
 }
 
+// 编辑按钮
 const handleEdit = (row: RoleVo) => {
   resetForm()
   dialogTitle.value = '编辑角色'
@@ -149,52 +147,7 @@ const handleEdit = (row: RoleVo) => {
   dialogVisible.value = true
 }
 
-const handleDelete = async (row: RoleVo) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除角色【${row.roleName || row.roleCode}】吗？`, '提示', {
-      type: 'warning',
-    })
-    await deleteRole(row.id)
-    ElMessage.success('删除成功')
-    fetchData()
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-const handleBatchDelete = async () => {
-  if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的角色')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`, '提示', {
-      type: 'warning',
-    })
-    const ids = multipleSelection.value.map((r) => r.id)
-    await batchDeleteRole({ roleIds: ids })
-    ElMessage.success('批量删除成功')
-    fetchData()
-  } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
-  }
-}
-
-const handleToggleStatus = async (row: RoleVo) => {
-  const targetStatus = row.status === 1 ? 0 : 1
-  try {
-    await switchRoleStatus({ roleId: row.id, status: targetStatus })
-    ElMessage.success(targetStatus === 1 ? '已启用角色' : '已禁用角色')
-    fetchData()
-  } catch (error) {
-    handleErrorToast(error)
-  }
-}
-
+// （新建/编辑）确定按钮
 const handleSubmit = async () => {
   try {
     if (!form.roleCode) {
@@ -228,7 +181,6 @@ const handleSubmit = async () => {
       })
       ElMessage.success('创建成功')
     }
-
     dialogVisible.value = false
     fetchData()
   } catch (error) {
@@ -236,7 +188,68 @@ const handleSubmit = async () => {
   }
 }
 
-// 分配权限相关函数
+// 重置（新增/编辑）表单
+const resetForm = () => {
+  editingRoleId.value = null
+  dialogTitle.value = '新建角色'
+  form.roleCode = ''
+  form.roleName = ''
+  form.roleType = 'custom'
+  form.sortOrder = 1
+  form.status = 1
+  form.remark = ''
+}
+
+// 删除按钮
+const handleDelete = async (row: RoleVo) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除角色【${row.roleName || row.roleCode}】吗？`, '提示', {
+      type: 'warning',
+    })
+    await deleteRole(row.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 批量删除按钮
+const handleBatchDelete = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.info('请先选择要删除的角色')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`, '提示', {
+      type: 'warning',
+    })
+    const ids = multipleSelection.value.map((r) => r.id)
+    await batchDeleteRole({roleIds: ids})
+    ElMessage.success('批量删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 启用按钮 / 禁用按钮
+const handleToggleStatus = async (row: RoleVo) => {
+  const targetStatus = row.status === 1 ? 0 : 1
+  try {
+    await switchRoleStatus({roleId: row.id, status: targetStatus})
+    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    fetchData()
+  } catch (error) {
+    handleErrorToast(error)
+  }
+}
+
+// 分配权限按钮（加载数据并打开弹窗）
 const handleAssignPermissions = async (row: RoleVo) => {
   assigningRoleId.value = row.id
   assigningRoleName.value = row.roleName
@@ -244,6 +257,7 @@ const handleAssignPermissions = async (row: RoleVo) => {
   await loadPermissionTree(row.id)
 }
 
+// 获取权限树（加载权限树并设置选中状态）
 const loadPermissionTree = async (roleId: number) => {
   permissionTreeLoading.value = true
   try {
@@ -293,6 +307,7 @@ const loadPermissionTree = async (roleId: number) => {
   }
 }
 
+// 分配权限确定按钮（给角色分配权限）
 const handleSubmitPermissions = async () => {
   if (!assigningRoleId.value) return
 
@@ -320,7 +335,7 @@ const handleSubmitPermissions = async () => {
   }
 }
 
-// 查看用户相关函数
+// 查看用户按钮（加载数据并打开弹窗）
 const handleViewUsers = async (row: RoleVo) => {
   viewingRoleId.value = row.id
   viewingRoleName.value = row.roleName
@@ -328,6 +343,7 @@ const handleViewUsers = async (row: RoleVo) => {
   await loadRoleUsers(row.id)
 }
 
+// 获取指定角色拥有的用户列表
 const loadRoleUsers = async (roleId: number) => {
   userListLoading.value = true
   try {
@@ -339,6 +355,7 @@ const loadRoleUsers = async (roleId: number) => {
   }
 }
 
+// 移除用户按钮
 const handleRemoveUser = async (user: UserVo) => {
   if (!viewingRoleId.value) return
   try {
@@ -374,7 +391,7 @@ const handleRemoveUser = async (user: UserVo) => {
         <el-input v-model="query.roleName" placeholder="请输入角色名称" clearable />
       </el-form-item>
       <el-form-item label="角色类型">
-        <el-select v-model="query.roleType" placeholder="全部" clearable>
+        <el-select v-model="query.roleType" placeholder="全部" clearable >
           <el-option
             v-for="opt in roleTypeOptions"
             :key="opt.value"
@@ -384,7 +401,7 @@ const handleRemoveUser = async (user: UserVo) => {
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable>
+        <el-select v-model="query.status" placeholder="全部" clearable >
           <el-option
             v-for="opt in statusOptions"
             :key="opt.value"
@@ -419,11 +436,7 @@ const handleRemoveUser = async (user: UserVo) => {
       <el-table-column prop="roleType" label="角色类型" min-width="110">
         <template #default="{ row }">
           <span>
-            {{
-              roleTypeOptions.find((opt) => opt.value === row.roleType)?.label ||
-              row.roleType ||
-              '-'
-            }}
+            {{roleTypeFindLable(row.roleType) }}
           </span>
         </template>
       </el-table-column>
@@ -431,7 +444,7 @@ const handleRemoveUser = async (user: UserVo) => {
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ getStatusLabel(row.status) }}
+            {{ statusFindLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -444,7 +457,7 @@ const handleRemoveUser = async (user: UserVo) => {
           <IconButton
             type="primary"
             :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="getStatusLabel(row.status === 1 ? 0 : 1)"
+            :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
             @click="handleToggleStatus(row)"
           />
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
@@ -455,6 +468,7 @@ const handleRemoveUser = async (user: UserVo) => {
     <!-- 分页 -->
     <Pagination :query="query" :total="total" @change="fetchData" />
 
+    <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="520px" destroy-on-close>
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="角色编码" required>
@@ -556,7 +570,7 @@ const handleRemoveUser = async (user: UserVo) => {
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ getStatusLabel(row.status) }}
+                {{ statusFindLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
