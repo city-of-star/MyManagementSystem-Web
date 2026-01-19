@@ -1,48 +1,15 @@
 <script setup lang="ts">
-import { RouterView, useRouter } from 'vue-router'
-import { computed } from 'vue'
-import { useAuthStore } from '@/store/auth/auth'
-import { useMenuStore } from '@/store/menu/menu'
-import { useTabsStore } from '@/store/tabs/tabs'
-import { resetDynamicRoutesState } from '@/router'
-import { logout } from '@/api/auth/auth.ts'
-import { handleErrorSilent } from '@/utils/http'
+import { RouterView } from 'vue-router'
 import LayoutHeader from '@/layouts/LayoutHeader.vue'
 import LayoutSidebar from '@/layouts/LayoutSidebar.vue'
 import LayoutTabs from '@/layouts/LayoutTabs.vue'
-
-const router = useRouter()
-const authStore = useAuthStore()
-const menuStore = useMenuStore()
-const tabsStore = useTabsStore()
-
-// 使用动态菜单
-const menus = computed(() => menuStore.menus)
-
-const handleLogout = async () => {
-  const refreshToken = authStore.refreshToken || localStorage.getItem('refreshToken')
-
-  try {
-    if (refreshToken) {
-      await logout({ refreshToken })
-    }
-  } catch (error) {
-    handleErrorSilent(error)
-  } finally {
-    authStore.clearTokens()
-    menuStore.clearMenus()
-    tabsStore.closeAllTabs()
-    resetDynamicRoutesState()
-    await router.push({ name: 'login' })
-  }
-}
 </script>
 
 <template>
   <div class="app-layout">
-    <LayoutHeader @logout="handleLogout" />
+    <LayoutHeader />
     <div class="body">
-      <LayoutSidebar :menus="menus" />
+      <LayoutSidebar />
       <main class="content">
         <LayoutTabs />
         <div class="content-inner">

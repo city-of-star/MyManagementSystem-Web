@@ -1,13 +1,32 @@
 <script setup lang="ts">
-import { defineEmits } from 'vue'
 import logoImg from '@/assets/mms.svg'
+import {logout} from "@/api/auth/auth.ts";
+import {handleErrorSilent} from "@/utils/http";
+import router, { resetDynamicRoutesState } from "@/router";
+import {useAuthStore} from "@/store/auth/auth.ts";
+import {useMenuStore} from "@/store/menu/menu.ts";
+import {useTabsStore} from "@/store/tabs/tabs.ts";
 
-const emit = defineEmits<{
-  (e: 'logout'): void
-}>()
+const authStore = useAuthStore()
+const menuStore = useMenuStore()
+const tabsStore = useTabsStore()
 
-const handleLogout = () => {
-  emit('logout')
+const handleLogout = async () => {
+  const refreshToken = authStore.refreshToken || localStorage.getItem('refreshToken')
+
+  try {
+    if (refreshToken) {
+      await logout({ refreshToken })
+    }
+  } catch (error) {
+    handleErrorSilent(error)
+  } finally {
+    authStore.clearTokens()
+    menuStore.clearMenus()
+    tabsStore.closeAllTabs()
+    resetDynamicRoutesState()
+    await router.push('/login')
+  }
 }
 </script>
 

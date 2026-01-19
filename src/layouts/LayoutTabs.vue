@@ -10,7 +10,7 @@ const tabsStore = useTabsStore()
 // 监听路由变化，自动添加标签页
 watch(
   () => route.fullPath,
-  (newPath) => {
+  () => {
     if (route.meta?.title && route.path !== '/login') {
       tabsStore.addTab(route)
     }
@@ -28,17 +28,17 @@ const handleTabClick = (tab: { fullPath: string }) => {
 
 const handleTabClose = (e: MouseEvent, tab: { fullPath: string }) => {
   e.stopPropagation()
-  
+
   const currentIndex = tabs.value.findIndex(t => t.fullPath === tab.fullPath)
   const isActive = activeTab.value === tab.fullPath
-  
+
   // 如果关闭的是当前活动标签，需要先确定跳转目标
   if (isActive) {
     // 优先跳转到右侧标签，如果没有则跳转到左侧
     const nextTab = tabs.value[currentIndex + 1] || tabs.value[currentIndex - 1]
-    
+
     tabsStore.removeTab(tab.fullPath)
-    
+
     if (nextTab) {
       router.push(nextTab.fullPath)
     } else if (tabs.value.length > 0) {
@@ -53,7 +53,7 @@ const handleTabClose = (e: MouseEvent, tab: { fullPath: string }) => {
   }
 }
 
-const handleContextMenu = (e: MouseEvent, tab: { fullPath: string }) => {
+const handleContextMenu = (e: MouseEvent) => {
   e.preventDefault()
   // 可以在这里添加右键菜单功能（关闭其他、关闭左侧、关闭右侧等）
 }

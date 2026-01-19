@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {MMSMessage} from '@/utils/base/message.ts'
 import {
   getPermissionTree,
@@ -17,6 +17,7 @@ import {useDict} from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/SearchForm.vue'
 import Toolbar from '@/components/Toolbar.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
+import { iconOptions, type IconName } from '@/assets/icon/icons'
 
 // 查询条件
 const query = reactive({
@@ -49,11 +50,20 @@ const form = reactive({
   permissionCode: '',
   path: '',
   component: '',
-  icon: '',
+  icon: '' as IconName | '',
   sortOrder: 1,
   visible: 1,
   status: 1,
   remark: '',
+})
+
+// 图标选择弹窗可见性
+const iconPickerVisible = ref(false)
+
+// 当前选中图标组件，用于回显
+const selectedIconComponent = computed(() => {
+  if (!form.icon) return null
+  return iconOptions.find(opt => opt.value === form.icon)?.component || null
 })
 
 // 查看角色相关
@@ -173,7 +183,7 @@ const handleEdit = (node: PermissionTreeVo) => {
   form.permissionCode = node.permissionCode
   form.path = node.path || ''
   form.component = node.component || ''
-  form.icon = node.icon || ''
+  form.icon = (node.icon as IconName) || ''
   form.sortOrder = node.sortOrder ?? 1
   form.visible = node.visible ?? 1
   form.status = node.status ?? 1
@@ -181,6 +191,12 @@ const handleEdit = (node: PermissionTreeVo) => {
   parentLabel.value = findParentName(node.parentId ?? 0, treeData.value)
   codePrefix.value = '' // 编辑不强制前缀
   dialogVisible.value = true
+}
+
+// 选择图标
+const handleSelectIcon = (icon: IconName) => {
+  form.icon = icon
+  iconPickerVisible.value = false
 }
 
 // 删除按钮
@@ -447,8 +463,36 @@ const handleRemoveRole = async (role: RoleVo) => {
           <el-input v-model="form.component" placeholder="例如：system/user/UserPage" />
         </el-form-item>
         <el-form-item label="图标">
-          <el-input v-model="form.icon" placeholder="例如：user" />
+          <div class="icon-picker-row">
+            <el-button type="primary" link @click="iconPickerVisible = true">选择图标</el-button>
+            <div v-if="selectedIconComponent" class="icon-preview">
+              <component :is="selectedIconComponent" class="icon-preview__icon" />
+
+              <el-button link type="danger" size="small" @click="form.icon = ''">清除</el-button>
+            </div>
+            <span v-else class="icon-preview__placeholder">未选择</span>
+          </div>
         </el-form-item>
+
+        <el-dialog
+          v-model="iconPickerVisible"
+          title="选择图标"
+          width="720px"
+          destroy-on-close
+        >
+          <div class="icon-grid">
+            <div
+              v-for="opt in iconOptions"
+              :key="opt.value"
+              class="icon-grid__item"
+              :class="{ active: form.icon === opt.value }"
+              @click="handleSelectIcon(opt.value)"
+            >
+              <component :is="opt.component" class="icon-grid__icon" />
+              <span class="icon-grid__label">{{ opt.label }}</span>
+            </div>
+          </div>
+        </el-dialog>
         <el-form-item label="排序">
           <el-input-number v-model="form.sortOrder" :min="1" :max="9999" />
         </el-form-item>
@@ -723,6 +767,80 @@ const handleRemoveRole = async (role: RoleVo) => {
     opacity: 1;
     flex-wrap: wrap;
   }
+}
+
+.icon-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.icon-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
+.icon-preview__icon {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-preview__label {
+  font-size: 13px;
+  color: #374151;
+}
+
+.icon-preview__placeholder {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.icon-grid__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #fff;
+}
+
+.icon-grid__item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.12);
+}
+
+.icon-grid__item.active {
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+
+.icon-grid__icon {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-grid__label {
+  font-size: 12px;
+  color: #374151;
+  word-break: break-all;
+  text-align: center;
 }
 </style>
 

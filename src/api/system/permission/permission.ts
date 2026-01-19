@@ -163,18 +163,10 @@ export function getPermissionTree(params?: {
 
 /**
  * 获取当前用户的权限树（用于前端菜单展示）
+ * 后端固定返回：启用、可见、目录或菜单类型的权限
  */
-export function getCurrentUserPermissionTree(params?: {
-  permissionType?: string
-  status?: number
-  visible?: number
-}): Promise<PermissionTreeVo[]> {
-  const queryParams: Record<string, unknown> = {}
-  if (params?.permissionType) queryParams.permissionType = params.permissionType
-  if (params?.status !== undefined) queryParams.status = params.status
-  if (params?.visible !== undefined) queryParams.visible = params.visible
-
-  return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree/current-user', Object.keys(queryParams).length > 0 ? queryParams : undefined)
+export function getCurrentUserPermissionTree(): Promise<PermissionTreeVo[]> {
+  return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree/current-user')
 }
 
 

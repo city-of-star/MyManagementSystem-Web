@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import type { MenuItem } from '@/utils/menu/menuUtils.ts'
-
-const props = defineProps<{
-  menus: MenuItem[]
-}>()
+import { type MenuItem, useMenuStore } from "@/store/menu/menu.ts";
+import { iconMap } from '@/assets/icon/icons'
 
 const route = useRoute()
 const expandedMenus = ref<Set<string>>(new Set())
+
+// 使用动态菜单
+const menuStore = useMenuStore()
+const menus = computed(() => menuStore.menus)
 
 // 检查路径是否匹配（包括子路径）
 const isActive = (path?: string): boolean => {
@@ -38,7 +39,7 @@ const toggleMenu = (label: string) => {
 
 // 初始化时展开包含当前路由的菜单
 const initExpandedMenus = () => {
-  props.menus.forEach(menu => {
+  menus.value.forEach(menu => {
     if (menu.children && isMenuActive(menu)) {
       expandedMenus.value.add(menu.label)
     }
@@ -47,12 +48,11 @@ const initExpandedMenus = () => {
 
 initExpandedMenus()
 
-// 图标映射
-const getIcon = (icon?: string) => {
-  const iconMap: Record<string, string> = {
-    system: 'M10.5 6a7.5 7.5 0 1 0-7.5 7.5h7.5V6zM13.5 6a7.5 7.5 0 1 1-7.5 7.5h7.5V6z',
-  }
-  return iconMap[icon || ''] || 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11l2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6'
+// 解析菜单 icon，大小写不敏感；不匹配则不显示
+const resolveIcon = (icon?: string) => {
+  if (!icon) return null
+  const entry = Object.entries(iconMap).find(([key]) => key.toLowerCase() === icon.toLowerCase())
+  return entry ? entry[1] : null
 }
 </script>
 
@@ -75,22 +75,11 @@ const getIcon = (icon?: string) => {
           @click="toggleMenu(menu.label)"
         >
           <div class="menu-folder-content">
-            <svg
-              class="menu-icon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                :d="getIcon(menu.icon)"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <component
+              v-if="resolveIcon(menu.icon)"
+              :is="resolveIcon(menu.icon)"
+              class="menu-icon-comp"
+            />
             <span class="menu-label">{{ menu.label }}</span>
             <svg
               class="menu-arrow"
@@ -123,7 +112,11 @@ const getIcon = (icon?: string) => {
             class="submenu-item"
             :class="{ active: isActive(child.path) }"
           >
-            <span class="submenu-dot" />
+            <component
+              v-if="resolveIcon(child.icon)"
+              :is="resolveIcon(child.icon)"
+              class="menu-icon-comp"
+            />
             <span class="submenu-label">{{ child.label }}</span>
           </RouterLink>
         </div>
@@ -135,22 +128,11 @@ const getIcon = (icon?: string) => {
           class="menu-item"
           :class="{ active: isActive(menu.path) }"
         >
-          <svg
-            class="menu-icon"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              :d="getIcon(menu.icon)"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <component
+            v-if="resolveIcon(menu.icon)"
+            :is="resolveIcon(menu.icon)"
+            class="menu-icon-comp"
+          />
           <span class="menu-label">{{ menu.label }}</span>
         </RouterLink>
       </div>
@@ -259,6 +241,13 @@ const getIcon = (icon?: string) => {
   color: inherit;
 }
 
+.menu-icon-comp {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: inherit;
+}
+
 .menu-arrow {
   margin-left: auto;
   transition: transform 0.2s ease;
@@ -307,20 +296,6 @@ const getIcon = (icon?: string) => {
   background: rgba(22, 119, 255, 0.15);
   color: #1677ff;
   font-weight: 500;
-}
-
-.submenu-item.active .submenu-dot {
-  background: #1677ff;
-  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.2);
-}
-
-.submenu-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-  transition: all 0.2s ease;
-  flex-shrink: 0;
 }
 
 .submenu-label {

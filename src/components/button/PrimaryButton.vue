@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import {computed, defineOptions} from 'vue'
 import type {ButtonProps} from 'element-plus'
-import {iconMap, type IconName} from '@/components/button/icons'
+import {iconMap, type IconName} from '@/assets/icon/icons.ts'
 
 defineOptions({
   inheritAttrs: false,
