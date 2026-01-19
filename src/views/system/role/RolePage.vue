@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref, nextTick} from 'vue'
+import {MMSMessage} from '@/utils/base/message.ts'
 import type {ElTree} from 'element-plus'
-import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   assignRolePermissions,
   batchDeleteRole,
@@ -151,11 +151,11 @@ const handleEdit = (row: RoleVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.roleCode) {
-      ElMessage.warning('请填写角色编码')
+      MMSMessage.warning('请填写角色编码')
       return
     }
     if (!form.roleName) {
-      ElMessage.warning('请填写角色名称')
+      MMSMessage.warning('请填写角色名称')
       return
     }
 
@@ -169,7 +169,7 @@ const handleSubmit = async () => {
         status: form.status,
         remark: form.remark || undefined,
       })
-      ElMessage.success('更新成功')
+      MMSMessage.success('更新成功')
     } else {
       await createRole({
         roleCode: form.roleCode,
@@ -179,7 +179,7 @@ const handleSubmit = async () => {
         status: form.status,
         remark: form.remark || undefined,
       })
-      ElMessage.success('创建成功')
+      MMSMessage.success('创建成功')
     }
     dialogVisible.value = false
     fetchData()
@@ -203,11 +203,9 @@ const resetForm = () => {
 // 删除按钮
 const handleDelete = async (row: RoleVo) => {
   try {
-    await ElMessageBox.confirm(`确定要删除角色【${row.roleName || row.roleCode}】吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除角色【${row.roleName || row.roleCode}】吗？`)
     await deleteRole(row.id)
-    ElMessage.success('删除成功')
+    MMSMessage.success('删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -219,16 +217,14 @@ const handleDelete = async (row: RoleVo) => {
 // 批量删除按钮
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的角色')
+    MMSMessage.info('请先选择要删除的角色')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`)
     const ids = multipleSelection.value.map((r) => r.id)
     await batchDeleteRole({roleIds: ids})
-    ElMessage.success('批量删除成功')
+    MMSMessage.success('批量删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -242,7 +238,7 @@ const handleToggleStatus = async (row: RoleVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchRoleStatus({roleId: row.id, status: targetStatus})
-    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -319,7 +315,7 @@ const handleSubmitPermissions = async () => {
   const allPermissionIds = [...new Set([...checkedKeys, ...halfCheckedKeys])]
 
   if (allPermissionIds.length === 0) {
-    ElMessage.warning('请至少选择一个权限')
+    MMSMessage.warning('请至少选择一个权限')
     return
   }
 
@@ -328,7 +324,7 @@ const handleSubmitPermissions = async () => {
       roleId: assigningRoleId.value,
       permissionIds: allPermissionIds,
     })
-    ElMessage.success('分配权限成功')
+    MMSMessage.success('分配权限成功')
     permissionDialogVisible.value = false
   } catch (error) {
     handleErrorToast(error)
@@ -359,18 +355,14 @@ const loadRoleUsers = async (roleId: number) => {
 const handleRemoveUser = async (user: UserVo) => {
   if (!viewingRoleId.value) return
   try {
-    await ElMessageBox.confirm(
-      `确定要从角色【${viewingRoleName.value}】中移除用户【${user.username || user.realName || user.nickname}】吗？`,
-      '提示',
-      {
-        type: 'warning',
-      }
+    await MMSMessage.confirm(
+      `确定要从角色【${viewingRoleName.value}】中移除用户【${user.username || user.realName || user.nickname}】吗？`
     )
     await removeUserFromRole({
       roleId: viewingRoleId.value,
       userId: user.id,
     })
-    ElMessage.success('移除成功')
+    MMSMessage.success('移除成功')
     await loadRoleUsers(viewingRoleId.value)
   } catch (error) {
     if (error !== 'cancel') {

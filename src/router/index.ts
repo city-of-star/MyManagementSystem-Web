@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
-import LovePage from '@/views/system/Love/LovePage.vue'
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
 import { getCurrentUserPermissionTree } from '@/api/system/permission/permission.ts'
@@ -20,11 +19,6 @@ const baseRoutes: RouteRecordRaw[] = [
     name: 'login',
     component: Login,
   },
-  {
-    path: '/love',
-    name: 'love',
-    component: LovePage,
-  },
 ]
 
 const router = createRouter({
@@ -35,68 +29,41 @@ const router = createRouter({
 // 动态路由是否已加载
 let dynamicRoutesLoaded = false
 
-/**
- * 将权限树转换为路由配置
- * 目录用于拼接路径前缀，菜单用于实际生成路由；组件加载失败时跳过但继续处理子级
- */
-function convertPermissionToRoutes(permissions: PermissionTreeVo[], parentPath = ''): RouteRecordRaw[] {
-  const routes: RouteRecordRaw[] = []
+// 路由守卫：处理登录和动态路由加载
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuthStore()
+  const menuStore = useMenuStore()
+  const isLoggedIn = !!authStore.accessToken || !!localStorage.getItem('accessToken')
 
-  const buildFullPath = (base: string, path?: string) => {
-    if (!path) return base
-    if (path.startsWith('/')) return path
-    if (!base) return path.startsWith('/') ? path : `/${path}`
-    return base.endsWith('/') ? `${base}${path}` : `${base}/${path}`
+  // 未登录，清除菜单和动态路由状态，重定向到登录页
+  if (to.path !== '/login' && !isLoggedIn) {
+    menuStore.clearMenus()
+    dynamicRoutesLoaded = false
+    next('/login')
+    return
   }
 
-  for (const permission of permissions) {
-    // 仅处理启用且可见
-    if (permission.status !== 1 || permission.visible !== 1) {
-      continue
+  // 已登录，访问登录页，重定向到首页
+  if (to.path === '/login' && isLoggedIn) {
+    // 先加载动态路由，然后重定向
+    if (!dynamicRoutesLoaded) {
+      await loadDynamicRoutes()
     }
-
-    const currentPath = buildFullPath(parentPath, permission.path)
-
-    // 菜单：有组件且有路径才生成路由
-    if (permission.permissionType === 'menu' && permission.component && currentPath) {
-      try {
-        let childRoutes: RouteRecordRaw[] = []
-        if (permission.children && permission.children.length > 0) {
-          childRoutes = convertPermissionToRoutes(permission.children, currentPath)
-        }
-
-        const componentLoader = loadComponent(permission.component)
-
-        const route: RouteRecordRaw = {
-          path: currentPath,
-          name: permission.permissionCode || `route_${permission.id}`,
-          component: componentLoader,
-          meta: {
-            title: permission.permissionName,
-            icon: permission.icon,
-          },
-          ...(childRoutes.length > 0 ? { children: childRoutes } : {}),
-        }
-
-        routes.push(route)
-      } catch (error) {
-        console.warn(`[动态路由] 跳过路由 ${currentPath}，组件加载失败:`, error)
-        if (permission.children && permission.children.length > 0) {
-          const childRoutes = convertPermissionToRoutes(permission.children, parentPath)
-          routes.push(...childRoutes)
-        }
-      }
-    }
-
-    // 目录或无组件的菜单：继续向下处理子级，携带路径前缀
-    if (permission.children && permission.children.length > 0) {
-      const childRoutes = convertPermissionToRoutes(permission.children, currentPath)
-      routes.push(...childRoutes)
-    }
+    next('/system/userPage')
+    return
   }
 
-  return routes
-}
+  // 已登录，加载动态路由
+  if (isLoggedIn && !dynamicRoutesLoaded) {
+    await loadDynamicRoutes()
+    // 动态路由加载后，重新导航到目标路由
+    next(to.fullPath)
+    return
+  }
+
+  next()
+})
+
 
 /**
  * 加载动态菜单和路由
@@ -118,46 +85,109 @@ async function loadDynamicRoutes() {
     const menus = convertPermissionToMenu(permissionTree)
     menuStore.setMenus(menus)
 
-    // 转换为路由配置
+    // 转换为路由配置（数据库路径已经是完整路径，如 /system/userPage）
     const dynamicRoutes = convertPermissionToRoutes(permissionTree)
 
-    // 找到第一个有路径的路由作为默认重定向
-    const findFirstPath = (routes: RouteRecordRaw[]): string | null => {
-      for (const route of routes) {
-        if (route.path && route.component) {
-          return route.path
-        }
-        if (route.children) {
-          const childPath = findFirstPath(route.children)
-          if (childPath) return childPath
-        }
+    // 按路径前缀分组（如 /system、/business），为每个前缀创建 Layout 父路由
+    const routeGroups = new Map<string, RouteRecordRaw[]>()
+
+    for (const route of dynamicRoutes) {
+      if (!route.path || !route.component) {
+        continue
       }
-      return null
+
+      // 提取路径前缀：/system/userPage -> /system
+      const prefix = '/' + route.path.split('/')[1]
+      
+      // 转换为相对路径：/system/userPage -> userPage
+      const relativePath = route.path.replace(prefix, '').replace(/^\//, '') || ''
+      
+      // 处理子路由的相对路径
+      let children = route.children
+      if (children && children.length > 0) {
+        children = children.map(child => ({
+          ...child,
+          path: child.path?.replace(prefix, '').replace(/^\//, '') || '',
+        }))
+      }
+
+      const relativeRoute: RouteRecordRaw = {
+        ...route,
+        path: relativePath,
+        ...(children ? { children } : {}),
+      }
+
+      if (!routeGroups.has(prefix)) {
+        routeGroups.set(prefix, [])
+      }
+      routeGroups.get(prefix)!.push(relativeRoute)
     }
 
-    const defaultPath = findFirstPath(dynamicRoutes) || '/system/userPage'
-
-    // 无论是否有动态路由，都注册 /system 路由
-    // 这样即使所有组件都加载失败，至少也有一个可用的路由
-    const layoutRoute: RouteRecordRaw = {
-      path: '/system',
-      component: Layout,
-      children: [
-        ...dynamicRoutes,
-        {
-          path: '',
-          redirect: defaultPath,
-        },
-      ],
+    // 为每个前缀创建 Layout 父路由
+    for (const [prefix, childRoutes] of routeGroups) {
+      router.addRoute({
+        path: prefix,
+        component: Layout,
+        children: childRoutes,
+      })
     }
-
-    router.addRoute(layoutRoute)
 
     dynamicRoutesLoaded = true
   } catch (error) {
     handleErrorSilent(error)
     console.error('加载动态菜单失败:', error)
   }
+}
+
+/**
+ * 将权限树转换为路由配置
+ * 数据库中的 path 已经是完整路径（如 /system/userPage），直接使用即可
+ */
+function convertPermissionToRoutes(permissions: PermissionTreeVo[]): RouteRecordRaw[] {
+  const routes: RouteRecordRaw[] = []
+
+  for (const permission of permissions) {
+    // 仅处理启用且可见的菜单
+    if (permission.status !== 1 || permission.visible !== 1) {
+      continue
+    }
+
+    // 菜单：有组件且有路径才生成路由
+    if (permission.permissionType === 'menu' && permission.component && permission.path) {
+      try {
+        // 处理子路由
+        const childRoutes = permission.children && permission.children.length > 0
+          ? convertPermissionToRoutes(permission.children)
+          : []
+
+        const componentLoader = loadComponent(permission.component)
+
+        routes.push({
+          path: permission.path, // 数据库已经是完整路径
+          name: permission.permissionCode || `route_${permission.id}`,
+          component: componentLoader,
+          meta: {
+            title: permission.permissionName,
+            icon: permission.icon,
+          },
+          ...(childRoutes.length > 0 ? { children: childRoutes } : {}),
+        })
+      } catch (error) {
+        console.warn(`[动态路由] 跳过路由 ${permission.path}，组件加载失败:`, error)
+        // 组件加载失败，继续处理子路由
+        if (permission.children && permission.children.length > 0) {
+          routes.push(...convertPermissionToRoutes(permission.children))
+        }
+      }
+    } else {
+      // 目录：继续处理子路由
+      if (permission.children && permission.children.length > 0) {
+        routes.push(...convertPermissionToRoutes(permission.children))
+      }
+    }
+  }
+
+  return routes
 }
 
 // 对外暴露，便于登录后主动加载动态路由
@@ -169,41 +199,6 @@ export async function ensureDynamicRoutesLoaded() {
 export function resetDynamicRoutesState() {
   dynamicRoutesLoaded = false
 }
-
-// 路由守卫：处理登录和动态路由加载
-router.beforeEach(async (to, _from, next) => {
-  const authStore = useAuthStore()
-  const menuStore = useMenuStore()
-  const isLoggedIn = !!authStore.accessToken || !!localStorage.getItem('accessToken')
-
-  // 未登录，清除菜单和动态路由状态，重定向到登录页
-  if (to.path !== '/login' && !isLoggedIn) {
-    menuStore.clearMenus()
-    dynamicRoutesLoaded = false
-    next('/login')
-    return
-  }
-
-  // 已登录，访问登录页，重定向到系统首页
-  if (to.path === '/login' && isLoggedIn) {
-    // 先加载动态路由，然后重定向
-    if (!dynamicRoutesLoaded) {
-      await loadDynamicRoutes()
-    }
-    next('/system')
-    return
-  }
-
-  // 已登录，加载动态路由
-  if (isLoggedIn && !dynamicRoutesLoaded) {
-    await loadDynamicRoutes()
-    // 动态路由加载后，重新导航到目标路由
-    next(to.fullPath)
-    return
-  }
-
-  next()
-})
 
 export default router
 

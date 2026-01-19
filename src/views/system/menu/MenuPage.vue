@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {MMSMessage} from '@/utils/base/message.ts'
 import {
   getPermissionTree,
   createPermission,
@@ -186,11 +186,9 @@ const handleEdit = (node: PermissionTreeVo) => {
 // 删除按钮
 const handleDelete = async (node: PermissionTreeVo) => {
   try {
-    await ElMessageBox.confirm(`确定要删除【${node.permissionName}】吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除【${node.permissionName}】吗？`)
     await deletePermission(node.id)
-    ElMessage.success('删除成功')
+    MMSMessage.success('删除成功')
     fetchTree()
   } catch (error) {
     if (error !== 'cancel') {
@@ -204,7 +202,7 @@ const handleToggleStatus = async (node: PermissionTreeVo) => {
   const targetStatus = node.status === 1 ? 0 : 1
   try {
     await switchPermissionStatus({ permissionId: node.id, status: targetStatus })
-    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchTree()
   } catch (error) {
     handleErrorToast(error)
@@ -215,21 +213,21 @@ const handleToggleStatus = async (node: PermissionTreeVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.permissionName) {
-      ElMessage.warning('请填写名称')
+      MMSMessage.warning('请填写名称')
       return
     }
     // 新建时编码必填，编辑时编码不是必填项
     if (!editingId.value && !form.permissionCode) {
-      ElMessage.warning('请填写编码')
+      MMSMessage.warning('请填写编码')
       return
     }
     if (form.permissionType === 'menu') {
       if (!form.path) {
-        ElMessage.warning('菜单类型必须填写路由路径')
+        MMSMessage.warning('菜单类型必须填写路由路径')
         return
       }
       if (!form.component) {
-        ElMessage.warning('菜单类型必须填写组件路径')
+        MMSMessage.warning('菜单类型必须填写组件路径')
         return
       }
     } else if (form.permissionType === 'catalog') {
@@ -259,10 +257,10 @@ const handleSubmit = async () => {
 
     if (editingId.value) {
       await updatePermission({ ...payload, id: editingId.value })
-      ElMessage.success('更新成功')
+      MMSMessage.success('更新成功')
     } else {
       await createPermission(payload)
-      ElMessage.success('创建成功')
+      MMSMessage.success('创建成功')
     }
 
     dialogVisible.value = false
@@ -295,16 +293,14 @@ const loadPermissionRoles = async (permissionId: number) => {
 const handleRemoveRole = async (role: RoleVo) => {
   if (!viewingPermissionId.value) return
   try {
-    await ElMessageBox.confirm(
-      `确定要将角色【${role.roleName || role.roleCode}】与权限【${viewingPermissionName.value}】解除关联吗？`,
-      '提示',
-      { type: 'warning' }
+    await MMSMessage.confirm(
+      `确定要将角色【${role.roleName || role.roleCode}】与权限【${viewingPermissionName.value}】解除关联吗？`
     )
     await removeRoleFromPermission({
       permissionId: viewingPermissionId.value,
       roleId: role.id,
     })
-    ElMessage.success('已解除关联')
+    MMSMessage.success('已解除关联')
     await loadPermissionRoles(viewingPermissionId.value)
   } catch (error) {
     if (error !== 'cancel') {

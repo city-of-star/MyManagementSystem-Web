@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {MMSMessage} from '@/utils/base/message.ts'
 import {
   assignUserRoles,
   batchDeleteUser,
@@ -76,12 +76,12 @@ const form = reactive({
 
 // 初始化
 onMounted(() => {
-  // 加载列表数据
-  fetchData()
   // 加载字典
   loadStatusDict()
   loadGenderDict()
   loadLockStatusDict()
+  // 加载列表数据
+  fetchData()
 })
 
 // 查询按钮
@@ -147,12 +147,12 @@ const handleEdit = (row: UserVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.username) {
-      ElMessage.warning('请填写用户名')
+      MMSMessage.warning('请填写用户名')
       return
     }
 
     if (!editingUserId.value && !form.password) {
-      ElMessage.warning('请填写密码')
+      MMSMessage.warning('请填写密码')
       return
     }
 
@@ -167,7 +167,7 @@ const handleSubmit = async () => {
         status: form.status,
         remark: form.remark || undefined,
       })
-      ElMessage.success('更新成功')
+      MMSMessage.success('更新成功')
     } else {
       await createUser({
         username: form.username,
@@ -179,7 +179,7 @@ const handleSubmit = async () => {
         status: form.status,
         remark: form.remark || undefined,
       })
-      ElMessage.success('创建成功')
+      MMSMessage.success('创建成功')
     }
     dialogVisible.value = false
     fetchData()
@@ -205,11 +205,9 @@ const resetForm = () => {
 // 删除按钮
 const handleDelete = async (row: UserVo) => {
   try {
-    await ElMessageBox.confirm(`确定要删除用户【${row.username}】吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除用户【${row.username}】吗？`)
     await deleteUser(row.id)
-    ElMessage.success('删除成功')
+    MMSMessage.success('删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -221,16 +219,14 @@ const handleDelete = async (row: UserVo) => {
 // 批量删除按钮
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的用户')
+    MMSMessage.info('请先选择要删除的用户')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个用户吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个用户吗？`)
     const ids = multipleSelection.value.map((u) => u.id)
     await batchDeleteUser(ids)
-    ElMessage.success('批量删除成功')
+    MMSMessage.success('批量删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -244,7 +240,7 @@ const handleToggleStatus = async (row: UserVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchUserStatus({ userId: row.id, status: targetStatus })
-    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -260,7 +256,7 @@ const handleToggleLock = async (row: UserVo) => {
       locked: targetLocked,
       lockReason: targetLocked === 1 ? '后台锁定' : undefined,
     })
-    ElMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
+    MMSMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -270,12 +266,10 @@ const handleToggleLock = async (row: UserVo) => {
 // 重置密码按钮
 const handleResetPassword = async (row: UserVo) => {
   try {
-    await ElMessageBox.confirm(`确定要重置用户【${row.username}】的密码吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要重置用户【${row.username}】的密码吗？`)
     // 简单演示：重置为固定密码；实际可弹窗输入新密码
     await resetUserPassword({ userId: row.id, newPassword: '123456' })
-    ElMessage.success('密码已重置为 123456')
+    MMSMessage.success('密码已重置为 123456')
   } catch (error) {
     if (error !== 'cancel') {
       handleErrorToast(error)
@@ -322,7 +316,7 @@ const loadUserRoles = async (userId: number) => {
 const handleSubmitRoles = async () => {
   if (!assigningUserId.value) return
   if (checkedRoleIds.value.length === 0) {
-    ElMessage.warning('请至少选择一个角色')
+    MMSMessage.warning('请至少选择一个角色')
     return
   }
   try {
@@ -330,7 +324,7 @@ const handleSubmitRoles = async () => {
       userId: assigningUserId.value,
       roleIds: checkedRoleIds.value,
     })
-    ElMessage.success('分配角色成功')
+    MMSMessage.success('分配角色成功')
     roleDialogVisible.value = false
   } catch (error) {
     handleErrorToast(error)

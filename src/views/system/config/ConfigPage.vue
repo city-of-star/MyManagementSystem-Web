@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {MMSMessage} from '@/utils/base/message.ts'
 import {
   getConfigPage,
   type ConfigVo,
@@ -135,11 +135,11 @@ const handleEdit = (row: ConfigVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.configKey) {
-      ElMessage.warning('请填写配置键')
+      MMSMessage.warning('请填写配置键')
       return
     }
     if (!form.configName) {
-      ElMessage.warning('请填写配置名称')
+      MMSMessage.warning('请填写配置名称')
       return
     }
 
@@ -154,7 +154,7 @@ const handleSubmit = async () => {
         editable: form.editable,
         remark: form.remark || undefined,
       })
-      ElMessage.success('更新成功')
+      MMSMessage.success('更新成功')
     } else {
       await createConfig({
         configKey: form.configKey,
@@ -165,7 +165,7 @@ const handleSubmit = async () => {
         editable: form.editable,
         remark: form.remark || undefined,
       })
-      ElMessage.success('创建成功')
+      MMSMessage.success('创建成功')
     }
     dialogVisible.value = false
     fetchData()
@@ -190,11 +190,9 @@ const resetForm = () => {
 // 删除按钮
 const handleDelete = async (row: ConfigVo) => {
   try {
-    await ElMessageBox.confirm(`确定要删除配置【${row.configKey}】吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除配置【${row.configKey}】吗？`)
     await deleteConfigApi(row.id)
-    ElMessage.success('删除成功')
+    MMSMessage.success('删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -206,16 +204,14 @@ const handleDelete = async (row: ConfigVo) => {
 // 批量删除按钮
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.info('请先选择要删除的配置')
+    MMSMessage.info('请先选择要删除的配置')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`, '提示', {
-      type: 'warning',
-    })
+    await MMSMessage.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`)
     const ids = multipleSelection.value.map((c) => c.id)
     await batchDeleteConfig({configIds: ids})
-    ElMessage.success('批量删除成功')
+    MMSMessage.success('批量删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -229,7 +225,7 @@ const handleToggleStatus = async (row: ConfigVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchConfigStatus({configId: row.id, status: targetStatus})
-    ElMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)

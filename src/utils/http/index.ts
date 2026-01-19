@@ -8,7 +8,7 @@
  * - instance.ts: Axios 实例创建和拦截器注册
  * - interceptors.ts: 所有拦截器逻辑（请求+响应+错误处理）
  * - token.ts: Token 刷新相关逻辑
- * - error.ts: UI 层错误处理（Toast、Modal）
+ * - error.ts: UI 层错误处理（Toast）
  * - client.ts: HTTP 请求方法封装（httpGet, httpPost 等）
  * - config.ts: 配置和常量
  * - types.ts: 类型定义和错误类
@@ -60,7 +60,6 @@ export {
   handleError,
   handleErrorSilent,
   handleErrorToast,
-  handleErrorModal,
   type ErrorHandlerOptions,
 } from './error'
 

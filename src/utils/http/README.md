@@ -30,7 +30,7 @@ http/
 **导出内容**：
 - `http`: Axios 实例
 - `httpGet`, `httpPost` 等请求方法
-- `handleErrorToast`, `handleErrorModal` 等错误处理方法
+- `handleErrorToast` 等错误处理方法
 - 类型定义和配置常量
 
 ### 2. `instance.ts` - Axios 实例
@@ -66,11 +66,10 @@ http/
 **优势**：所有 Token 相关逻辑集中在一个文件中，便于追踪和理解
 
 ### 5. `error.ts` - UI 层错误处理
-**作用**：UI 层错误处理（Toast、Modal 提示）
+**作用**：UI 层错误处理（Toast 提示）
 
 **提供方法**：
 - `handleErrorToast`: Toast 提示（默认方式）
-- `handleErrorModal`: 弹窗提示（关键操作）
 - `handleErrorSilent`: 静默处理（不显示提示）
 
 ### 6. `client.ts` - HTTP 请求方法
@@ -134,16 +133,13 @@ const result = await httpPost<CreateResult>(SERVICE.USERCENTER, '/users', {
 ### 方式3：错误处理
 
 ```typescript
-import { handleErrorToast, handleErrorModal } from '@/utils/http'
+import { handleErrorToast } from '@/utils/http'
 
 try {
   await httpPost(SERVICE.USERCENTER, '/users', data)
 } catch (error) {
   // Toast 提示（默认方式）
   handleErrorToast(error, '保存失败')
-  
-  // 或弹窗提示（关键操作）
-  handleErrorModal(error, '删除失败', '确定要删除吗？')
 }
 ```
 
