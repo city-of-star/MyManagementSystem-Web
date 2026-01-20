@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
-import {MMSMessage} from '@/utils/base/message.ts'
+import { onMounted, reactive, ref } from 'vue'
+import { Message } from '@/utils/base/messageUtils.ts'
 import {
   assignUserRoles,
   batchDeleteUser,
@@ -15,16 +15,20 @@ import {
   type UserPageQuery,
   type UserVo,
 } from '@/api/system/user/user.ts'
-import {type PageResult} from '@/api/common/types.ts'
-import {getRolePage, type RoleVo} from '@/api/system/role/role.ts'
-import {handleErrorToast} from '@/utils/http'
-import {useDict} from '@/utils/base/dictUtils.ts'
-import SearchForm from '@/components/SearchForm.vue'
-import DataTable from '@/components/DataTable.vue'
-import Pagination from '@/components/Pagination.vue'
-import Toolbar from '@/components/Toolbar.vue'
+import { type PageResult } from '@/api/common/types.ts'
+import { getRolePage, type RoleVo } from '@/api/system/role/role.ts'
+import { handleErrorToast } from '@/utils/http'
+import { useDict } from '@/utils/base/dictUtils.ts'
+import SearchForm from '@/components/layout/SearchForm.vue'
+import DataTable from '@/components/layout/DataTable.vue'
+import Pagination from '@/components/layout/Pagination.vue'
+import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
+import DictSelect from '@/components/dict/DictSelect.vue'
+import DictText from '@/components/dict/DictText.vue'
+import DictTag from '@/components/dict/DictTag.vue'
+import DateRangePicker from '@/components/datePicker/DateRangePicker.vue'
 
 // 查询条件
 const query = reactive<UserPageQuery>({
@@ -32,14 +36,20 @@ const query = reactive<UserPageQuery>({
   pageSize: 10,
   username: '',
   nickname: '',
+  realName: '',
+  email: '',
   phone: '',
   status: null,
+  locked: null,
+  gender: null,
+  createTimeStart: null,
+  createTimeEnd: null,
+  lastLoginTimeStart: null,
+  lastLoginTimeEnd: null,
 })
 
-// 字典：通用状态、性别、锁定状态
-const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
-const {findLabel: genderFindLabel, load: loadGenderDict} = useDict('user_gender')
-const {findLabel: lockStatusFindLabel, load: loadLockStatusDict} = useDict('user_lock_status')
+// 字典：通用状态（用于 tooltip 文案）
+const { findLabel: statusFindLabel, load: loadStatusDict } = useDict('common_status')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -68,6 +78,7 @@ const form = reactive({
   password: '',
   nickname: '',
   realName: '',
+  gender: null as number | null,
   email: '',
   phone: '',
   status: 1,
@@ -78,8 +89,6 @@ const form = reactive({
 onMounted(() => {
   // 加载字典
   loadStatusDict()
-  loadGenderDict()
-  loadLockStatusDict()
   // 加载列表数据
   fetchData()
 })
@@ -95,8 +104,16 @@ const handleReset = () => {
   query.pageNum = 1
   query.username = ''
   query.nickname = ''
+  query.realName = ''
+  query.email = ''
   query.phone = ''
   query.status = null
+  query.locked = null
+  query.gender = null
+  query.createTimeStart = null
+  query.createTimeEnd = null
+  query.lastLoginTimeStart = null
+  query.lastLoginTimeEnd = null
   fetchData()
 }
 
@@ -136,6 +153,7 @@ const handleEdit = (row: UserVo) => {
   form.username = row.username
   form.nickname = row.nickname || ''
   form.realName = row.realName || ''
+  form.gender = row.gender ?? null
   form.email = row.email || ''
   form.phone = row.phone || ''
   form.status = row.status ?? 1
@@ -147,12 +165,12 @@ const handleEdit = (row: UserVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.username) {
-      MMSMessage.warning('请填写用户名')
+      Message.warning('请填写用户名')
       return
     }
 
     if (!editingUserId.value && !form.password) {
-      MMSMessage.warning('请填写密码')
+      Message.warning('请填写密码')
       return
     }
 
@@ -162,24 +180,26 @@ const handleSubmit = async () => {
         username: form.username,
         nickname: form.nickname || undefined,
         realName: form.realName || undefined,
+        gender: form.gender ?? undefined,
         email: form.email || undefined,
         phone: form.phone || undefined,
         status: form.status,
         remark: form.remark || undefined,
       })
-      MMSMessage.success('更新成功')
+      Message.success('更新成功')
     } else {
       await createUser({
         username: form.username,
         password: form.password,
         nickname: form.nickname || undefined,
         realName: form.realName || undefined,
+        gender: form.gender ?? undefined,
         email: form.email || undefined,
         phone: form.phone || undefined,
         status: form.status,
         remark: form.remark || undefined,
       })
-      MMSMessage.success('创建成功')
+      Message.success('创建成功')
     }
     dialogVisible.value = false
     fetchData()
@@ -196,6 +216,7 @@ const resetForm = () => {
   form.password = ''
   form.nickname = ''
   form.realName = ''
+  form.gender = null
   form.email = ''
   form.phone = ''
   form.status = 1
@@ -205,9 +226,9 @@ const resetForm = () => {
 // 删除按钮
 const handleDelete = async (row: UserVo) => {
   try {
-    await MMSMessage.confirm(`确定要删除用户【${row.username}】吗？`)
+    await Message.confirm(`确定要删除用户【${row.username}】吗？`)
     await deleteUser(row.id)
-    MMSMessage.success('删除成功')
+    Message.success('删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -219,14 +240,14 @@ const handleDelete = async (row: UserVo) => {
 // 批量删除按钮
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    MMSMessage.info('请先选择要删除的用户')
+    Message.info('请先选择要删除的用户')
     return
   }
   try {
-    await MMSMessage.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个用户吗？`)
+    await Message.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个用户吗？`)
     const ids = multipleSelection.value.map((u) => u.id)
     await batchDeleteUser(ids)
-    MMSMessage.success('批量删除成功')
+    Message.success('批量删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -240,7 +261,7 @@ const handleToggleStatus = async (row: UserVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchUserStatus({ userId: row.id, status: targetStatus })
-    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -256,7 +277,7 @@ const handleToggleLock = async (row: UserVo) => {
       locked: targetLocked,
       lockReason: targetLocked === 1 ? '后台锁定' : undefined,
     })
-    MMSMessage.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
+    Message.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -266,10 +287,10 @@ const handleToggleLock = async (row: UserVo) => {
 // 重置密码按钮
 const handleResetPassword = async (row: UserVo) => {
   try {
-    await MMSMessage.confirm(`确定要重置用户【${row.username}】的密码吗？`)
+    await Message.confirm(`确定要重置用户【${row.username}】的密码吗？`)
     // 简单演示：重置为固定密码；实际可弹窗输入新密码
     await resetUserPassword({ userId: row.id, newPassword: '123456' })
-    MMSMessage.success('密码已重置为 123456')
+    Message.success('密码已重置为 123456')
   } catch (error) {
     if (error !== 'cancel') {
       handleErrorToast(error)
@@ -316,7 +337,7 @@ const loadUserRoles = async (userId: number) => {
 const handleSubmitRoles = async () => {
   if (!assigningUserId.value) return
   if (checkedRoleIds.value.length === 0) {
-    MMSMessage.warning('请至少选择一个角色')
+    Message.warning('请至少选择一个角色')
     return
   }
   try {
@@ -324,7 +345,7 @@ const handleSubmitRoles = async () => {
       userId: assigningUserId.value,
       roleIds: checkedRoleIds.value,
     })
-    MMSMessage.success('分配角色成功')
+    Message.success('分配角色成功')
     roleDialogVisible.value = false
   } catch (error) {
     handleErrorToast(error)
@@ -342,18 +363,37 @@ const handleSubmitRoles = async () => {
       <el-form-item label="昵称">
         <el-input v-model="query.nickname" placeholder="请输入昵称" clearable />
       </el-form-item>
+      <el-form-item label="真实姓名">
+        <el-input v-model="query.realName" placeholder="请输入真实姓名" clearable />
+      </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="query.email" placeholder="请输入邮箱" clearable />
+      </el-form-item>
       <el-form-item label="手机号">
         <el-input v-model="query.phone" placeholder="请输入手机号" clearable />
       </el-form-item>
+      <el-form-item label="性别">
+        <DictSelect dict-code="user_gender" v-model="query.gender" placeholder="全部" clearable />
+      </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in statusOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="Number(opt.value)"
-          />
-        </el-select>
+        <DictSelect dict-code="common_status" v-model="query.status" placeholder="全部" clearable />
+      </el-form-item>
+      <el-form-item label="锁定状态">
+        <DictSelect dict-code="user_lock_status" v-model="query.locked" placeholder="全部" clearable />
+      </el-form-item>
+      <el-form-item label="创建时间">
+        <DateRangePicker
+          v-model:start="query.createTimeStart"
+          v-model:end="query.createTimeEnd"
+          type="datetime"
+        />
+      </el-form-item>
+      <el-form-item label="最后登录时间">
+        <DateRangePicker
+          v-model:start="query.lastLoginTimeStart"
+          v-model:end="query.lastLoginTimeEnd"
+          type="datetime"
+        />
       </el-form-item>
     </SearchForm>
 
@@ -381,23 +421,27 @@ const handleSubmitRoles = async () => {
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
       <el-table-column prop="gender" label="性别" width="90">
         <template #default="{ row }">
-          {{ genderFindLabel(row.status) }}
+          <DictText dict-code="user_gender" :value="row.gender" />
         </template>
       </el-table-column>
       <el-table-column prop="phone" label="手机号" min-width="130" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ statusFindLabel(row.status) }}
-          </el-tag>
+          <DictTag
+            dict-code="common_status"
+            :value="row.status"
+            :type-map="{ '1': 'success', '0': 'info' }"
+          />
         </template>
       </el-table-column>
       <el-table-column label="锁定" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.locked === 1 ? 'danger' : 'success'">
-            {{ lockStatusFindLabel(row.status) }}
-          </el-tag>
+          <DictTag
+            dict-code="user_lock_status"
+            :value="row.locked"
+            :type-map="{ '1': 'danger', '0': 'success' }"
+          />
         </template>
       </el-table-column>
       <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
@@ -447,21 +491,21 @@ const handleSubmitRoles = async () => {
         <el-form-item label="真实姓名">
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
         </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        <el-form-item label="性别">
+          <DictSelect dict-code="user_gender" v-model="form.gender" placeholder="请选择性别" clearable />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status" style="width: 140px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
+        <el-form-item label="邮箱">
+          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="状态" v-if="!editingUserId">
+          <DictSelect
+            dict-code="common_status"
+            v-model="form.status"
+            style="width: 140px"
+          />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />

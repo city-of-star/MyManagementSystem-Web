@@ -15,6 +15,8 @@ export interface UserPageQuery {
   gender?: number | null
   createTimeStart?: string | null
   createTimeEnd?: string | null
+  lastLoginTimeStart?: string | null
+  lastLoginTimeEnd?: string | null
 }
 
 // 用户信息 VO（与后端 UserVo 字段对齐，时间字段统一用字符串）

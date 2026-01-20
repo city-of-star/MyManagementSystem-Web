@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref, nextTick} from 'vue'
-import {MMSMessage} from '@/utils/base/message.ts'
+import {Message} from '@/utils/base/messageUtils.ts'
 import type {ElTree} from 'element-plus'
 import {
   assignRolePermissions,
@@ -21,10 +21,10 @@ import type {UserVo} from '@/api/system/user/user'
 import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
 import {handleErrorToast} from '@/utils/http'
 import {useDict} from '@/utils/base/dictUtils.ts'
-import SearchForm from '@/components/SearchForm.vue'
-import DataTable from '@/components/DataTable.vue'
-import Pagination from '@/components/Pagination.vue'
-import Toolbar from '@/components/Toolbar.vue'
+import SearchForm from '@/components/layout/SearchForm.vue'
+import DataTable from '@/components/layout/DataTable.vue'
+import Pagination from '@/components/layout/Pagination.vue'
+import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
@@ -151,11 +151,11 @@ const handleEdit = (row: RoleVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.roleCode) {
-      MMSMessage.warning('请填写角色编码')
+      Message.warning('请填写角色编码')
       return
     }
     if (!form.roleName) {
-      MMSMessage.warning('请填写角色名称')
+      Message.warning('请填写角色名称')
       return
     }
 
@@ -169,7 +169,7 @@ const handleSubmit = async () => {
         status: form.status,
         remark: form.remark || undefined,
       })
-      MMSMessage.success('更新成功')
+      Message.success('更新成功')
     } else {
       await createRole({
         roleCode: form.roleCode,
@@ -179,7 +179,7 @@ const handleSubmit = async () => {
         status: form.status,
         remark: form.remark || undefined,
       })
-      MMSMessage.success('创建成功')
+      Message.success('创建成功')
     }
     dialogVisible.value = false
     fetchData()
@@ -203,9 +203,9 @@ const resetForm = () => {
 // 删除按钮
 const handleDelete = async (row: RoleVo) => {
   try {
-    await MMSMessage.confirm(`确定要删除角色【${row.roleName || row.roleCode}】吗？`)
+    await Message.confirm(`确定要删除角色【${row.roleName || row.roleCode}】吗？`)
     await deleteRole(row.id)
-    MMSMessage.success('删除成功')
+    Message.success('删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -217,14 +217,14 @@ const handleDelete = async (row: RoleVo) => {
 // 批量删除按钮
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    MMSMessage.info('请先选择要删除的角色')
+    Message.info('请先选择要删除的角色')
     return
   }
   try {
-    await MMSMessage.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`)
+    await Message.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`)
     const ids = multipleSelection.value.map((r) => r.id)
     await batchDeleteRole({roleIds: ids})
-    MMSMessage.success('批量删除成功')
+    Message.success('批量删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -238,7 +238,7 @@ const handleToggleStatus = async (row: RoleVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchRoleStatus({roleId: row.id, status: targetStatus})
-    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)
@@ -315,7 +315,7 @@ const handleSubmitPermissions = async () => {
   const allPermissionIds = [...new Set([...checkedKeys, ...halfCheckedKeys])]
 
   if (allPermissionIds.length === 0) {
-    MMSMessage.warning('请至少选择一个权限')
+    Message.warning('请至少选择一个权限')
     return
   }
 
@@ -324,7 +324,7 @@ const handleSubmitPermissions = async () => {
       roleId: assigningRoleId.value,
       permissionIds: allPermissionIds,
     })
-    MMSMessage.success('分配权限成功')
+    Message.success('分配权限成功')
     permissionDialogVisible.value = false
   } catch (error) {
     handleErrorToast(error)
@@ -355,14 +355,14 @@ const loadRoleUsers = async (roleId: number) => {
 const handleRemoveUser = async (user: UserVo) => {
   if (!viewingRoleId.value) return
   try {
-    await MMSMessage.confirm(
+    await Message.confirm(
       `确定要从角色【${viewingRoleName.value}】中移除用户【${user.username || user.realName || user.nickname}】吗？`
     )
     await removeUserFromRole({
       roleId: viewingRoleId.value,
       userId: user.id,
     })
-    MMSMessage.success('移除成功')
+    Message.success('移除成功')
     await loadRoleUsers(viewingRoleId.value)
   } catch (error) {
     if (error !== 'cancel') {

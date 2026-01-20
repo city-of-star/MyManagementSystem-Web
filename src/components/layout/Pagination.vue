@@ -15,7 +15,7 @@
   <Pagination :query="query" :total="total" @change="fetchData" />
 -->
 <script setup lang="ts">
-import type { BasePageQuery } from '@/api/common/types'
+import type { BasePageQuery } from '@/api/common/types.ts'
 
 const props = withDefaults(defineProps<{
   total: number // 总记录数

@@ -6,11 +6,11 @@
   - 通过 v-model 把选中的图标名称回传给父组件
 
   使用示例：
-  <IconPicker v-model="form.icon" />
+  <IconPicker v-model="datePicker.icon" />
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { iconMap, iconOptions, type IconName } from '@/assets/icon/icons'
+import { iconMap, iconOptions, type IconName } from '@/assets/icon/icons.ts'
 
 const props = withDefaults(
   defineProps<{

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
-import {MMSMessage} from '@/utils/base/message.ts'
+import {Message} from '@/utils/base/messageUtils.ts'
 import {
   getConfigPage,
   type ConfigVo,
@@ -14,10 +14,10 @@ import {
 import {type PageResult} from '@/api/common/types.ts'
 import {handleErrorToast} from '@/utils/http'
 import {useDict} from '@/utils/base/dictUtils.ts'
-import SearchForm from '@/components/SearchForm.vue'
-import DataTable from '@/components/DataTable.vue'
-import Pagination from '@/components/Pagination.vue'
-import Toolbar from '@/components/Toolbar.vue'
+import SearchForm from '@/components/layout/SearchForm.vue'
+import DataTable from '@/components/layout/DataTable.vue'
+import Pagination from '@/components/layout/Pagination.vue'
+import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
@@ -135,11 +135,11 @@ const handleEdit = (row: ConfigVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.configKey) {
-      MMSMessage.warning('请填写配置键')
+      Message.warning('请填写配置键')
       return
     }
     if (!form.configName) {
-      MMSMessage.warning('请填写配置名称')
+      Message.warning('请填写配置名称')
       return
     }
 
@@ -154,7 +154,7 @@ const handleSubmit = async () => {
         editable: form.editable,
         remark: form.remark || undefined,
       })
-      MMSMessage.success('更新成功')
+      Message.success('更新成功')
     } else {
       await createConfig({
         configKey: form.configKey,
@@ -165,7 +165,7 @@ const handleSubmit = async () => {
         editable: form.editable,
         remark: form.remark || undefined,
       })
-      MMSMessage.success('创建成功')
+      Message.success('创建成功')
     }
     dialogVisible.value = false
     fetchData()
@@ -190,9 +190,9 @@ const resetForm = () => {
 // 删除按钮
 const handleDelete = async (row: ConfigVo) => {
   try {
-    await MMSMessage.confirm(`确定要删除配置【${row.configKey}】吗？`)
+    await Message.confirm(`确定要删除配置【${row.configKey}】吗？`)
     await deleteConfigApi(row.id)
-    MMSMessage.success('删除成功')
+    Message.success('删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -204,14 +204,14 @@ const handleDelete = async (row: ConfigVo) => {
 // 批量删除按钮
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    MMSMessage.info('请先选择要删除的配置')
+    Message.info('请先选择要删除的配置')
     return
   }
   try {
-    await MMSMessage.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`)
+    await Message.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`)
     const ids = multipleSelection.value.map((c) => c.id)
     await batchDeleteConfig({configIds: ids})
-    MMSMessage.success('批量删除成功')
+    Message.success('批量删除成功')
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -225,7 +225,7 @@ const handleToggleStatus = async (row: ConfigVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchConfigStatus({configId: row.id, status: targetStatus})
-    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
     handleErrorToast(error)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref, watch} from 'vue'
-import {MMSMessage} from '@/utils/base/message.ts'
+import {Message} from '@/utils/base/messageUtils.ts'
 import {
   batchDeleteDictData,
   createDictData,
@@ -29,10 +29,10 @@ import {
 import {type PageResult} from '@/api/common/types.ts'
 import {handleErrorToast} from '@/utils/http'
 import {clearDictCache, useDict} from '@/utils/base/dictUtils.ts'
-import SearchForm from '@/components/SearchForm.vue'
-import DataTable from '@/components/DataTable.vue'
-import Pagination from '@/components/Pagination.vue'
-import Toolbar from '@/components/Toolbar.vue'
+import SearchForm from '@/components/layout/SearchForm.vue'
+import DataTable from '@/components/layout/DataTable.vue'
+import Pagination from '@/components/layout/Pagination.vue'
+import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 
@@ -166,9 +166,9 @@ const handleTypeEdit = (row: DictTypeVo) => {
 // 删除按钮
 const handleTypeDelete = async (row: DictTypeVo) => {
   try {
-    await MMSMessage.confirm(`确定要删除字典类型【${row.dictTypeName || row.dictTypeCode}】吗？`)
+    await Message.confirm(`确定要删除字典类型【${row.dictTypeName || row.dictTypeCode}】吗？`)
     await deleteDictType(row.id)
-    MMSMessage.success('删除成功')
+    Message.success('删除成功')
     // 清除对应字典类型的缓存
     clearDictCache(row.dictTypeCode)
     if (currentTypeId.value === row.id) {
@@ -185,18 +185,18 @@ const handleTypeDelete = async (row: DictTypeVo) => {
 // 批量删除按钮
 const handleTypeBatchDelete = async () => {
   if (!typeMultipleSelection.value.length) {
-    MMSMessage.info('请先选择要删除的字典类型')
+    Message.info('请先选择要删除的字典类型')
     return
   }
   try {
-    await MMSMessage.confirm(
+    await Message.confirm(
       `确定要删除选中的 ${typeMultipleSelection.value.length} 个字典类型吗？（会同时影响其下字典数据）`
     )
     const ids = typeMultipleSelection.value.map((t) => t.id)
     // 保存要删除的字典类型编码，用于清除缓存
     const dictTypeCodes = typeMultipleSelection.value.map((t) => t.dictTypeCode)
     await batchDeleteDictType({ dictTypeIds: ids })
-    MMSMessage.success('批量删除成功')
+    Message.success('批量删除成功')
     // 清除所有被删除字典类型的缓存
     dictTypeCodes.forEach((code) => clearDictCache(code))
     if (currentTypeId.value && ids.includes(currentTypeId.value)) {
@@ -215,7 +215,7 @@ const handleTypeToggleStatus = async (row: DictTypeVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchDictTypeStatus({ dictTypeId: row.id, status: targetStatus })
-    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     // 清除对应字典类型的缓存（状态变更可能影响字典数据的可用性）
     clearDictCache(row.dictTypeCode)
     fetchTypeData()
@@ -229,11 +229,11 @@ const handleTypeSubmit = async () => {
   try {
     // 新增时验证编码，编辑时编码不可修改，不需要验证
     if (!editingTypeId.value && !typeForm.dictTypeCode) {
-      MMSMessage.warning('请填写字典类型编码')
+      Message.warning('请填写字典类型编码')
       return
     }
     if (!typeForm.dictTypeName) {
-      MMSMessage.warning('请填写字典类型名称')
+      Message.warning('请填写字典类型名称')
       return
     }
 
@@ -243,7 +243,7 @@ const handleTypeSubmit = async () => {
       const dictTypeCode = oldType?.dictTypeCode
 
       if (!dictTypeCode) {
-        MMSMessage.error('无法获取字典类型编码')
+        Message.error('无法获取字典类型编码')
         return
       }
 
@@ -256,7 +256,7 @@ const handleTypeSubmit = async () => {
         remark: typeForm.remark || undefined,
       }
       await updateDictType(payload)
-      MMSMessage.success('更新成功')
+      Message.success('更新成功')
 
       // 清除对应字典类型的缓存（编码不会改变，直接清除当前编码的缓存）
       clearDictCache(dictTypeCode)
@@ -269,7 +269,7 @@ const handleTypeSubmit = async () => {
         remark: typeForm.remark || undefined,
       }
       await createDictType(payload)
-      MMSMessage.success('创建成功')
+      Message.success('创建成功')
       // 新增不需要清除缓存（之前没有这个字典的缓存）
     }
     typeDialogVisible.value = false
@@ -385,7 +385,7 @@ const handleDataSelectionChange = (rows: DictDataVo[]) => {
 // 新建按钮
 const handleDataCreate = () => {
   if (!currentTypeId.value) {
-    MMSMessage.warning('请先选择左侧字典类型')
+    Message.warning('请先选择左侧字典类型')
     return
   }
   resetDataForm()
@@ -396,7 +396,7 @@ const handleDataCreate = () => {
 // 编辑按钮
 const handleDataEdit = (row: DictDataVo) => {
   if (!currentTypeId.value) {
-    MMSMessage.warning('请先选择左侧字典类型')
+    Message.warning('请先选择左侧字典类型')
     return
   }
   resetDataForm()
@@ -415,9 +415,9 @@ const handleDataEdit = (row: DictDataVo) => {
 // 删除按钮
 const handleDataDelete = async (row: DictDataVo) => {
   try {
-    await MMSMessage.confirm(`确定要删除字典数据【${row.dictLabel}】吗？`)
+    await Message.confirm(`确定要删除字典数据【${row.dictLabel}】吗？`)
     await deleteDictData(row.id)
-    MMSMessage.success('删除成功')
+    Message.success('删除成功')
     // 清除对应字典类型的缓存
     if (row.dictTypeCode) {
       clearDictCache(row.dictTypeCode)
@@ -433,18 +433,18 @@ const handleDataDelete = async (row: DictDataVo) => {
 // 批量删除按钮
 const handleDataBatchDelete = async () => {
   if (!dataMultipleSelection.value.length) {
-    MMSMessage.info('请先选择要删除的字典数据')
+    Message.info('请先选择要删除的字典数据')
     return
   }
   try {
-    await MMSMessage.confirm(`确定要删除选中的 ${dataMultipleSelection.value.length} 条字典数据吗？`)
+    await Message.confirm(`确定要删除选中的 ${dataMultipleSelection.value.length} 条字典数据吗？`)
     const ids = dataMultipleSelection.value.map((d) => d.id)
     // 保存要删除的字典类型编码，用于清除缓存
     const dictTypeCodes = dataMultipleSelection.value
       .map((d) => d.dictTypeCode)
       .filter((code): code is string => !!code)
     await batchDeleteDictData({ dictDataIds: ids })
-    MMSMessage.success('批量删除成功')
+    Message.success('批量删除成功')
     // 清除所有被删除字典数据对应的字典类型缓存（去重）
     const uniqueDictTypeCodes = [...new Set(dictTypeCodes)]
     uniqueDictTypeCodes.forEach((code) => clearDictCache(code))
@@ -461,7 +461,7 @@ const handleDataToggleStatus = async (row: DictDataVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchDictDataStatus({ dictDataId: row.id, status: targetStatus })
-    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     // 清除对应字典类型的缓存（状态变更影响过滤结果，只显示启用的）
     if (row.dictTypeCode) {
       clearDictCache(row.dictTypeCode)
@@ -477,15 +477,15 @@ const handleDataSubmit = async () => {
   try {
     // 使用当前选择的字典类型
     if (!currentTypeId.value) {
-      MMSMessage.warning('请先选择左侧字典类型')
+      Message.warning('请先选择左侧字典类型')
       return
     }
     if (!dataForm.dictLabel) {
-      MMSMessage.warning('请填写字典标签')
+      Message.warning('请填写字典标签')
       return
     }
     if (!dataForm.dictValue) {
-      MMSMessage.warning('请填写字典值')
+      Message.warning('请填写字典值')
       return
     }
 
@@ -515,7 +515,7 @@ const handleDataSubmit = async () => {
         remark: dataForm.remark || undefined,
       }
       await updateDictData(payload)
-      MMSMessage.success('更新成功')
+      Message.success('更新成功')
 
       // 清除缓存：如果类型改变了，清除旧的；无论如何都清除新的
       if (oldDictTypeCode && oldDictTypeCode !== dictTypeCode) {
@@ -535,7 +535,7 @@ const handleDataSubmit = async () => {
         remark: dataForm.remark || undefined,
       }
       await createDictData(payload)
-      MMSMessage.success('创建成功')
+      Message.success('创建成功')
       // 新增时也清除缓存，确保下次获取最新数据（包含新增的数据）
       if (dictTypeCode) {
         clearDictCache(dictTypeCode)

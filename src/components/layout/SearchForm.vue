@@ -65,7 +65,7 @@ const handleReset = () => {
 
 /* 统一表单项内容区域的宽度 */
 .search-card :deep(.el-form-item__content) {
-  width: 200px;
+  width: 220px;
 }
 
 /* 所有表单控件占满内容区域，确保宽度一致 */

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { MMSMessage } from '@/utils/base/message.ts'
+import { Message } from '@/utils/base/messageUtils.ts'
 import {
   getPermissionTree,
   createPermission,
@@ -14,11 +14,11 @@ import {
 import type { RoleVo } from '@/api/system/role/role'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
-import SearchForm from '@/components/SearchForm.vue'
-import Toolbar from '@/components/Toolbar.vue'
+import SearchForm from '@/components/layout/SearchForm.vue'
+import Toolbar from '@/components/layout/Toolbar.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import IconButton from '@/components/button/IconButton.vue'
-import IconPicker from '@/components/IconPicker.vue'
+import IconPicker from '@/components/icon/IconPicker.vue'
 import { iconMap, type IconName } from '@/assets/icon/icons'
 
 // 查询条件
@@ -197,9 +197,9 @@ const handleEdit = (node: PermissionTreeVo) => {
 // 删除按钮
 const handleDelete = async (node: PermissionTreeVo) => {
   try {
-    await MMSMessage.confirm(`确定要删除【${node.permissionName}】吗？`)
+    await Message.confirm(`确定要删除【${node.permissionName}】吗？`)
     await deletePermission(node.id)
-    MMSMessage.success('删除成功')
+    Message.success('删除成功')
     fetchTree()
   } catch (error) {
     if (error !== 'cancel') {
@@ -213,7 +213,7 @@ const handleToggleStatus = async (node: PermissionTreeVo) => {
   const targetStatus = node.status === 1 ? 0 : 1
   try {
     await switchPermissionStatus({ permissionId: node.id, status: targetStatus })
-    MMSMessage.success(targetStatus === 1 ? '已启用' : '已禁用')
+    Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchTree()
   } catch (error) {
     handleErrorToast(error)
@@ -224,21 +224,21 @@ const handleToggleStatus = async (node: PermissionTreeVo) => {
 const handleSubmit = async () => {
   try {
     if (!form.permissionName) {
-      MMSMessage.warning('请填写名称')
+      Message.warning('请填写名称')
       return
     }
     // 新建时编码必填，编辑时编码不是必填项
     if (!editingId.value && !form.permissionCode) {
-      MMSMessage.warning('请填写编码')
+      Message.warning('请填写编码')
       return
     }
     if (form.permissionType === 'menu') {
       if (!form.path) {
-        MMSMessage.warning('菜单类型必须填写路由路径')
+        Message.warning('菜单类型必须填写路由路径')
         return
       }
       if (!form.component) {
-        MMSMessage.warning('菜单类型必须填写组件路径')
+        Message.warning('菜单类型必须填写组件路径')
         return
       }
     } else if (form.permissionType === 'catalog') {
@@ -268,10 +268,10 @@ const handleSubmit = async () => {
 
     if (editingId.value) {
       await updatePermission({ ...payload, id: editingId.value })
-      MMSMessage.success('更新成功')
+      Message.success('更新成功')
     } else {
       await createPermission(payload)
-      MMSMessage.success('创建成功')
+      Message.success('创建成功')
     }
 
     dialogVisible.value = false
@@ -304,14 +304,14 @@ const loadPermissionRoles = async (permissionId: number) => {
 const handleRemoveRole = async (role: RoleVo) => {
   if (!viewingPermissionId.value) return
   try {
-    await MMSMessage.confirm(
+    await Message.confirm(
       `确定要将角色【${role.roleName || role.roleCode}】与权限【${viewingPermissionName.value}】解除关联吗？`
     )
     await removeRoleFromPermission({
       permissionId: viewingPermissionId.value,
       roleId: role.id,
     })
-    MMSMessage.success('已解除关联')
+    Message.success('已解除关联')
     await loadPermissionRoles(viewingPermissionId.value)
   } catch (error) {
     if (error !== 'cancel') {
@@ -326,16 +326,6 @@ const handleRemoveRole = async (role: RoleVo) => {
   <div class="menu-page">
     <!-- 查询区域 -->
     <SearchForm @search="handleSearch" @reset="handleReset">
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in statusOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="Number(opt.value)"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item label="显示状态">
         <el-select v-model="query.visible" placeholder="全部" clearable >
           <el-option
@@ -343,6 +333,16 @@ const handleRemoveRole = async (role: RoleVo) => {
             :key="opt.value"
             :label="opt.label"
             :value="Number(opt.value)"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="启用状态">
+        <el-select v-model="query.status" placeholder="全部" clearable >
+          <el-option
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="Number(opt.value)"
           />
         </el-select>
       </el-form-item>
@@ -404,16 +404,6 @@ const handleRemoveRole = async (role: RoleVo) => {
           <span>{{ row.component || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="icon" label="图标" width="100">
-        <template #default="{ row }">
-          <component
-            v-if="row.icon && iconMap[row.icon]"
-            :is="iconMap[row.icon]"
-            class="icon-display"
-          />
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="80" />
       <el-table-column prop="visible" label="显示状态" width="100">
         <template #default="{ row }">
@@ -422,7 +412,7 @@ const handleRemoveRole = async (role: RoleVo) => {
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column prop="status" label="启用状态" width="100">
         <template #default="{ row }">
           <el-tag size="small" :type="row.status === 1 ? 'success' : 'info'">
             {{ statusFindLabel(row.status) }}
@@ -645,17 +635,12 @@ const handleRemoveRole = async (role: RoleVo) => {
 
 .code-text {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: 600;
   color: #606266;
   background: #f5f7fa;
   padding: 2px 6px;
   border-radius: 4px;
-}
-
-.icon-display {
-  width: 18px;
-  height: 18px;
-  color: #409eff;
 }
 
 .action-buttons {

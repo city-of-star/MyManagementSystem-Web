@@ -3,7 +3,7 @@
  *
  * 统一管理业务消息提示，与错误处理（error.ts）分离
  * - error.ts：专门处理 HTTP 请求错误
- * - message.ts：专门处理业务操作的成功/警告/信息提示
+ * - messageUtils.ts：专门处理业务操作的成功/警告/信息提示
  *
  * 使用示例：
  * - 成功提示：message.success('操作成功')
@@ -98,7 +98,7 @@ export function showConfirm(
  * 统一的消息工具对象
  * 提供更简洁的 API
  */
-export const MMSMessage = {
+export const Message = {
   success: showSuccess,
   warning: showWarning,
   info: showInfo,

@@ -22,7 +22,7 @@
  *   }
  */
 
-import { MMSMessage } from '@/utils/base/message.ts'
+import { Message } from '@/utils/base/messageUtils.ts'
 import { BusinessError, NetworkError } from './types'
 
 /**
@@ -84,7 +84,7 @@ export function handleError(
 
   // Toast 提示
   if (opts.showToast) {
-    MMSMessage.error(errorMessage)
+    Message.error(errorMessage)
     return errorMessage
   }
 
