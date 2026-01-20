@@ -1,11 +1,12 @@
 import type { PermissionTreeVo } from '@/api/system/permission/permission.ts'
 import type { MenuItem } from "@/store/menu/menu.ts";
+import type {RouteRecordRaw} from "vue-router";
 
 /**
  * 将后端权限树转换为前端菜单项
  */
-export function convertPermissionToMenu(permissions: PermissionTreeVo[]): MenuItem[] {
-  return permissions
+export function convertPermissionToMenu(permissionTree: PermissionTreeVo[]): MenuItem[] {
+  return permissionTree
     .map(p => ({
       label: p.permissionName,
       icon: p.icon,
@@ -15,9 +16,55 @@ export function convertPermissionToMenu(permissions: PermissionTreeVo[]): MenuIt
 }
 
 /**
+ * 将后端权限树转换为 Map 结构（键->父路由路径，值->子路由）
+ */
+export function convertPermissionToMap(permissionTree: PermissionTreeVo[]): Map<string, RouteRecordRaw[]> {
+    // 定义 Map
+    const routeGroups = new Map<string, RouteRecordRaw[]>()
+
+    // 递归调用
+    function processPermissions(permissions: PermissionTreeVo[]) {
+        for (const p of permissions) {
+            // 只处理菜单类型的权限
+            if (p.permissionType === 'menu' && p.path && p.component) {
+                try {
+                    // 提取前缀：/system/userPage -> /system
+                    const prefix = '/' + p.path.split('/')[1]
+                    // 相对路径：/system/userPage -> userPage
+                    const relativePath = p.path.replace(prefix, '').replace(/^\//, '') || ''
+
+                    // 创建路由
+                    const route: RouteRecordRaw = {
+                        path: relativePath,
+                        name: p.permissionCode || `route_${p.id}`,
+                        component: loadComponent(p.component),
+                        meta: { title: p.permissionName, icon: p.icon },
+                    }
+
+                    // 根据菜单路径的前缀来设置父路由的路径
+                    if (!routeGroups.has(prefix)) {
+                        routeGroups.set(prefix, [])
+                    }
+                    routeGroups.get(prefix)!.push(route)
+                } catch (error) {
+                    console.warn(error)
+                }
+            }
+
+            // 递归处理子节点
+            if (p.children) processPermissions(p.children)
+        }
+    }
+
+    // 执行递归
+    processPermissions(permissionTree)
+
+    return routeGroups
+}
+
+/**
  * 根据组件路径动态导入组件
  * component 格式: "/system/user/UserPage.vue" 或 "/system/user/UserPage"
- * 支持大小写不敏感匹配
  */
 export function loadComponent(component: string) {
 

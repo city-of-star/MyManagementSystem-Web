@@ -5,27 +5,24 @@ import { type MenuItem, useMenuStore } from "@/store/menu/menu.ts";
 import { iconMap } from '@/assets/icon/icons'
 
 const route = useRoute()
+
+// 存储展开的菜单项（使用 Set 保证唯一性）
 const expandedMenus = ref<Set<string>>(new Set())
 
-// 使用动态菜单
+// 获取菜单数据
 const menuStore = useMenuStore()
 const menus = computed(() => menuStore.menus)
 
-// 检查路径是否匹配（包括子路径）
+// 检查当前路由是否匹配菜单路径
 const isActive = (path?: string): boolean => {
   if (!path) return false
-  return route.path === path || route.path.startsWith(path + '/')
+  return route.path === path
 }
 
-// 检查菜单项或其子项是否激活
-const isMenuActive = (menu: MenuItem): boolean => {
-  if (menu.path && isActive(menu.path)) {
-    return true
-  }
-  if (menu.children) {
-    return menu.children.some(child => isMenuActive(child))
-  }
-  return false
+// 检查目录是否激活（目录下有菜单被激活）
+const isFolderActive = (menu: MenuItem): boolean => {
+  if (!menu.children) return false
+  return menu.children.some(child => child.path && isActive(child.path))
 }
 
 // 切换菜单展开/折叠
@@ -37,10 +34,10 @@ const toggleMenu = (label: string) => {
   }
 }
 
-// 初始化时展开包含当前路由的菜单
+// 初始化时展开包含当前路由的目录
 const initExpandedMenus = () => {
   menus.value.forEach(menu => {
-    if (menu.children && isMenuActive(menu)) {
+    if (menu.children && isFolderActive(menu)) {
       expandedMenus.value.add(menu.label)
     }
   })
@@ -48,11 +45,10 @@ const initExpandedMenus = () => {
 
 initExpandedMenus()
 
-// 解析菜单 icon，大小写不敏感；不匹配则不显示
+// 解析菜单 icon，不匹配则不显示
 const resolveIcon = (icon?: string) => {
   if (!icon) return null
-  const entry = Object.entries(iconMap).find(([key]) => key.toLowerCase() === icon.toLowerCase())
-  return entry ? entry[1] : null
+  return iconMap[icon as keyof typeof iconMap] || null
 }
 </script>
 
@@ -69,7 +65,7 @@ const resolveIcon = (icon?: string) => {
           v-if="menu.children"
           class="menu-folder"
           :class="{
-            active: isMenuActive(menu),
+            active: isFolderActive(menu),
             expanded: expandedMenus.has(menu.label)
           }"
           @click="toggleMenu(menu.label)"

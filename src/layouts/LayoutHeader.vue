@@ -11,6 +11,7 @@ const authStore = useAuthStore()
 const menuStore = useMenuStore()
 const tabsStore = useTabsStore()
 
+// 退出按钮
 const handleLogout = async () => {
   const refreshToken = authStore.refreshToken || localStorage.getItem('refreshToken')
 
@@ -21,9 +22,11 @@ const handleLogout = async () => {
   } catch (error) {
     handleErrorSilent(error)
   } finally {
+    // 清除相关数据
     authStore.clearTokens()
     menuStore.clearMenus()
     tabsStore.closeAllTabs()
+    // 重置路由状态
     resetDynamicRoutesState()
     await router.push('/login')
   }

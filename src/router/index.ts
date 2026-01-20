@@ -3,9 +3,9 @@ import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
-import { convertPermissionToMenu, loadComponent } from '@/utils/menu/menuUtils'
+import { convertPermissionToMenu, convertPermissionToMap} from '@/utils/menu/menuUtils'
 import { handleErrorSilent } from '@/utils/http'
-import {getCurrentUserPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
+import {getCurrentUserPermissionTree} from '@/api/system/permission/permission.ts'
 
 // 基础路由（不需要权限）
 const baseRoutes: RouteRecordRaw[] = [
@@ -73,48 +73,12 @@ async function loadDynamicRoutes() {
     // 获取权限树（后端已固定返回启用、可见、目录或菜单类型的权限）
     const permissionTree = await getCurrentUserPermissionTree()
 
-    // 转换为菜单（用于侧边栏）
+    // 转换为菜单（保存到 pinia）
     const menuStore = useMenuStore()
     menuStore.setMenus(convertPermissionToMenu(permissionTree))
 
-    // 定义 Map（键->父路由路径，值->子路由）
-    const routeGroups = new Map<string, RouteRecordRaw[]>()
-
-    // 将权限树转换成 Map 结构
-    function processPermissions(permissions: PermissionTreeVo[]) {
-      for (const p of permissions) {
-        // 只处理菜单类型的权限
-        if (p.permissionType === 'menu' && p.path && p.component) {
-          try {
-            // 提取前缀：/system/userPage -> /system
-            const prefix = '/' + p.path.split('/')[1]
-            // 相对路径：/system/userPage -> userPage
-            const relativePath = p.path.replace(prefix, '').replace(/^\//, '') || ''
-
-            // 创建路由
-            const route: RouteRecordRaw = {
-              path: relativePath,
-              name: p.permissionCode || `route_${p.id}`,
-              component: loadComponent(p.component),
-              meta: { title: p.permissionName, icon: p.icon },
-            }
-
-            // 根据菜单路径的前缀来设置父路由的路径
-            if (!routeGroups.has(prefix)) {
-              routeGroups.set(prefix, [])
-            }
-            routeGroups.get(prefix)!.push(route)
-          } catch (error) {
-            console.warn(error)
-          }
-        }
-
-        // 递归处理子节点
-        if (p.children) processPermissions(p.children)
-      }
-    }
-
-    processPermissions(permissionTree)
+    // 转换为 Map（键->父路由路径，值->子路由），用于构建路由
+    const routeGroups = convertPermissionToMap(permissionTree)
 
     // 注册路由（prefix为父路由路径，routes为子路由）
     for (const [prefix, routes] of routeGroups) {
