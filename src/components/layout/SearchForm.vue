@@ -38,7 +38,7 @@ const handleReset = () => {
 
 <template>
   <div class="search-card">
-    <el-form :inline="true" label-width="120px" class="search-form">
+    <el-form :inline="true" label-width="110px" class="search-form">
       <slot />
     </el-form>
     <!-- 分隔线 -->

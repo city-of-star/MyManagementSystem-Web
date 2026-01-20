@@ -23,6 +23,9 @@ import { iconMap, type IconName } from '@/assets/icon/icons'
 
 // 查询条件
 const query = reactive({
+  permissionName: '',
+  permissionCode: '',
+  permissionType: null as string | null,
   status: null as number | null,
   visible: null as number | null,
 })
@@ -30,10 +33,12 @@ const query = reactive({
 // 字典：通用状态、菜单显示状态
 const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
 const {options: visibleOptions, findLabel: visibleFindLabel, load: loadVisibleDict} = useDict('menu_visible')
+const {options: typeOptions, findLabel: typeFindLabel, load: loadTypeDict} = useDict('permission_type')
 
 // 列表
 const loading = ref(false)
 const treeData = ref<PermissionTreeVo[]>([])
+const defaultExpandKeys = ref<(number | string)[]>([]) // 进入页面默认展开的一级目录
 
 // 表格样式（与DataTable保持一致）
 const headerCellStyle = {
@@ -78,11 +83,12 @@ const roleListLoading = ref(false)
 
 // 初始化
 onMounted(() => {
-  // 加载权限树数据
-  fetchTree()
   // 加载字典
   loadStatusDict()
   loadVisibleDict()
+  loadTypeDict()
+  // 加载权限树数据
+  fetchTree()
 })
 
 // 查询按钮
@@ -92,6 +98,9 @@ const handleSearch = () => {
 
 // 重置按钮
 const handleReset = () => {
+  query.permissionName = ''
+  query.permissionCode = ''
+  query.permissionType = null
   query.status = null
   query.visible = null
   fetchTree()
@@ -102,10 +111,17 @@ const fetchTree = async () => {
   loading.value = true
   try {
     const resp = await getPermissionTree({
+      permissionName: query.permissionName || undefined,
+      permissionCode: query.permissionCode || undefined,
+      permissionType: query.permissionType || undefined,
       status: query.status ?? undefined,
       visible: query.visible ?? undefined,
     })
     treeData.value = resp || []
+    // 只展开一级目录（根节点的直接子节点）
+    defaultExpandKeys.value = (treeData.value || [])
+      .filter(item => !item.parentId || item.parentId === 0)
+      .map(item => String(item.id))
   } catch (error) {
     handleErrorToast(error)
   } finally {
@@ -326,6 +342,22 @@ const handleRemoveRole = async (role: RoleVo) => {
   <div class="menu-page">
     <!-- 查询区域 -->
     <SearchForm @search="handleSearch" @reset="handleReset">
+      <el-form-item label="名称">
+        <el-input v-model="query.permissionName" placeholder="请输入名称" clearable />
+      </el-form-item>
+      <el-form-item label="编码">
+        <el-input v-model="query.permissionCode" placeholder="请输入编码" clearable />
+      </el-form-item>
+      <el-form-item label="类型">
+        <el-select v-model="query.permissionType" placeholder="全部" clearable >
+          <el-option
+            v-for="opt in typeOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="显示状态">
         <el-select v-model="query.visible" placeholder="全部" clearable >
           <el-option
@@ -362,6 +394,7 @@ const handleRemoveRole = async (role: RoleVo) => {
       :cell-style="cellStyle"
       :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       row-key="id"
+      :expand-row-keys="defaultExpandKeys"
       border
       stripe
       :default-expand-all="false"
@@ -379,19 +412,19 @@ const handleRemoveRole = async (role: RoleVo) => {
           </div>
         </template>
       </el-table-column>
+      <el-table-column prop="permissionCode" label="编码" min-width="180" show-overflow-tooltip align="left">
+        <template #default="{ row }">
+          <span class="code-text">{{ row.permissionCode }}</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="permissionType" label="类型" width="100">
         <template #default="{ row }">
           <el-tag
             size="small"
             :type="row.permissionType === 'catalog' ? 'warning' : row.permissionType === 'menu' ? 'success' : 'info'"
           >
-            {{ row.permissionType === 'catalog' ? '目录' : row.permissionType === 'menu' ? '菜单' : '按钮' }}
+            {{ typeFindLabel(row.permissionType) }}
           </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="permissionCode" label="编码" min-width="180" show-overflow-tooltip align="left">
-        <template #default="{ row }">
-          <span class="code-text">{{ row.permissionCode }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="path" label="路由路径" min-width="180" show-overflow-tooltip align="left">
@@ -480,7 +513,7 @@ const handleRemoveRole = async (role: RoleVo) => {
           </template>
           <template v-else>
             <el-tag size="small" :type="form.permissionType === 'catalog' ? 'warning' : form.permissionType === 'menu' ? 'success' : 'info'">
-              {{ form.permissionType === 'catalog' ? '目录' : form.permissionType === 'menu' ? '菜单' : '按钮' }}
+              {{ typeFindLabel(form.permissionType) }}
             </el-tag>
           </template>
         </el-form-item>
