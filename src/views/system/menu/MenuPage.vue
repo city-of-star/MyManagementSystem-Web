@@ -54,7 +54,7 @@ const cellStyle = {
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建菜单')
-const editingId = ref<number | null>(null)
+const editingPermissionId = ref<number | null>(null)
 const codePrefix = ref('')
 const parentLabel = ref('根目录')
 const typeLocked = ref(false)
@@ -118,10 +118,10 @@ const fetchTree = async () => {
       visible: query.visible ?? undefined,
     })
     treeData.value = resp || []
-    // 只展开一级目录（根节点的直接子节点）
-    defaultExpandKeys.value = (treeData.value || [])
-      .filter(item => !item.parentId || item.parentId === 0)
-      .map(item => String(item.id))
+    // 默认展开第一个一级目录
+    const roots = (treeData.value || []).filter(item => !item.parentId || item.parentId === 0)
+    const firstRoot = roots[0]
+    defaultExpandKeys.value = firstRoot ? [String(firstRoot.id)] : []
   } catch (error) {
     handleErrorToast(error)
   } finally {
@@ -131,7 +131,7 @@ const fetchTree = async () => {
 
 // 重置（新增/编辑）表单
 const resetForm = () => {
-  editingId.value = null
+  editingPermissionId.value = null
   dialogTitle.value = '新建菜单'
   form.parentId = 0
   form.permissionType = 'catalog'
@@ -154,7 +154,7 @@ const openCreateDialog = (parent: PermissionTreeVo | null, type: 'catalog' | 'me
   form.permissionType = type
   typeLocked.value = true
   parentLabel.value = parent ? parent.permissionName : '根目录'
-  codePrefix.value = !editingId.value && parent?.permissionCode ? `${parent.permissionCode}_` : ''
+  codePrefix.value = !editingPermissionId.value && parent?.permissionCode ? `${parent.permissionCode}_` : ''
   dialogTitle.value = title || (type === 'catalog' ? '新建目录' : type === 'menu' ? '新建菜单' : '新建按钮')
   dialogVisible.value = true
 }
@@ -192,7 +192,7 @@ const findParentName = (parentId: number | null, nodes: PermissionTreeVo[]): str
 const handleEdit = (node: PermissionTreeVo) => {
   resetForm()
   dialogTitle.value = '编辑'
-  editingId.value = node.id
+  editingPermissionId.value = node.id
   form.parentId = node.parentId ?? 0
   form.permissionType = (node.permissionType as 'catalog' | 'menu' | 'button') || 'catalog'
   typeLocked.value = true // 编辑时类型不可修改
@@ -244,7 +244,7 @@ const handleSubmit = async () => {
       return
     }
     // 新建时编码必填，编辑时编码不是必填项
-    if (!editingId.value && !form.permissionCode) {
+    if (!editingPermissionId.value && !form.permissionCode) {
       Message.warning('请填写编码')
       return
     }
@@ -266,7 +266,7 @@ const handleSubmit = async () => {
     }
 
     const finalCode =
-      editingId.value || !codePrefix.value ? form.permissionCode : `${codePrefix.value}${form.permissionCode}`
+      editingPermissionId.value || !codePrefix.value ? form.permissionCode : `${codePrefix.value}${form.permissionCode}`
 
     const payload = {
       parentId: form.parentId ?? 0,
@@ -282,8 +282,8 @@ const handleSubmit = async () => {
       remark: form.remark || undefined,
     }
 
-    if (editingId.value) {
-      await updatePermission({ ...payload, id: editingId.value })
+    if (editingPermissionId.value) {
+      await updatePermission({ ...payload, id: editingPermissionId.value })
       Message.success('更新成功')
     } else {
       await createPermission(payload)
@@ -523,13 +523,13 @@ const handleRemoveRole = async (role: RoleVo) => {
         <el-form-item label="名称" required>
           <el-input v-model="form.permissionName" placeholder="请输入名称" />
         </el-form-item>
-        <el-form-item label="编码" :required="!editingId">
+        <el-form-item label="编码" :required="!editingPermissionId">
           <div class="code-input">
-            <el-input v-if="!editingId && codePrefix" v-model="codePrefix" disabled style="width: 160px" />
+            <el-input v-if="!editingPermissionId && codePrefix" v-model="codePrefix" disabled style="width: 160px" />
             <el-input
               v-model="form.permissionCode"
               placeholder="请输入编码"
-              :disabled="!!editingId"
+              :disabled="!!editingPermissionId"
             />
           </div>
         </el-form-item>
@@ -555,7 +555,7 @@ const handleRemoveRole = async (role: RoleVo) => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item label="启用状态" v-if="!editingPermissionId">
           <el-select v-model="form.status" style="width: 140px">
             <el-option
               v-for="opt in statusOptions"

@@ -482,7 +482,7 @@ const handleRemoveUser = async (user: UserVo) => {
         <el-form-item label="排序">
           <el-input-number v-model="form.sortOrder" :min="1" :max="9999" />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item label="状态" v-if="!editingRoleId">
           <el-select v-model="form.status" style="width: 140px">
             <el-option
               v-for="opt in statusOptions"
