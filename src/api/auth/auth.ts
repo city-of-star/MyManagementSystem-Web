@@ -1,4 +1,5 @@
 import { httpPost, SERVICE } from '@/utils/http'
+import type { UserVo } from "@/api/system/user/user.ts";
 
 // 登录请求 DTO
 export interface LoginRequest {
@@ -45,3 +46,9 @@ export function logout(payload: LogoutRequest): Promise<void> {
   return httpPost<void>(SERVICE.USERCENTER, '/auth/logout', payload)
 }
 
+/**
+ * 获取当前用户信息接口
+ */
+export function getCurrentUser(): Promise<UserVo> {
+  return httpPost<UserVo>(SERVICE.USERCENTER, '/auth/getCurrentUser')
+}

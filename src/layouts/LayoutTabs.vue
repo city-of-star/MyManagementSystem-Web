@@ -46,7 +46,7 @@ const handleTabClose = (e: MouseEvent, tab: { fullPath: string }) => {
       router.push(tabs.value[0].fullPath)
     } else {
       // 如果没有标签了，跳转到默认页面
-      router.push('/system/userPage')
+      router.push('/home')
     }
   } else {
     tabsStore.removeTab(tab.fullPath)

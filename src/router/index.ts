@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
+import HomeView from '@/views/HomeView.vue'
+
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
 import { convertPermissionToMenu, convertPermissionToMap} from '@/utils/menu/menuUtils'
@@ -47,7 +49,7 @@ router.beforeEach(async (to, _from, next) => {
     if (!dynamicRoutesLoaded) {
       await loadDynamicRoutes()
     }
-    next('/system/userPage')
+    next('/home')
     return
   }
 
@@ -79,6 +81,18 @@ async function loadDynamicRoutes() {
 
     // 转换为 Map（键->父路由路径，值->子路由），用于构建路由
     const routeGroups = convertPermissionToMap(permissionTree)
+
+    // 注册首页路由
+    router.addRoute({
+      path: '/home',
+      component: Layout,
+      children: [{
+        path: '',
+        name: 'home',
+        component: HomeView,
+        meta: { title: '首页', icon: 'HomeFilled' }
+      }]
+    })
 
     // 注册路由（prefix为父路由路径，routes为子路由）
     for (const [prefix, routes] of routeGroups) {

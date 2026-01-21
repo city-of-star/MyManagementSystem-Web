@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ensureDynamicRoutesLoaded } from '@/router'
-import { login, type LoginRequest } from '@/api/auth/auth.ts'
+import { getCurrentUser, login, type LoginRequest } from '@/api/auth/auth.ts'
 import { useAuthStore } from '@/store/auth/auth'
 import { handleErrorToast } from '@/utils/http'
+import {useUserStore} from "@/store/user/user.ts";
 
 const router = useRouter()
 const authStore = useAuthStore()
+const userStore = useUserStore()
 
 // 表单
 const form = ref<LoginRequest>({
@@ -26,10 +27,12 @@ const handleSubmit = async () => {
     const data = await login(form.value)
     // 持久化 token
     authStore.setTokens(data.accessToken, data.refreshToken)
-    // 先加载动态路由，避免路由未注册导致跳转报错
-    await ensureDynamicRoutesLoaded()
+    // 获取用户信息
+    const user = await getCurrentUser();
+    // 持久化用户信息
+    userStore.setUser(user)
     // 跳转到用户管理页面
-    await router.push('/system/userPage')
+    await router.push('/home')
   } catch (error) {
     handleErrorToast(error)
   } finally {

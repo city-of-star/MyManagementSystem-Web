@@ -6,8 +6,10 @@ import router, { resetDynamicRoutesState } from "@/router";
 import {useAuthStore} from "@/store/auth/auth.ts";
 import {useMenuStore} from "@/store/menu/menu.ts";
 import {useTabsStore} from "@/store/tabs/tabs.ts";
+import {useUserStore} from "@/store/user/user.ts";
 
 const authStore = useAuthStore()
+const userStore = useUserStore()
 const menuStore = useMenuStore()
 const tabsStore = useTabsStore()
 
@@ -24,6 +26,7 @@ const handleLogout = async () => {
   } finally {
     // 清除相关数据
     authStore.clearTokens()
+    userStore.clearUser()
     menuStore.clearMenus()
     tabsStore.closeAllTabs()
     // 重置路由状态
@@ -62,7 +65,7 @@ const handleLogout = async () => {
             />
           </svg>
         </div>
-        <span class="username">管理员</span>
+        <span class="username">{{ userStore.nickname }}</span>
       </div>
       <div class="divider" />
       <button class="logout-btn" type="button" @click="handleLogout">
