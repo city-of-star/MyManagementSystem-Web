@@ -5,9 +5,10 @@ import HomeView from '@/views/HomeView.vue'
 
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
-import { convertPermissionToMenu, convertPermissionToMap} from '@/utils/menu/menuUtils'
+import { convertPermissionTreeToMenu, convertPermissionToMap} from '@/utils/menu/menuUtils'
 import { handleErrorSilent } from '@/utils/http'
 import {getCurrentUserPermissionTree} from '@/api/system/permission/permission.ts'
+import type { MenuItem } from '@/store/menu/menu'
 
 // 基础路由（不需要权限）
 const baseRoutes: RouteRecordRaw[] = [
@@ -19,6 +20,19 @@ const baseRoutes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: Login,
+  },
+  // 首页路由（不需要权限，所有用户都可以访问）
+  {
+    path: '/home',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: HomeView,
+        meta: { title: '首页', icon: 'Home' },
+      },
+    ],
   },
 ]
 
@@ -77,22 +91,18 @@ async function loadDynamicRoutes() {
 
     // 转换为菜单（保存到 pinia）
     const menuStore = useMenuStore()
-    menuStore.setMenus(convertPermissionToMenu(permissionTree))
+    const dynamicMenus = convertPermissionTreeToMenu(permissionTree)
+
+    // 手动添加首页菜单项到菜单列表最前面（不需要权限）
+    const homeMenu: MenuItem = {
+      label: '首页',
+      icon: 'Home',
+      path: '/home',
+    }
+    menuStore.setMenus([homeMenu, ...dynamicMenus])
 
     // 转换为 Map（键->父路由路径，值->子路由），用于构建路由
     const routeGroups = convertPermissionToMap(permissionTree)
-
-    // 注册首页路由
-    router.addRoute({
-      path: '/home',
-      component: Layout,
-      children: [{
-        path: '',
-        name: 'home',
-        component: HomeView,
-        meta: { title: '首页', icon: 'HomeFilled' }
-      }]
-    })
 
     // 注册路由（prefix为父路由路径，routes为子路由）
     for (const [prefix, routes] of routeGroups) {

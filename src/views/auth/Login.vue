@@ -31,7 +31,7 @@ const handleSubmit = async () => {
     const user = await getCurrentUser();
     // 持久化用户信息
     userStore.setUser(user)
-    // 跳转到用户管理页面
+    // 跳转到首页
     await router.push('/home')
   } catch (error) {
     handleErrorToast(error)

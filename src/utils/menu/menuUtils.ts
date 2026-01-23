@@ -5,22 +5,7 @@ import type { RouteRecordRaw } from "vue-router";
 /**
  * 将后端权限树转换为前端菜单项
  */
-export function convertPermissionToMenu(permissionTree: PermissionTreeVo[]): MenuItem[] {
-    // 创建首页菜单项
-    const homeMenuItem: MenuItem = {
-        label: '首页',
-        icon: 'HomeFilled',
-        path: '/home',
-    }
-
-    // 将首页作为第一个菜单项，只在顶层添加
-    return [homeMenuItem, ...convertPermissionTreeToMenu(permissionTree)]
-}
-
-/**
- * 递归转换权限树为菜单项
- */
-function convertPermissionTreeToMenu(permissionTree: PermissionTreeVo[]): MenuItem[] {
+export function convertPermissionTreeToMenu(permissionTree: PermissionTreeVo[]): MenuItem[] {
     return permissionTree
         .map(p => ({
             label: p.permissionName,
