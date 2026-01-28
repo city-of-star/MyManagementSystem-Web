@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
-import {Message} from '@/utils/base/messageUtils.ts'
+import { onMounted, reactive, ref } from 'vue'
+import { Message } from '@/utils/base/messageUtils.ts'
 import {
   getConfigPage,
   type ConfigVo,
@@ -11,15 +11,17 @@ import {
   batchDeleteConfig,
   switchConfigStatus,
 } from '@/api/system/config/config.ts'
-import {type PageResult} from '@/api/common/types.ts'
-import {handleErrorToast} from '@/utils/http'
-import {useDict} from '@/utils/base/dictUtils.ts'
+import { type PageResult } from '@/api/common/types.ts'
+import { handleErrorToast } from '@/utils/http'
+import { useDict } from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/layout/SearchForm.vue'
 import DataTable from '@/components/layout/DataTable.vue'
 import Pagination from '@/components/layout/Pagination.vue'
 import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
+import DictSelect from '@/components/dict/DictSelect.vue'
+import DictTag from '@/components/dict/DictTag.vue'
 
 // 查询条件
 const query = reactive<ConfigPageQuery>({
@@ -33,9 +35,9 @@ const query = reactive<ConfigPageQuery>({
 })
 
 // 字典：通用状态、是否、配置类型
-const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
-const {options: yesNoOptions, findLabel: yesNoFindLabel, load: loadYesNoDict} = useDict('yes_no')
-const {options: configTypeOptions, findLabel: configTypeFindLabel, load: loadConfigTypeDict} = useDict('config_type')
+const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
+const { options: yesNoOptions, loading: yesNoLoading, load: yesNoLoad } = useDict('yes_no')
+const { options: configTypeOptions, loading: configTypeLoading, load: configTypeLoad } = useDict('config_type')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -62,13 +64,13 @@ const form = reactive({
 })
 
 // 初始化
-onMounted(() => {
-  // 加载列表数据
+onMounted(async () => {
+  await Promise.all([
+    statusLoad(),
+    yesNoLoad(),
+    configTypeLoad(),
+  ])
   fetchData()
-  // 加载字典
-  loadStatusDict()
-  loadYesNoDict()
-  loadConfigTypeDict()
 })
 
 // 查询按钮
@@ -210,7 +212,7 @@ const handleBatchDelete = async () => {
   try {
     await Message.confirm(`确定要删除选中的 ${multipleSelection.value.length} 条配置吗？`)
     const ids = multipleSelection.value.map((c) => c.id)
-    await batchDeleteConfig({configIds: ids})
+    await batchDeleteConfig({ configIds: ids })
     Message.success('批量删除成功')
     fetchData()
   } catch (error) {
@@ -224,7 +226,7 @@ const handleBatchDelete = async () => {
 const handleToggleStatus = async (row: ConfigVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
-    await switchConfigStatus({configId: row.id, status: targetStatus})
+    await switchConfigStatus({ configId: row.id, status: targetStatus })
     Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
@@ -244,34 +246,28 @@ const handleToggleStatus = async (row: ConfigVo) => {
         <el-input v-model="query.configName" placeholder="请输入配置名称" clearable />
       </el-form-item>
       <el-form-item label="类型">
-        <el-select v-model="query.configType" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in configTypeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
+        <DictSelect
+          v-model="query.configType"
+          :options="configTypeOptions"
+          :loading="configTypeLoading"
+          placeholder="全部"
+        />
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in statusOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="Number(opt.value)"
-          />
-        </el-select>
+        <DictSelect
+          v-model.number="query.status"
+          :options="statusOptions"
+          :loading="statusLoading"
+          placeholder="全部"
+        />
       </el-form-item>
       <el-form-item label="可编辑">
-        <el-select v-model="query.editable" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in yesNoOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="Number(opt.value)"
-          />
-        </el-select>
+        <DictSelect
+          v-model.number="query.editable"
+          :options="yesNoOptions"
+          :loading="yesNoLoading"
+          placeholder="全部"
+        />
       </el-form-item>
     </SearchForm>
 
@@ -298,22 +294,18 @@ const handleToggleStatus = async (row: ConfigVo) => {
       <el-table-column prop="configName" label="配置名称" min-width="180" />
       <el-table-column prop="configType" label="类型" width="100">
         <template #default="{ row }">
-          {{ configTypeFindLabel(row.configType) || row.configType || '-' }}
+          <DictTag :options="configTypeOptions" :value="row.configType" />
         </template>
       </el-table-column>
       <el-table-column prop="configValue" label="配置值" min-width="200" show-overflow-tooltip />
       <el-table-column label="可编辑" width="90">
         <template #default="{ row }">
-          <el-tag :type="row.editable === 1 ? 'success' : 'info'">
-            {{ yesNoFindLabel(row.editable) }}
-          </el-tag>
+          <DictTag :options="yesNoOptions" :value="row.editable" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ statusFindLabel(row.status) }}
-          </el-tag>
+          <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
@@ -323,7 +315,7 @@ const handleToggleStatus = async (row: ConfigVo) => {
           <IconButton
             type="primary"
             :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+            :tooltip="row.status === 1 ? '禁用' : '启用'"
             @click="handleToggleStatus(row)"
           />
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
@@ -348,14 +340,12 @@ const handleToggleStatus = async (row: ConfigVo) => {
           <el-input v-model="form.configName" placeholder="请输入配置名称" />
         </el-form-item>
         <el-form-item label="配置类型">
-          <el-select v-model="form.configType" style="width: 160px">
-            <el-option
-              v-for="opt in configTypeOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
+          <DictSelect
+            v-model="form.configType"
+            :options="configTypeOptions"
+            :loading="configTypeLoading"
+            style="width: 160px"
+          />
         </el-form-item>
         <el-form-item label="配置值">
           <el-input
@@ -366,24 +356,20 @@ const handleToggleStatus = async (row: ConfigVo) => {
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="form.status" style="width: 140px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
+          <DictSelect
+            v-model.number="form.status"
+            :options="statusOptions"
+            :loading="statusLoading"
+            style="width: 140px"
+          />
         </el-form-item>
         <el-form-item label="可编辑">
-          <el-select v-model="form.editable" style="width: 140px">
-            <el-option
-              v-for="opt in yesNoOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
+          <DictSelect
+            v-model.number="form.editable"
+            :options="yesNoOptions"
+            :loading="yesNoLoading"
+            style="width: 140px"
+          />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />

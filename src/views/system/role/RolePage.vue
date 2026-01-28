@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref, nextTick} from 'vue'
-import {Message} from '@/utils/base/messageUtils.ts'
-import type {ElTree} from 'element-plus'
+import { nextTick, onMounted, reactive, ref } from 'vue'
+import { Message } from '@/utils/base/messageUtils.ts'
+import type { ElTree } from 'element-plus'
 import {
   assignRolePermissions,
   batchDeleteRole,
@@ -16,17 +16,20 @@ import {
   switchRoleStatus,
   updateRole,
 } from '@/api/system/role/role.ts'
-import {type PageResult} from '@/api/common/types.ts'
-import type {UserVo} from '@/api/system/user/user'
-import {getPermissionTree, type PermissionTreeVo} from '@/api/system/permission/permission.ts'
-import {handleErrorToast} from '@/utils/http'
-import {useDict} from '@/utils/base/dictUtils.ts'
+import { type PageResult } from '@/api/common/types.ts'
+import type { UserVo } from '@/api/system/user/user'
+import { getPermissionTree, type PermissionTreeVo } from '@/api/system/permission/permission.ts'
+import { handleErrorToast } from '@/utils/http'
+import { useDict } from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/layout/SearchForm.vue'
 import DataTable from '@/components/layout/DataTable.vue'
 import Pagination from '@/components/layout/Pagination.vue'
 import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
+import DictSelect from '@/components/dict/DictSelect.vue'
+import DictText from '@/components/dict/DictText.vue'
+import DictTag from '@/components/dict/DictTag.vue'
 
 // 查询条件
 const query = reactive<RolePageQuery>({
@@ -39,8 +42,8 @@ const query = reactive<RolePageQuery>({
 })
 
 // 字典：通用状态、角色类型
-const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
-const {options: roleTypeOptions, findLabel: roleTypeFindLable, load: loadRoleTypeDict} = useDict('role_type')
+const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
+const { options: roleTypeOptions, loading: roleTypeLoading, load: roleTypeLoad } = useDict('role_type')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -81,12 +84,12 @@ const form = reactive({
 })
 
 // 初始化
-onMounted(() => {
-  // 加载列表数据
+onMounted(async () => {
+  await Promise.all([
+    statusLoad(),
+    roleTypeLoad(),
+  ])
   fetchData()
-  // 加载字典
-  loadStatusDict()
-  loadRoleTypeDict()
 })
 
 // 查询按钮
@@ -223,7 +226,7 @@ const handleBatchDelete = async () => {
   try {
     await Message.confirm(`确定要删除选中的 ${multipleSelection.value.length} 个角色吗？`)
     const ids = multipleSelection.value.map((r) => r.id)
-    await batchDeleteRole({roleIds: ids})
+    await batchDeleteRole({ roleIds: ids })
     Message.success('批量删除成功')
     fetchData()
   } catch (error) {
@@ -237,7 +240,7 @@ const handleBatchDelete = async () => {
 const handleToggleStatus = async (row: RoleVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
-    await switchRoleStatus({roleId: row.id, status: targetStatus})
+    await switchRoleStatus({ roleId: row.id, status: targetStatus })
     Message.success(targetStatus === 1 ? '已启用' : '已禁用')
     fetchData()
   } catch (error) {
@@ -383,24 +386,20 @@ const handleRemoveUser = async (user: UserVo) => {
         <el-input v-model="query.roleName" placeholder="请输入角色名称" clearable />
       </el-form-item>
       <el-form-item label="角色类型">
-        <el-select v-model="query.roleType" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in roleTypeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
+        <DictSelect
+          v-model="query.roleType"
+          :options="roleTypeOptions"
+          :loading="roleTypeLoading"
+          placeholder="全部"
+        />
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in statusOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="Number(opt.value)"
-          />
-        </el-select>
+        <DictSelect
+          v-model.number="query.status"
+          :options="statusOptions"
+          :loading="statusLoading"
+          placeholder="全部"
+        />
       </el-form-item>
     </SearchForm>
 
@@ -427,17 +426,13 @@ const handleRemoveUser = async (user: UserVo) => {
       <el-table-column prop="roleName" label="角色名称" min-width="140" />
       <el-table-column prop="roleType" label="角色类型" min-width="110">
         <template #default="{ row }">
-          <span>
-            {{roleTypeFindLable(row.roleType) }}
-          </span>
+          <DictText :options="roleTypeOptions" :value="row.roleType" />
         </template>
       </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="80" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ statusFindLabel(row.status) }}
-          </el-tag>
+          <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
@@ -449,7 +444,7 @@ const handleRemoveUser = async (user: UserVo) => {
           <IconButton
             type="primary"
             :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+            :tooltip="row.status === 1 ? '禁用' : '启用'"
             @click="handleToggleStatus(row)"
           />
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
@@ -470,27 +465,23 @@ const handleRemoveUser = async (user: UserVo) => {
           <el-input v-model="form.roleName" placeholder="请输入角色名称" />
         </el-form-item>
         <el-form-item label="角色类型">
-          <el-select v-model="form.roleType" style="width: 160px">
-            <el-option
-              v-for="opt in roleTypeOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
+          <DictSelect
+            v-model="form.roleType"
+            :options="roleTypeOptions"
+            :loading="roleTypeLoading"
+            style="width: 160px"
+          />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sortOrder" :min="1" :max="9999" />
         </el-form-item>
         <el-form-item label="状态" v-if="!editingRoleId">
-          <el-select v-model="form.status" style="width: 140px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
+          <DictSelect
+            v-model.number="form.status"
+            :options="statusOptions"
+            :loading="statusLoading"
+            style="width: 140px"
+          />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
@@ -557,9 +548,7 @@ const handleRemoveUser = async (user: UserVo) => {
           <el-table-column prop="phone" label="手机号" min-width="120" />
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ statusFindLabel(row.status) }}
-              </el-tag>
+              <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
             </template>
           </el-table-column>
           <el-table-column label="操作" fixed="right" width="100">

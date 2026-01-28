@@ -18,6 +18,8 @@ import SearchForm from '@/components/layout/SearchForm.vue'
 import Toolbar from '@/components/layout/Toolbar.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import IconButton from '@/components/button/IconButton.vue'
+import DictSelect from '@/components/dict/DictSelect.vue'
+import DictTag from '@/components/dict/DictTag.vue'
 import IconPicker from '@/components/icon/IconPicker.vue'
 import { iconMap, type IconName } from '@/assets/icon/icons'
 
@@ -30,10 +32,10 @@ const query = reactive({
   visible: null as number | null,
 })
 
-// 字典：通用状态、菜单显示状态
-const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
-const {options: visibleOptions, findLabel: visibleFindLabel, load: loadVisibleDict} = useDict('menu_visible')
-const {options: typeOptions, findLabel: typeFindLabel, load: loadTypeDict} = useDict('permission_type')
+// 字典：通用状态、菜单显示状态、权限类型
+const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
+const { options: visibleOptions, loading: visibleLoading, load: visibleLoad } = useDict('menu_visible')
+const { options: typeOptions, loading: typeLoading, load: typeLoad } = useDict('permission_type')
 
 // 列表
 const loading = ref(false)
@@ -82,12 +84,12 @@ const roleList = ref<RoleVo[]>([])
 const roleListLoading = ref(false)
 
 // 初始化
-onMounted(() => {
-  // 加载字典
-  loadStatusDict()
-  loadVisibleDict()
-  loadTypeDict()
-  // 加载权限树数据
+onMounted(async () => {
+  await Promise.all([
+    statusLoad(),
+    visibleLoad(),
+    typeLoad(),
+  ])
   fetchTree()
 })
 
@@ -119,7 +121,7 @@ const fetchTree = async () => {
     })
     treeData.value = resp || []
     // 默认展开第一个一级目录
-    const roots = (treeData.value || []).filter(item => !item.parentId || item.parentId === 0)
+    const roots = (treeData.value || []).filter((item) => !item.parentId || item.parentId === 0)
     const firstRoot = roots[0]
     defaultExpandKeys.value = firstRoot ? [String(firstRoot.id)] : []
   } catch (error) {
@@ -349,34 +351,28 @@ const handleRemoveRole = async (role: RoleVo) => {
         <el-input v-model="query.permissionCode" placeholder="请输入编码" clearable />
       </el-form-item>
       <el-form-item label="类型">
-        <el-select v-model="query.permissionType" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in typeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
+        <DictSelect
+          v-model="query.permissionType"
+          :options="typeOptions"
+          :loading="typeLoading"
+          placeholder="全部"
+        />
       </el-form-item>
       <el-form-item label="显示状态">
-        <el-select v-model="query.visible" placeholder="全部" clearable >
-          <el-option
-            v-for="opt in visibleOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="Number(opt.value)"
-          />
-        </el-select>
+        <DictSelect
+          v-model.number="query.visible"
+          :options="visibleOptions"
+          :loading="visibleLoading"
+          placeholder="全部"
+        />
       </el-form-item>
       <el-form-item label="启用状态">
-        <el-select v-model="query.status" placeholder="全部" clearable >
-          <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-          />
-        </el-select>
+        <DictSelect
+          v-model.number="query.status"
+          :options="statusOptions"
+          :loading="statusLoading"
+          placeholder="全部"
+        />
       </el-form-item>
     </SearchForm>
 
@@ -419,12 +415,11 @@ const handleRemoveRole = async (role: RoleVo) => {
       </el-table-column>
       <el-table-column prop="permissionType" label="类型" width="100">
         <template #default="{ row }">
-          <el-tag
-            size="small"
-            :type="row.permissionType === 'catalog' ? 'warning' : row.permissionType === 'menu' ? 'success' : 'info'"
-          >
-            {{ typeFindLabel(row.permissionType) }}
-          </el-tag>
+          <DictTag
+            :options="typeOptions"
+            :value="row.permissionType"
+            :type-map="{ catalog: 'warning', menu: 'success', button: 'info' }"
+          />
         </template>
       </el-table-column>
       <el-table-column prop="path" label="路由路径" min-width="180" show-overflow-tooltip align="left">
@@ -440,16 +435,12 @@ const handleRemoveRole = async (role: RoleVo) => {
       <el-table-column prop="sortOrder" label="排序" width="80" />
       <el-table-column prop="visible" label="显示状态" width="100">
         <template #default="{ row }">
-          <el-tag size="small" :type="row.visible === 1 ? 'success' : 'info'">
-            {{ visibleFindLabel(row.visible) }}
-          </el-tag>
+          <DictTag :options="visibleOptions" :value="row.visible" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
       <el-table-column prop="status" label="启用状态" width="100">
         <template #default="{ row }">
-          <el-tag size="small" :type="row.status === 1 ? 'success' : 'info'">
-            {{ statusFindLabel(row.status) }}
-          </el-tag>
+          <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
       <el-table-column label="操作" fixed="right" width="200">
@@ -486,7 +477,7 @@ const handleRemoveRole = async (role: RoleVo) => {
             <IconButton
               type="primary"
               :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-              :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+              :tooltip="row.status === 1 ? '禁用' : '启用'"
               @click.stop="handleToggleStatus(row)"
             />
             <IconButton
@@ -512,9 +503,11 @@ const handleRemoveRole = async (role: RoleVo) => {
             </el-radio-group>
           </template>
           <template v-else>
-            <el-tag size="small" :type="form.permissionType === 'catalog' ? 'warning' : form.permissionType === 'menu' ? 'success' : 'info'">
-              {{ typeFindLabel(form.permissionType) }}
-            </el-tag>
+            <DictTag
+              :options="typeOptions"
+              :value="form.permissionType"
+              :type-map="{ catalog: 'warning', menu: 'success', button: 'info' }"
+            />
           </template>
         </el-form-item>
         <el-form-item label="上级">
@@ -546,24 +539,20 @@ const handleRemoveRole = async (role: RoleVo) => {
           <el-input-number v-model="form.sortOrder" :min="1" :max="9999" />
         </el-form-item>
         <el-form-item label="显示状态">
-          <el-select v-model="form.visible" style="width: 140px">
-            <el-option
-              v-for="opt in visibleOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
+          <DictSelect
+            v-model.number="form.visible"
+            :options="visibleOptions"
+            :loading="visibleLoading"
+            style="width: 140px"
+          />
         </el-form-item>
         <el-form-item label="启用状态" v-if="!editingPermissionId">
-          <el-select v-model="form.status" style="width: 140px">
-            <el-option
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="Number(opt.value)"
-            />
-          </el-select>
+          <DictSelect
+            v-model.number="form.status"
+            :options="statusOptions"
+            :loading="statusLoading"
+            style="width: 140px"
+          />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
@@ -597,9 +586,7 @@ const handleRemoveRole = async (role: RoleVo) => {
           </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ row.status === 1 ? '启用' : '禁用' }}
-              </el-tag>
+              <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
             </template>
           </el-table-column>
           <el-table-column label="操作" fixed="right" width="120">

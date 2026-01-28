@@ -49,23 +49,11 @@ const query = reactive<UserPageQuery>({
 })
 
 // 字典：性别
-const {
-  options: userGenderOptions,
-  loading: userGenderLoading,
-  load: userGenderLoad
-} = useDict('user_gender')
+const { options: userGenderOptions, loading: userGenderLoading, load: userGenderLoad } = useDict('user_gender')
 // 字典：通用状态
-const {
-  options: commonStatusOptions,
-  loading: commonStatusLoading,
-  load: commonStatusLoad
-} = useDict('common_status')
+const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
 // 字典：锁定状态
-const {
-  options: userLockStatusOptions,
-  loading: userLockStatusLoading,
-  load: userLockStatusLoad
-} = useDict('user_lock_status')
+const { options: userLockStatusOptions, loading: userLockStatusLoading, load: userLockStatusLoad } = useDict('user_lock_status')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -106,7 +94,7 @@ onMounted(async () => {
   // 并行加载所有字典
   await Promise.all([
     userGenderLoad(),
-    commonStatusLoad(),
+    statusLoad(),
     userLockStatusLoad(),
   ])
   // 加载列表数据
@@ -401,8 +389,8 @@ const handleSubmitRoles = async () => {
       </el-form-item>
       <el-form-item label="状态">
         <DictSelect
-            :options="commonStatusOptions"
-            :loading="commonStatusLoading"
+            :options="statusOptions"
+            :loading="statusLoading"
             v-model.number="query.status"
         />
       </el-form-item>
@@ -460,7 +448,7 @@ const handleSubmitRoles = async () => {
       <el-table-column prop="email" label="邮箱" min-width="180" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <DictTag :options="commonStatusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>
+          <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>
         </template>
       </el-table-column>
       <el-table-column label="锁定" width="100">
@@ -520,8 +508,8 @@ const handleSubmitRoles = async () => {
         </el-form-item>
         <el-form-item label="状态" v-if="!editingUserId">
           <DictSelect
-            :options="commonStatusOptions"
-            :loading="commonStatusLoading"
+            :options="statusOptions"
+            :loading="statusLoading"
             v-model.number="form.status"
             style="width: 140px"
           />

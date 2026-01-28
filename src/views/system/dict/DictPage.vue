@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch} from 'vue'
-import {Message} from '@/utils/base/messageUtils.ts'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { Message } from '@/utils/base/messageUtils.ts'
 import {
   batchDeleteDictData,
   createDictData,
@@ -26,18 +26,21 @@ import {
   type DictTypeUpdateRequest,
   type DictTypeVo,
 } from '@/api/system/dict/dictType.ts'
-import {type PageResult} from '@/api/common/types.ts'
-import {handleErrorToast} from '@/utils/http'
-import {clearDictCache, useDict} from '@/utils/base/dictUtils.ts'
+import { type PageResult } from '@/api/common/types.ts'
+import { handleErrorToast } from '@/utils/http'
+import { clearDictCache, useDict } from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/layout/SearchForm.vue'
 import DataTable from '@/components/layout/DataTable.vue'
 import Pagination from '@/components/layout/Pagination.vue'
 import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
+import DictSelect from '@/components/dict/DictSelect.vue'
+import DictTag from '@/components/dict/DictTag.vue'
 
-// 字典：通用状态
-const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
+// 字典：通用状态、是否
+const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
+const { options: yesNoOptions, load: yesNoLoad } = useDict('yes_no')
 
 // ====== 字典类型（左侧） ======
 
@@ -74,13 +77,15 @@ const typeForm = reactive<DictTypeCreateRequest & { id?: number }>({
 })
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
+  await Promise.all([
+    statusLoad(),
+    yesNoLoad(),
+  ])
   // 加载字典类型列表数据
   fetchTypeData()
   // 加载启用的字典类型列表
   loadEnabledDictTypes()
-  // 加载字典
-  loadStatusDict()
 })
 
 // 查询按钮
@@ -592,14 +597,12 @@ const currentTypeName = computed(() => {
             <el-input v-model="typeQuery.dictTypeName" placeholder="请输入类型名称" clearable />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="typeQuery.status" placeholder="全部" clearable >
-              <el-option
-                v-for="opt in statusOptions"
-                :key="opt.value"
-                :label="opt.label"
-                :value="Number(opt.value)"
-              />
-            </el-select>
+            <DictSelect
+              v-model.number="typeQuery.status"
+              :options="statusOptions"
+              :loading="statusLoading"
+              placeholder="全部"
+            />
           </el-form-item>
         </SearchForm>
 
@@ -635,9 +638,7 @@ const currentTypeName = computed(() => {
           <el-table-column prop="dictTypeName" label="类型名称" min-width="100" show-overflow-tooltip />
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ statusFindLabel(row.status) }}
-              </el-tag>
+              <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
             </template>
           </el-table-column>
           <el-table-column prop="sortOrder" label="排序" width="70" />
@@ -647,7 +648,7 @@ const currentTypeName = computed(() => {
               <IconButton
                 type="primary"
                 :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-                :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+                :tooltip="row.status === 1 ? '禁用' : '启用'"
                 @click.stop="handleTypeToggleStatus(row)"
               />
               <IconButton type="danger" icon="Delete" tooltip="删除" @click.stop="handleTypeDelete(row)" />
@@ -679,14 +680,12 @@ const currentTypeName = computed(() => {
             <el-input v-model="dataQuery.dictValue" placeholder="请输入字典值" clearable />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="dataQuery.status" placeholder="全部" clearable >
-              <el-option
-                v-for="opt in statusOptions"
-                :key="opt.value"
-                :label="opt.label"
-                :value="Number(opt.value)"
-              />
-            </el-select>
+            <DictSelect
+              v-model.number="dataQuery.status"
+              :options="statusOptions"
+              :loading="statusLoading"
+              placeholder="全部"
+            />
           </el-form-item>
         </SearchForm>
 
@@ -720,15 +719,12 @@ const currentTypeName = computed(() => {
           <el-table-column prop="dictSort" label="排序" width="70" />
           <el-table-column prop="isDefault" label="默认" width="70">
             <template #default="{ row }">
-              <el-tag v-if="row.isDefault === 1" size="small" type="success">是</el-tag>
-              <span v-else>否</span>
+              <DictTag :options="yesNoOptions" :value="row.isDefault" :type-map="{ '1': 'success', '0': 'info' }" />
             </template>
           </el-table-column>
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'info'">
-                {{ statusFindLabel(row.status) }}
-              </el-tag>
+              <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
             </template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
@@ -738,7 +734,7 @@ const currentTypeName = computed(() => {
               <IconButton
                 type="primary"
                 :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-                :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+                :tooltip="row.status === 1 ? '禁用' : '启用'"
                 @click="handleDataToggleStatus(row)"
               />
               <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDataDelete(row)" />
@@ -768,10 +764,7 @@ const currentTypeName = computed(() => {
           <el-input-number v-model="typeForm.sortOrder" :min="0" :max="9999" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="typeForm.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
+          <DictSelect v-model.number="typeForm.status" :options="statusOptions" :loading="statusLoading" style="width: 140px" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="typeForm.remark" type="textarea" rows="3" placeholder="请输入备注" />
@@ -808,10 +801,7 @@ const currentTypeName = computed(() => {
           </el-radio-group>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="dataForm.status" style="width: 140px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
+          <DictSelect v-model.number="dataForm.status" :options="statusOptions" :loading="statusLoading" style="width: 140px" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="dataForm.remark" type="textarea" rows="3" placeholder="请输入备注" />
