@@ -17,6 +17,10 @@ export interface UserPageQuery {
   createTimeEnd?: string | null
   lastLoginTimeStart?: string | null
   lastLoginTimeEnd?: string | null
+  // 所属部门（用于列表筛选）
+  deptId?: number | null
+  // 所属岗位（用于列表筛选）
+  postId?: number | null
 }
 
 // 用户信息 VO
@@ -42,6 +46,14 @@ export interface UserVo {
   createTime?: string
   updateBy?: number
   updateTime?: string
+  // 主部门ID（后端 VO 若未返回则为 undefined）
+  primaryDeptId?: number
+  // 主岗位ID
+  primaryPostId?: number
+  // 所属部门ID列表
+  deptIds?: number[]
+  // 所属岗位ID列表
+  postIds?: number[]
 }
 
 // 创建用户请求 DTO
@@ -57,6 +69,14 @@ export interface UserCreateRequest {
   birthday?: string
   status?: number
   remark?: string
+  // 所属部门ID列表
+  deptIds?: number[]
+  // 主部门ID，必须包含在部门ID列表中
+  primaryDeptId?: number
+  // 所属岗位ID列表
+  postIds?: number[]
+  // 主岗位ID，必须包含在岗位ID列表中
+  primaryPostId?: number
 }
 
 // 更新用户请求 DTO
@@ -72,6 +92,14 @@ export interface UserUpdateRequest {
   birthday?: string
   status?: number
   remark?: string
+  // 主部门ID（为空表示不变）
+  primaryDeptId?: number
+  // 主岗位ID（为空表示不变）
+  primaryPostId?: number
+  // 所属部门ID列表（为空表示不变）
+  deptIds?: number[]
+  // 所属岗位ID列表（为空表示不变）
+  postIds?: number[]
 }
 
 // 切换用户状态请求 DTO

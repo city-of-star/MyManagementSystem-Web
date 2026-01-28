@@ -17,6 +17,8 @@ import {
 } from '@/api/system/user/user.ts'
 import { type PageResult } from '@/api/common/types.ts'
 import { getRolePage, type RoleVo } from '@/api/system/role/role.ts'
+import { getDeptTree, type DeptVo } from '@/api/system/dept/dept.ts'
+import { getPostPage, type PostVo } from '@/api/system/post/post.ts'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/layout/SearchForm.vue'
@@ -46,6 +48,8 @@ const query = reactive<UserPageQuery>({
   createTimeEnd: null,
   lastLoginTimeStart: null,
   lastLoginTimeEnd: null,
+  deptId: null,
+  postId: null,
 })
 
 // 字典：性别
@@ -54,6 +58,18 @@ const { options: userGenderOptions, loading: userGenderLoading, load: userGender
 const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
 // 字典：锁定状态
 const { options: userLockStatusOptions, loading: userLockStatusLoading, load: userLockStatusLoad } = useDict('user_lock_status')
+
+// 部门 / 岗位选项
+const deptTree = ref<DeptVo[]>([])
+const deptLoading = ref(false)
+const postOptions = ref<PostVo[]>([])
+const postLoading = ref(false)
+
+const deptTreeProps = {
+  label: 'deptName',
+  value: 'id',
+  children: 'children',
+}
 
 // 列表 & 分页
 const loading = ref(false)
@@ -86,20 +102,55 @@ const form = reactive({
   email: '',
   phone: '',
   status: 1,
+  // 简化为单选主部门 / 主岗位，底层转换为列表 + 主ID
+  deptId: null as number | null,
+  postId: null as number | null,
   remark: '',
 })
 
 // 初始化
 onMounted(async () => {
-  // 并行加载所有字典
+  // 并行加载所有字典 & 部门/岗位
   await Promise.all([
     userGenderLoad(),
     statusLoad(),
     userLockStatusLoad(),
+    loadDeptTree(),
+    loadPosts(),
   ])
   // 加载列表数据
   fetchData()
 })
+
+// 加载部门树（仅启用）
+const loadDeptTree = async () => {
+  deptLoading.value = true
+  try {
+    const resp = await getDeptTree({ status: 1 })
+    deptTree.value = resp || []
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    deptLoading.value = false
+  }
+}
+
+// 加载岗位列表（仅启用）
+const loadPosts = async () => {
+  postLoading.value = true
+  try {
+    const resp: PageResult<PostVo> = await getPostPage({
+      pageNum: 1,
+      pageSize: 1000,
+      status: 1,
+    })
+    postOptions.value = resp.records || []
+  } catch (error) {
+    handleErrorToast(error)
+  } finally {
+    postLoading.value = false
+  }
+}
 
 // 查询按钮
 const handleSearch = () => {
@@ -122,6 +173,8 @@ const handleReset = () => {
   query.createTimeEnd = null
   query.lastLoginTimeStart = null
   query.lastLoginTimeEnd = null
+  query.deptId = null
+  query.postId = null
   fetchData()
 }
 
@@ -165,6 +218,9 @@ const handleEdit = (row: UserVo) => {
   form.email = row.email || ''
   form.phone = row.phone || ''
   form.status = row.status ?? 1
+  // 主部门 / 主岗位从 VO 回填，后端暂不返回时为 null
+  form.deptId = (row as any).primaryDeptId ?? null
+  form.postId = (row as any).primaryPostId ?? null
   form.remark = row.remark || ''
   dialogVisible.value = true
 }
@@ -182,6 +238,9 @@ const handleSubmit = async () => {
       return
     }
 
+    const deptIds = form.deptId ? [form.deptId] : undefined
+    const postIds = form.postId ? [form.postId] : undefined
+
     if (editingUserId.value) {
       await updateUser({
         id: editingUserId.value,
@@ -192,6 +251,10 @@ const handleSubmit = async () => {
         email: form.email || undefined,
         phone: form.phone || undefined,
         status: form.status,
+        deptIds,
+        primaryDeptId: form.deptId ?? undefined,
+        postIds,
+        primaryPostId: form.postId ?? undefined,
         remark: form.remark || undefined,
       })
       Message.success('更新成功')
@@ -205,6 +268,10 @@ const handleSubmit = async () => {
         email: form.email || undefined,
         phone: form.phone || undefined,
         status: form.status,
+        deptIds,
+        primaryDeptId: form.deptId ?? undefined,
+        postIds,
+        primaryPostId: form.postId ?? undefined,
         remark: form.remark || undefined,
       })
       Message.success('创建成功')
@@ -228,6 +295,8 @@ const resetForm = () => {
   form.email = ''
   form.phone = ''
   form.status = 1
+  form.deptId = null
+  form.postId = null
   form.remark = ''
 }
 
@@ -380,6 +449,35 @@ const handleSubmitRoles = async () => {
       <el-form-item label="手机号">
         <el-input v-model="query.phone" placeholder="请输入手机号" clearable />
       </el-form-item>
+      <el-form-item label="部门">
+        <el-tree-select
+          v-model="query.deptId"
+          :data="deptTree"
+          :props="deptTreeProps"
+          node-key="id"
+          check-strictly
+          :render-after-expand="false"
+          :loading="deptLoading"
+          placeholder="请选择部门"
+          clearable
+        />
+      </el-form-item>
+      <el-form-item label="岗位">
+        <el-select
+          v-model="query.postId"
+          placeholder="请选择岗位"
+          clearable
+          filterable
+          :loading="postLoading"
+        >
+          <el-option
+            v-for="post in postOptions"
+            :key="post.id"
+            :label="`${post.postName}(${post.postCode})`"
+            :value="post.id"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="性别">
         <DictSelect
             :options="userGenderOptions"
@@ -492,6 +590,35 @@ const handleSubmitRoles = async () => {
         </el-form-item>
         <el-form-item label="真实姓名">
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
+        </el-form-item>
+        <el-form-item label="部门">
+          <el-tree-select
+            v-model="form.deptId"
+            :data="deptTree"
+            :props="deptTreeProps"
+            node-key="id"
+            check-strictly
+            :render-after-expand="false"
+            :loading="deptLoading"
+            placeholder="请选择所属部门"
+            clearable
+          />
+        </el-form-item>
+        <el-form-item label="岗位">
+          <el-select
+            v-model="form.postId"
+            placeholder="请选择所属岗位"
+            clearable
+            filterable
+            :loading="postLoading"
+          >
+            <el-option
+              v-for="post in postOptions"
+              :key="post.id"
+              :label="`${post.postName}(${post.postCode})`"
+              :value="post.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="性别">
           <DictSelect

@@ -146,17 +146,10 @@ export function removeRoleFromPermission(payload: PermissionRemoveRoleRequest): 
 }
 
 /**
- * 获取权限树（全量，用于管理场景如角色分配）
+ * 获取权限树（全量）
  */
-export function getPermissionTree(params?: PermissionPageQuery): Promise<PermissionTreeVo[]> {
-  const queryParams: Partial<PermissionPageQuery> = {}
-  if (params?.permissionName) queryParams.permissionName = params.permissionName
-  if (params?.permissionCode) queryParams.permissionCode = params.permissionCode
-  if (params?.permissionType) queryParams.permissionType = params.permissionType
-  if (params?.status !== undefined) queryParams.status = params.status
-  if (params?.visible !== undefined) queryParams.visible = params.visible
-
-  return httpGet<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree', Object.keys(queryParams).length > 0 ? queryParams : undefined)
+export function getPermissionTree(payload: Partial<PermissionPageQuery> = {}): Promise<PermissionTreeVo[]> {
+  return httpPost<PermissionTreeVo[]>(SERVICE.USERCENTER, '/permission/tree', payload)
 }
 
 /**
