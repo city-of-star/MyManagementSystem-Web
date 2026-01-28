@@ -58,7 +58,6 @@ const {
 const {
   options: commonStatusOptions,
   loading: commonStatusLoading,
-  label: commonStatusLabel,
   load: commonStatusLoad
 } = useDict('common_status')
 // 字典：锁定状态
@@ -454,27 +453,19 @@ const handleSubmitRoles = async () => {
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
       <el-table-column prop="gender" label="性别" width="90">
         <template #default="{ row }">
-          <DictText dict-code="user_gender" :value="row.gender" />
+          <DictText :options="userGenderOptions" :value="row.gender" />
         </template>
       </el-table-column>
       <el-table-column prop="phone" label="手机号" min-width="130" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <DictTag
-            dict-code="common_status"
-            :value="row.status"
-            :type-map="{ '1': 'success', '0': 'info' }"
-          />
+          <DictTag :options="commonStatusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>
         </template>
       </el-table-column>
       <el-table-column label="锁定" width="100">
         <template #default="{ row }">
-          <DictTag
-            dict-code="user_lock_status"
-            :value="row.locked"
-            :type-map="{ '1': 'danger', '0': 'success' }"
-          />
+          <DictTag :options="userLockStatusOptions" :value="row.locked" :type-map="{ '1': 'danger', '0': 'success' }"/>
         </template>
       </el-table-column>
       <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
@@ -483,18 +474,8 @@ const handleSubmitRoles = async () => {
         <template #default="{ row }">
           <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)"/>
           <IconButton type="success" icon="User" tooltip="分配角色" @click="handleAssignRoles(row)"/>
-          <IconButton
-            type="primary"
-            :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="commonStatusLabel(row.status === 1 ? 0 : 1)"
-            @click="handleToggleStatus(row)"
-          />
-          <IconButton
-            type="primary"
-            :icon="row.locked === 1 ? 'Unlock' : 'Lock'"
-            :tooltip="row.locked === 1 ? '解锁' : '锁定'"
-            @click="handleToggleLock(row)"
-          />
+          <IconButton type="primary" :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'" :tooltip="row.status === 1 ? '禁用' : '启用'" @click="handleToggleStatus(row)"/>
+          <IconButton type="primary" :icon="row.locked === 1 ? 'Unlock' : 'Lock'" :tooltip="row.locked === 1 ? '解锁' : '锁定'" @click="handleToggleLock(row)"/>
           <IconButton type="primary" icon="Key" tooltip="重置密码" @click="handleResetPassword(row)"/>
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)"/>
         </template>

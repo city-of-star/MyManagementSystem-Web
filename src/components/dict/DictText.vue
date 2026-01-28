@@ -2,50 +2,31 @@
   字典文本显示组件
 
   功能：
-  - 根据字典编码和字典值显示对应的标签文本
-  - 内部自动加载字典并使用缓存
+  - 接收父组件传入的字典选项（options）和字典值（value）
+  - 在组件内部将 value 翻译为对应的 label 文本并展示
 
   使用示例：
-  <DictText dict-code="user_gender" :value="row.gender" />
+  <DictText :options="userGenderOptions" :value="row.gender" />
 -->
 <script setup lang="ts">
-import { onMounted, computed, watch } from 'vue'
-import { useDict } from '@/utils/base/dictUtils.ts'
+import { computed } from 'vue'
+import type { DictOption } from '@/utils/base/dictUtils.ts'
+import { findDictLabel } from '@/utils/base/dictUtils.ts'
 
 const props = withDefaults(
   defineProps<{
-    dictCode: string // 字典类型编码
+    options: DictOption[] // 字典选项列表（由父组件加载并传入）
     value: string | number | null | undefined // 字典值
     placeholder?: string // 找不到时的占位符
-    autoLoad?: boolean // 是否在挂载时自动加载字典
   }>(),
   {
-    placeholder: '',
-    autoLoad: true,
-  },
-)
-
-const { options, load } = useDict(props.dictCode)
-
-onMounted(() => {
-  if (props.autoLoad) {
-    load(true)
-  }
-})
-
-watch(
-  () => props.dictCode,
-  () => {
-    load(false)
+    placeholder: '--',
   },
 )
 
 const text = computed(() => {
-  if (props.value === null || props.value === undefined || props.value === '') {
-    return props.placeholder
-  }
-  const target = options.value.find((opt) => opt.value === String(props.value))
-  return target?.label ?? props.placeholder
+  const label = findDictLabel(props.options, props.value)
+  return label || props.placeholder
 })
 </script>
 
