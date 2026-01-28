@@ -48,8 +48,25 @@ const query = reactive<UserPageQuery>({
   lastLoginTimeEnd: null,
 })
 
-// 字典：通用状态（用于 tooltip 文案）
-const { findLabel: statusFindLabel, load: loadStatusDict } = useDict('common_status')
+// 字典：性别
+const {
+  options: userGenderOptions,
+  loading: userGenderLoading,
+  load: userGenderLoad
+} = useDict('user_gender')
+// 字典：通用状态
+const {
+  options: commonStatusOptions,
+  loading: commonStatusLoading,
+  label: commonStatusLabel,
+  load: commonStatusLoad
+} = useDict('common_status')
+// 字典：锁定状态
+const {
+  options: userLockStatusOptions,
+  loading: userLockStatusLoading,
+  load: userLockStatusLoad
+} = useDict('user_lock_status')
 
 // 列表 & 分页
 const loading = ref(false)
@@ -86,9 +103,13 @@ const form = reactive({
 })
 
 // 初始化
-onMounted(() => {
-  // 加载字典
-  loadStatusDict()
+onMounted(async () => {
+  // 并行加载所有字典
+  await Promise.all([
+    userGenderLoad(),
+    commonStatusLoad(),
+    userLockStatusLoad(),
+  ])
   // 加载列表数据
   fetchData()
 })
@@ -373,13 +394,25 @@ const handleSubmitRoles = async () => {
         <el-input v-model="query.phone" placeholder="请输入手机号" clearable />
       </el-form-item>
       <el-form-item label="性别">
-        <DictSelect dict-code="user_gender" v-model="query.gender" placeholder="全部" clearable />
+        <DictSelect
+            :options="userGenderOptions"
+            :loading="userGenderLoading"
+            v-model="query.gender"
+        />
       </el-form-item>
       <el-form-item label="状态">
-        <DictSelect dict-code="common_status" v-model="query.status" placeholder="全部" clearable />
+        <DictSelect
+            :options="commonStatusOptions"
+            :loading="commonStatusLoading"
+            v-model="query.status"
+        />
       </el-form-item>
       <el-form-item label="锁定状态">
-        <DictSelect dict-code="user_lock_status" v-model="query.locked" placeholder="全部" clearable />
+        <DictSelect
+            :options="userLockStatusOptions"
+            :loading="userLockStatusLoading"
+            v-model="query.locked"
+        />
       </el-form-item>
       <el-form-item label="创建时间">
         <DateRangePicker
@@ -453,7 +486,7 @@ const handleSubmitRoles = async () => {
           <IconButton
             type="primary"
             :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="statusFindLabel(row.status === 1 ? 0 : 1)"
+            :tooltip="commonStatusLabel(row.status === 1 ? 0 : 1)"
             @click="handleToggleStatus(row)"
           />
           <IconButton
@@ -492,7 +525,11 @@ const handleSubmitRoles = async () => {
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
         </el-form-item>
         <el-form-item label="性别">
-          <DictSelect dict-code="user_gender" v-model="form.gender" placeholder="请选择性别" clearable />
+          <DictSelect
+              :options="userGenderOptions"
+              :loading="userGenderLoading"
+              v-model="form.gender"
+          />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
@@ -502,13 +539,14 @@ const handleSubmitRoles = async () => {
         </el-form-item>
         <el-form-item label="状态" v-if="!editingUserId">
           <DictSelect
-            dict-code="common_status"
+            :options="commonStatusOptions"
+            :loading="commonStatusLoading"
             v-model="form.status"
             style="width: 140px"
           />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
 

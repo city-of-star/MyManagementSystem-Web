@@ -2,60 +2,39 @@
   字典下拉选择组件
 
   功能：
-  - 根据字典编码自动加载字典项
-  - 通过 v-model 绑定选中值
+  - 接收字典选项列表，通过 v-model 绑定选中值
+  - 默认支持清空（clearable），默认占位符为"请选择"
   - 透传 el-select 的常用属性和事件
 
   使用示例：
-  <DictSelect dict-code="common_status" v-model="query.status" placeholder="全部" clearable />
+  <DictSelect :options="statusOptions" v-model="query.status" placeholder="全部" />
 -->
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
-import { useDict } from '@/utils/base/dictUtils.ts'
+import type { DictOption } from '@/utils/base/dictUtils.ts'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
-    dictCode: string // 字典类型编码
+    options: DictOption[] // 字典选项列表
     modelValue: string | number | null | undefined // v-model 绑定值
-    valueAsNumber?: boolean // 是否将选项值转成 Number
-    autoLoad?: boolean // 是否在挂载时自动加载字典
+    loading?: boolean // 加载状态
+    placeholder?: string // 占位符文本
+    clearable?: boolean // 是否可清空
   }>(),
   {
-    valueAsNumber: true,
-    autoLoad: true,
+    loading: false,
+    placeholder: '请选择',
+    clearable: true,
   },
 )
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string | number | null | undefined]
-  change: [value: string | number | null | undefined]
+  'update:modelValue': [value: string | null | undefined]
+  change: [value: string | null | undefined]
 }>()
 
-// 使用字典工具加载选项
-const { options, loading, load } = useDict(props.dictCode)
-
-onMounted(() => {
-  if (props.autoLoad) {
-    load(true)
-  }
-})
-
-// 当字典编码变化时，重新加载
-watch(
-  () => props.dictCode,
-  () => {
-    load(false)
-  },
-)
-
-const handleChange = (val: string | number | null | undefined) => {
-  let value: string | number | null | undefined = val
-  if (props.valueAsNumber && value !== null && value !== undefined && value !== '') {
-    const num = Number(value)
-    value = Number.isNaN(num) ? value : num
-  }
-  emit('update:modelValue', value)
-  emit('change', value)
+const handleChange = (val: string | null | undefined) => {
+  emit('update:modelValue', val)
+  emit('change', val)
 }
 </script>
 
@@ -63,6 +42,8 @@ const handleChange = (val: string | number | null | undefined) => {
   <el-select
     :model-value="modelValue"
     :loading="loading"
+    :placeholder="placeholder"
+    :clearable="clearable"
     @change="handleChange"
     v-bind="$attrs"
   >
@@ -70,7 +51,7 @@ const handleChange = (val: string | number | null | undefined) => {
       v-for="opt in options"
       :key="opt.value"
       :label="opt.label"
-      :value="valueAsNumber ? Number(opt.value) : opt.value"
+      :value="opt.value"
     />
   </el-select>
 </template>

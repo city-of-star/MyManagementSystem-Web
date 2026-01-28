@@ -1,7 +1,7 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
 import type { PageResult } from '@/api/common/types'
 
-// 分页查询请求 DTO（与后端 UserPageQueryDto 字段对齐，日期用字符串承载）
+// 分页查询请求 DTO
 export interface UserPageQuery {
   pageNum?: number
   pageSize?: number
@@ -19,7 +19,7 @@ export interface UserPageQuery {
   lastLoginTimeEnd?: string | null
 }
 
-// 用户信息 VO（与后端 UserVo 字段对齐，时间字段统一用字符串）
+// 用户信息 VO
 export interface UserVo {
   id: number
   username: string
@@ -93,7 +93,7 @@ export interface UserPasswordResetRequest {
   newPassword: string
 }
 
-// 修改密码请求 DTO（当前页面主要用于管理员操作，留接口备用）
+// 修改密码请求 DTO
 export interface UserPasswordChangeRequest {
   oldPassword: string
   newPassword: string

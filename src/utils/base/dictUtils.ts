@@ -41,23 +41,26 @@ import { handleErrorToast } from '@/utils/http'
  * 字典选项接口
  */
 export interface DictOption {
-  /** 显示标签 */
-  label: string
-  /** 实际值 */
-  value: string
-  /** 完整的后端 VO 对象 */
-  raw: DictDataVo
+  label: string // 显示标签
+  value: string // 实际值（字符串形式，与后端一致）
+  raw: DictDataVo // 完整的后端 VO 对象
 }
 
-// 字典数据缓存，避免同一字典类型反复请求
+/**
+ * 字典数据缓存，避免同一字典类型反复请求
+ */
 const dictCache = new Map<string, DictOption[]>()
 
-// 全局响应式 loading 状态，所有组件共享同一个字典类型的 loading 状态
-// 使用 reactive 包装 Map，使其成为响应式的
+/**
+ * 全局响应式 loading 状态，所有组件共享同一个字典类型的 loading 状态
+ * 使用 reactive 包装 Map，使其成为响应式的
+ */
 const dictLoading = reactive(new Map<string, boolean>())
 
-// 正在进行的请求 Promise，用于处理并发请求
-// 当多个组件同时请求同一字典时，共享同一个 Promise，避免重复请求
+/**
+ * 正在进行的请求 Promise，用于处理并发请求
+ * 当多个组件同时请求同一字典时，共享同一个 Promise，避免重复请求
+ */
 const dictLoadingPromises = new Map<string, Promise<DictOption[]>>()
 
 /**
@@ -139,9 +142,7 @@ export function useDict(dictTypeCode: string) {
         dictLoading.set(dictTypeCode, true)
 
         // 获取字典数据（fetchDictOptions 内部已经处理缓存存储）
-        const options = await fetchDictOptions(dictTypeCode, useCache)
-
-        return options
+        return await fetchDictOptions(dictTypeCode, useCache)
       } catch (error) {
         handleErrorToast(error, `加载字典【${dictTypeCode}】失败`)
         throw error
@@ -164,19 +165,15 @@ export function useDict(dictTypeCode: string) {
   }
 
   // 基于当前 options 的同步查找
-  const findLabel = (
+  const label = (
     value: string | number | null | undefined,
   ) => findDictLabel(optionsRef.value, value)
 
   return {
-    /** 字典选项列表 */
-    options: optionsRef,
-    /** 加载状态（响应式，从全局 dictLoading 读取） */
-    loading: loadingRef,
-    /** 加载字典数据的方法 */
-    load,
-    /** 将字典值翻译成字典标签 */
-    findLabel
+    options: optionsRef, // 字典选项列表
+    loading: loadingRef, // 加载状态（响应式，从全局 dictLoading 读取）
+    load, // 加载字典数据的方法
+    label // 将字典值翻译成字典标签
   }
 }
 
