@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { Message } from '@/utils/base/messageUtils.ts'
 import {
   assignUserRoles,
   batchDeleteUser,
   createUser,
   deleteUser,
+  getUserDeptIds,
   getUserPage,
+  getUserPostIds,
   getUserRoleIds,
   lockOrUnlockUser,
   resetUserPassword,
@@ -71,6 +73,20 @@ const deptTreeProps = {
   children: 'children',
 }
 
+type FlatDept = { id: number; deptName: string }
+const deptFlat = computed<FlatDept[]>(() => {
+  const res: FlatDept[] = []
+  const walk = (nodes?: DeptVo[]) => {
+    if (!nodes?.length) return
+    for (const n of nodes) {
+      res.push({ id: n.id, deptName: n.deptName })
+      walk(n.children)
+    }
+  }
+  walk(deptTree.value)
+  return res
+})
+
 // 列表 & 分页
 const loading = ref(false)
 const tableData = ref<UserVo[]>([])
@@ -102,11 +118,42 @@ const form = reactive({
   email: '',
   phone: '',
   status: 1,
-  // 简化为单选主部门 / 主岗位，底层转换为列表 + 主ID
-  deptId: null as number | null,
-  postId: null as number | null,
+  // 部门：多选 + 主部门
+  deptIds: [] as number[],
+  primaryDeptId: null as number | null,
+  // 岗位：多选 + 主岗位
+  postIds: [] as number[],
+  primaryPostId: null as number | null,
   remark: '',
 })
+
+// deptIds / primaryDeptId 关联约束
+watch(
+  () => [...form.deptIds],
+  (ids) => {
+    if (!ids.length) {
+      form.primaryDeptId = null
+      return
+    }
+    if (!form.primaryDeptId || !ids.includes(form.primaryDeptId)) {
+      form.primaryDeptId = ids[0]
+    }
+  },
+)
+
+// postIds / primaryPostId 关联约束
+watch(
+  () => [...form.postIds],
+  (ids) => {
+    if (!ids.length) {
+      form.primaryPostId = null
+      return
+    }
+    if (!form.primaryPostId || !ids.includes(form.primaryPostId)) {
+      form.primaryPostId = ids[0]
+    }
+  },
+)
 
 // 初始化
 onMounted(async () => {
@@ -207,7 +254,7 @@ const handleCreate = () => {
 }
 
 // 编辑按钮
-const handleEdit = (row: UserVo) => {
+const handleEdit = async (row: UserVo) => {
   resetForm()
   dialogTitle.value = '编辑用户'
   editingUserId.value = row.id
@@ -218,10 +265,21 @@ const handleEdit = (row: UserVo) => {
   form.email = row.email || ''
   form.phone = row.phone || ''
   form.status = row.status ?? 1
-  // 主部门 / 主岗位从 VO 回填，后端暂不返回时为 null
-  form.deptId = (row as any).primaryDeptId ?? null
-  form.postId = (row as any).primaryPostId ?? null
   form.remark = row.remark || ''
+  // 回显部门/岗位列表（从后端接口拉取）
+  try {
+    const [deptIds, postIds] = await Promise.all([
+      getUserDeptIds(row.id),
+      getUserPostIds(row.id),
+    ])
+    form.deptIds = deptIds || []
+    form.postIds = postIds || []
+    // 主部门/主岗位：优先用 VO 回填，否则用第一个选中项兜底（watch 也会兜底）
+    form.primaryDeptId = (row as any).primaryDeptId ?? form.deptIds[0] ?? null
+    form.primaryPostId = (row as any).primaryPostId ?? form.postIds[0] ?? null
+  } catch (error) {
+    handleErrorToast(error)
+  }
   dialogVisible.value = true
 }
 
@@ -238,8 +296,17 @@ const handleSubmit = async () => {
       return
     }
 
-    const deptIds = form.deptId ? [form.deptId] : undefined
-    const postIds = form.postId ? [form.postId] : undefined
+    const deptIds = form.deptIds.length ? form.deptIds : undefined
+    const postIds = form.postIds.length ? form.postIds : undefined
+
+    const primaryDeptId =
+      deptIds && deptIds.length
+        ? (form.primaryDeptId && deptIds.includes(form.primaryDeptId) ? form.primaryDeptId : deptIds[0])
+        : undefined
+    const primaryPostId =
+      postIds && postIds.length
+        ? (form.primaryPostId && postIds.includes(form.primaryPostId) ? form.primaryPostId : postIds[0])
+        : undefined
 
     if (editingUserId.value) {
       await updateUser({
@@ -252,9 +319,9 @@ const handleSubmit = async () => {
         phone: form.phone || undefined,
         status: form.status,
         deptIds,
-        primaryDeptId: form.deptId ?? undefined,
+        primaryDeptId,
         postIds,
-        primaryPostId: form.postId ?? undefined,
+        primaryPostId,
         remark: form.remark || undefined,
       })
       Message.success('更新成功')
@@ -269,9 +336,9 @@ const handleSubmit = async () => {
         phone: form.phone || undefined,
         status: form.status,
         deptIds,
-        primaryDeptId: form.deptId ?? undefined,
+        primaryDeptId,
         postIds,
-        primaryPostId: form.postId ?? undefined,
+        primaryPostId,
         remark: form.remark || undefined,
       })
       Message.success('创建成功')
@@ -295,8 +362,10 @@ const resetForm = () => {
   form.email = ''
   form.phone = ''
   form.status = 1
-  form.deptId = null
-  form.postId = null
+  form.deptIds = []
+  form.primaryDeptId = null
+  form.postIds = []
+  form.primaryPostId = null
   form.remark = ''
 }
 
@@ -591,29 +660,61 @@ const handleSubmitRoles = async () => {
         <el-form-item label="真实姓名">
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
         </el-form-item>
-        <el-form-item label="部门">
+        <el-form-item label="所属部门">
           <el-tree-select
-            v-model="form.deptId"
+            v-model="form.deptIds"
             :data="deptTree"
             :props="deptTreeProps"
             node-key="id"
+            multiple
             check-strictly
             :render-after-expand="false"
             :loading="deptLoading"
-            placeholder="请选择所属部门"
+            placeholder="请选择所属部门（可多选）"
             clearable
           />
         </el-form-item>
-        <el-form-item label="岗位">
+        <el-form-item label="主部门">
           <el-select
-            v-model="form.postId"
-            placeholder="请选择所属岗位"
+            v-model="form.primaryDeptId"
+            placeholder="请选择主部门"
+            clearable
+            :disabled="!form.deptIds.length"
+          >
+            <el-option
+              v-for="dept in deptFlat.filter((d) => form.deptIds.includes(d.id))"
+              :key="dept.id"
+              :label="dept.deptName"
+              :value="dept.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="所属岗位">
+          <el-select
+            v-model="form.postIds"
+            multiple
+            placeholder="请选择所属岗位（可多选）"
             clearable
             filterable
             :loading="postLoading"
           >
             <el-option
               v-for="post in postOptions"
+              :key="post.id"
+              :label="`${post.postName}(${post.postCode})`"
+              :value="post.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="主岗位">
+          <el-select
+            v-model="form.primaryPostId"
+            placeholder="请选择主岗位"
+            clearable
+            :disabled="!form.postIds.length"
+          >
+            <el-option
+              v-for="post in postOptions.filter((p) => form.postIds.includes(p.id))"
               :key="post.id"
               :label="`${post.postName}(${post.postCode})`"
               :value="post.id"
@@ -709,4 +810,6 @@ const handleSubmitRoles = async () => {
   padding-top: 8px;
 }
 </style>
+
+
 
