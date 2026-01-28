@@ -6,6 +6,14 @@
   - 在组件内部将 value 翻译为对应的 label 文本，并用 el-tag 展示
   - 支持通过 typeMap 将不同的 value 映射为不同的 el-tag type
 
+    typeMap 说明：
+  - 作用：根据字典值映射 el-tag 的类型，从而控制不同状态的颜色样式
+  - 用法：key -> 字典值; value -> 类型
+    - 示例：  :type-map="{ '1': 'success', '0': 'info' }"
+    - 示例：  :type-map="{ '1': 'danger', '0': 'success' }"
+  - 可选类型：primary | success | info | warning | danger
+  - 不传此属性或者未命中类型时则用默认类型 info
+
   使用示例：
   <DictTag :options="commonStatusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>
 -->

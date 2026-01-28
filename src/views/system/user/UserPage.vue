@@ -396,21 +396,21 @@ const handleSubmitRoles = async () => {
         <DictSelect
             :options="userGenderOptions"
             :loading="userGenderLoading"
-            v-model="query.gender"
+            v-model.number="query.gender"
         />
       </el-form-item>
       <el-form-item label="状态">
         <DictSelect
             :options="commonStatusOptions"
             :loading="commonStatusLoading"
-            v-model="query.status"
+            v-model.number="query.status"
         />
       </el-form-item>
       <el-form-item label="锁定状态">
         <DictSelect
             :options="userLockStatusOptions"
             :loading="userLockStatusLoading"
-            v-model="query.locked"
+            v-model.number="query.locked"
         />
       </el-form-item>
       <el-form-item label="创建时间">
@@ -509,7 +509,7 @@ const handleSubmitRoles = async () => {
           <DictSelect
               :options="userGenderOptions"
               :loading="userGenderLoading"
-              v-model="form.gender"
+              v-model.number="form.gender"
           />
         </el-form-item>
         <el-form-item label="手机号">
@@ -522,7 +522,7 @@ const handleSubmitRoles = async () => {
           <DictSelect
             :options="commonStatusOptions"
             :loading="commonStatusLoading"
-            v-model="form.status"
+            v-model.number="form.status"
             style="width: 140px"
           />
         </el-form-item>

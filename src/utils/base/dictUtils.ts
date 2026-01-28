@@ -7,11 +7,23 @@
  * ```typescript
  * import { useDict } from '@/utils/base/dictUtils.ts'
  *
- * // 在组件中使用
- * const {options: statusOptions, findLabel: statusFindLabel, load: loadStatusDict} = useDict('common_status')
+ * // 在组件中使用（初始化字典）
+ * const {
+ *   options: userGenderOptions,
+ *   loading: userGenderLoading,
+ *   load: userGenderLoad
+ * } = useDict('user_gender')
+ * const {
+ *   options: commonStatusOptions,
+ *   loading: commonStatusLoading,
+ *   load: commonStatusLoad
+ * } = useDict('common_status')
  *
  * onMounted(() => {
- *   loadStatusDict()
+ *   await Promise.all([
+ *     userGenderLoad(),
+ *     commonStatusLoad()
+ *   ])
  * })
  *
  * // 在模板中使用（下拉框）
