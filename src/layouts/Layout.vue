@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import { computed } from 'vue'
 import LayoutHeader from '@/layouts/LayoutHeader.vue'
 import LayoutSidebar from '@/layouts/LayoutSidebar.vue'
 import LayoutTabs from '@/layouts/LayoutTabs.vue'
+import { useTabsStore } from '@/store/tabs/tabs'
+
+const tabsStore = useTabsStore()
+const viewKey = computed(() => tabsStore.viewKey)
 </script>
 
 <template>
@@ -13,7 +18,7 @@ import LayoutTabs from '@/layouts/LayoutTabs.vue'
       <main class="content">
         <LayoutTabs />
         <div class="content-inner">
-          <RouterView />
+          <RouterView :key="viewKey" />
         </div>
       </main>
     </div>

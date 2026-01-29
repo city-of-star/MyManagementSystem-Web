@@ -7,11 +7,15 @@ export interface TabItem {
   name: string
   title: string
   fullPath: string
+  reloadKey: number
 }
 
 export const useTabsStore = defineStore('tabs', () => {
   const tabs = ref<TabItem[]>([])
   const activeTab = ref<string>('')
+
+  // 当前 router-view 的 key，用于强制重新挂载组件
+  const viewKey = ref<number>(Date.now())
 
   // 添加标签页
   const addTab = (route: RouteLocationNormalized) => {
@@ -28,6 +32,7 @@ export const useTabsStore = defineStore('tabs', () => {
         name,
         title,
         fullPath,
+        reloadKey: Date.now(),
       })
     }
     activeTab.value = fullPath
@@ -46,6 +51,16 @@ export const useTabsStore = defineStore('tabs', () => {
     activeTab.value = fullPath
   }
 
+  // 刷新当前激活标签页（通过改变 viewKey 强制 RouterView 重新挂载）
+  const refreshActiveTab = () => {
+    viewKey.value = Date.now()
+
+    const current = tabs.value.find(tab => tab.fullPath === activeTab.value)
+    if (current) {
+      current.reloadKey = viewKey.value
+    }
+  }
+
   // 关闭其他标签页
   const closeOtherTabs = (fullPath: string) => {
     tabs.value = tabs.value.filter(tab => tab.fullPath === fullPath)
@@ -56,6 +71,7 @@ export const useTabsStore = defineStore('tabs', () => {
   const closeAllTabs = () => {
     tabs.value = []
     activeTab.value = ''
+    viewKey.value = Date.now()
   }
 
   // 关闭左侧标签页
@@ -77,6 +93,7 @@ export const useTabsStore = defineStore('tabs', () => {
   return {
     tabs,
     activeTab,
+    viewKey,
     addTab,
     removeTab,
     setActiveTab,
@@ -84,6 +101,7 @@ export const useTabsStore = defineStore('tabs', () => {
     closeAllTabs,
     closeLeftTabs,
     closeRightTabs,
+    refreshActiveTab,
   }
 })
 
