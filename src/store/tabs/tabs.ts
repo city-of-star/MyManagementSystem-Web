@@ -71,7 +71,6 @@ export const useTabsStore = defineStore('tabs', () => {
   const closeAllTabs = () => {
     tabs.value = []
     activeTab.value = ''
-    viewKey.value = Date.now()
   }
 
   // 关闭左侧标签页
