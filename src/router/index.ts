@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Login from '@/views/auth/Login.vue'
 import Layout from '@/layouts/Layout.vue'
+import UserProfile from '@/views/profile/UserProfile.vue'
 import HomeView from '@/views/HomeView.vue'
 
 import { useMenuStore } from '@/store/menu/menu'
@@ -31,6 +32,19 @@ const baseRoutes: RouteRecordRaw[] = [
         name: 'home',
         component: HomeView,
         meta: { title: '首页', icon: 'Home' },
+      },
+    ],
+  },
+  // 个人信息页面（所有登录用户可访问）
+  {
+    path: '/profile',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'profile',
+        component: UserProfile,
+        meta: { title: '个人信息', icon: 'User' },
       },
     ],
   },

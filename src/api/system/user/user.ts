@@ -46,13 +46,13 @@ export interface UserVo {
   createTime?: string
   updateBy?: number
   updateTime?: string
-  // 主部门ID（后端 VO 若未返回则为 undefined）
+  primaryDept?: any
+  primaryPost?: any
+  depts?: any[]
+  posts?: any[]
   primaryDeptId?: number
-  // 主岗位ID
   primaryPostId?: number
-  // 所属部门ID列表
   deptIds?: number[]
-  // 所属岗位ID列表
   postIds?: number[]
 }
 
@@ -69,13 +69,9 @@ export interface UserCreateRequest {
   birthday?: string
   status?: number
   remark?: string
-  // 所属部门ID列表
   deptIds?: number[]
-  // 主部门ID，必须包含在部门ID列表中
   primaryDeptId?: number
-  // 所属岗位ID列表
   postIds?: number[]
-  // 主岗位ID，必须包含在岗位ID列表中
   primaryPostId?: number
 }
 
@@ -92,13 +88,9 @@ export interface UserUpdateRequest {
   birthday?: string
   status?: number
   remark?: string
-  // 主部门ID（为空表示不变）
   primaryDeptId?: number
-  // 主岗位ID（为空表示不变）
   primaryPostId?: number
-  // 所属部门ID列表（为空表示不变）
   deptIds?: number[]
-  // 所属岗位ID列表（为空表示不变）
   postIds?: number[]
 }
 
@@ -189,6 +181,16 @@ export function resetUserPassword(payload: UserPasswordResetRequest): Promise<vo
 }
 
 /**
+ * 修改指定用户密码
+ */
+export function changeUserPassword(
+  userId: number,
+  payload: UserPasswordChangeRequest,
+): Promise<void> {
+  return httpPost<void>(SERVICE.USERCENTER, `/user/change-password/${userId}`, payload)
+}
+
+/**
  * 为用户分配角色
  */
 export function assignUserRoles(payload: UserAssignRoleRequest): Promise<void> {
@@ -201,5 +203,3 @@ export function assignUserRoles(payload: UserAssignRoleRequest): Promise<void> {
 export function getUserRoleIds(userId: number): Promise<number[]> {
   return httpGet<number[]>(SERVICE.USERCENTER, `/user/${userId}/role-ids`)
 }
-
-

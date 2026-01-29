@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import logoImg from '@/assets/mms.svg'
-import {logout} from "@/api/auth/auth.ts";
-import {handleErrorSilent} from "@/utils/http";
-import router, { resetDynamicRoutesState } from "@/router";
-import {useAuthStore} from "@/store/auth/auth.ts";
-import {useMenuStore} from "@/store/menu/menu.ts";
-import {useTabsStore} from "@/store/tabs/tabs.ts";
-import {useUserStore} from "@/store/user/user.ts";
+import { logout } from '@/api/auth/auth'
+import { handleErrorSilent } from '@/utils/http'
+import router, { resetDynamicRoutesState } from '@/router'
+import { useAuthStore } from '@/store/auth/auth'
+import { useMenuStore } from '@/store/menu/menu'
+import { useTabsStore } from '@/store/tabs/tabs'
+import { useUserStore } from '@/store/user/user'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const menuStore = useMenuStore()
 const tabsStore = useTabsStore()
 
-// 退出按钮
+// 退出登录
 const handleLogout = async () => {
   const refreshToken = authStore.refreshToken || localStorage.getItem('refreshToken')
 
@@ -34,6 +34,15 @@ const handleLogout = async () => {
     await router.push('/login')
   }
 }
+
+// 下拉菜单指令
+const handleUserCommand = async (command: string) => {
+  if (command === 'profile') {
+    await router.push('/profile')
+  } else if (command === 'logout') {
+    await handleLogout()
+  }
+}
 </script>
 
 <template>
@@ -47,45 +56,51 @@ const handleLogout = async () => {
       </div>
     </div>
     <div class="header-right">
-      <div class="user-info">
-        <div class="user-avatar">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+      <el-dropdown trigger="click" @command="handleUserCommand">
+        <div class="user-info">
+          <div class="user-avatar">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <span class="username">{{ userStore.nickname || userStore.username || '未登录' }}</span>
+          <span class="caret">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
         </div>
-        <span class="username">{{ userStore.nickname }}</span>
-      </div>
-      <div class="divider" />
-      <button class="logout-btn" type="button" @click="handleLogout">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        <span>退出</span>
-      </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="profile">个人信息</el-dropdown-item>
+            <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </header>
 </template>
@@ -134,20 +149,22 @@ const handleLogout = async () => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .user-info:hover {
   background: #f5f7fa;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .user-avatar {
@@ -166,6 +183,13 @@ const handleLogout = async () => {
   font-size: 14px;
   color: #262626;
   font-weight: 500;
+}
+
+.caret {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b0b3b8;
 }
 
 .divider {
