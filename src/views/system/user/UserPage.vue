@@ -6,9 +6,7 @@ import {
   batchDeleteUser,
   createUser,
   deleteUser,
-  getUserDeptIds,
   getUserPage,
-  getUserPostIds,
   getUserRoleIds,
   lockOrUnlockUser,
   resetUserPassword,
@@ -19,8 +17,8 @@ import {
 } from '@/api/system/user/user.ts'
 import { type PageResult } from '@/api/common/types.ts'
 import { getRolePage, type RoleVo } from '@/api/system/role/role.ts'
-import { getDeptTree, type DeptVo } from '@/api/system/dept/dept.ts'
-import { getPostPage, type PostVo } from '@/api/system/post/post.ts'
+import { getDeptTree, getUserDeptIds, getUserPrimaryDept, type DeptVo } from '@/api/system/dept/dept.ts'
+import { getPostPage, getUserPostIds, getUserPrimaryPost, type PostVo } from '@/api/system/post/post.ts'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/layout/SearchForm.vue'
@@ -120,10 +118,10 @@ const form = reactive({
   status: 1,
   // 部门：多选 + 主部门
   deptIds: [] as number[],
-  primaryDeptId: null as number | null,
+  primaryDeptId: null as number | null | undefined,
   // 岗位：多选 + 主岗位
   postIds: [] as number[],
-  primaryPostId: null as number | null,
+  primaryPostId: null as number | null | undefined,
   remark: '',
 })
 
@@ -135,8 +133,9 @@ watch(
       form.primaryDeptId = null
       return
     }
-    if (!form.primaryDeptId || !ids.includes(form.primaryDeptId)) {
-      form.primaryDeptId = ids[0]
+    // 不做“兜底造假”：如果主部门不在选择范围内，则置空让用户明确选择
+    if (form.primaryDeptId && !ids.includes(form.primaryDeptId)) {
+      form.primaryDeptId = null
     }
   },
 )
@@ -149,8 +148,9 @@ watch(
       form.primaryPostId = null
       return
     }
-    if (!form.primaryPostId || !ids.includes(form.primaryPostId)) {
-      form.primaryPostId = ids[0]
+    // 不做“兜底造假”：如果主岗位不在选择范围内，则置空让用户明确选择
+    if (form.primaryPostId && !ids.includes(form.primaryPostId)) {
+      form.primaryPostId = null
     }
   },
 )
@@ -268,15 +268,16 @@ const handleEdit = async (row: UserVo) => {
   form.remark = row.remark || ''
   // 回显部门/岗位列表（从后端接口拉取）
   try {
-    const [deptIds, postIds] = await Promise.all([
+    const [deptIds, postIds, primaryDept, primaryPost] = await Promise.all([
       getUserDeptIds(row.id),
       getUserPostIds(row.id),
+      getUserPrimaryDept(row.id),
+      getUserPrimaryPost(row.id),
     ])
     form.deptIds = deptIds || []
     form.postIds = postIds || []
-    // 主部门/主岗位：优先用 VO 回填，否则用第一个选中项兜底（watch 也会兜底）
-    form.primaryDeptId = (row as any).primaryDeptId ?? form.deptIds[0] ?? null
-    form.primaryPostId = (row as any).primaryPostId ?? form.postIds[0] ?? null
+    form.primaryDeptId = primaryDept?.id ?? null
+    form.primaryPostId = primaryPost?.id ?? null
   } catch (error) {
     handleErrorToast(error)
   }
@@ -296,17 +297,25 @@ const handleSubmit = async () => {
       return
     }
 
-    const deptIds = form.deptIds.length ? form.deptIds : undefined
-    const postIds = form.postIds.length ? form.postIds : undefined
+    const deptIds = form.deptIds
+    const postIds = form.postIds
 
-    const primaryDeptId =
-      deptIds && deptIds.length
-        ? (form.primaryDeptId && deptIds.includes(form.primaryDeptId) ? form.primaryDeptId : deptIds[0])
-        : undefined
-    const primaryPostId =
-      postIds && postIds.length
-        ? (form.primaryPostId && postIds.includes(form.primaryPostId) ? form.primaryPostId : postIds[0])
-        : undefined
+    // 如果选了部门/岗位，则必须选择主部门/主岗位
+    if (deptIds.length) {
+      if (!form.primaryDeptId || !deptIds.includes(form.primaryDeptId)) {
+        Message.warning('请选择主部门')
+        return
+      }
+    }
+    if (postIds.length) {
+      if (!form.primaryPostId || !postIds.includes(form.primaryPostId)) {
+        Message.warning('请选择主岗位')
+        return
+      }
+    }
+
+    const primaryDeptId = deptIds.length ? (form.primaryDeptId as number) : undefined
+    const primaryPostId = postIds.length ? (form.primaryPostId as number) : undefined
 
     if (editingUserId.value) {
       await updateUser({
@@ -435,7 +444,7 @@ const handleResetPassword = async (row: UserVo) => {
   try {
     await Message.confirm(`确定要重置用户【${row.username}】的密码吗？`)
     // 简单演示：重置为固定密码；实际可弹窗输入新密码
-    await resetUserPassword({ userId: row.id, newPassword: '123456' })
+    await resetUserPassword({ userId: row.id })
     Message.success('密码已重置为 123456')
   } catch (error) {
     if (error !== 'cancel') {

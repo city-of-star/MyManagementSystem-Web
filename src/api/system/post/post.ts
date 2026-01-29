@@ -109,3 +109,23 @@ export function switchPostStatus(payload: PostStatusSwitchRequest): Promise<void
   return httpPost<void>(SERVICE.USERCENTER, '/post/switch-status', payload)
 }
 
+/**
+ * 查询用户所属的岗位ID列表
+ */
+export function getUserPostIds(userId: number): Promise<number[]> {
+  return httpGet<number[]>(SERVICE.USERCENTER, `/post/${userId}/post-ids`)
+}
+
+/**
+ * 查询用户所属的岗位列表
+ */
+export function getUserPostList(userId: number): Promise<PostVo[]> {
+  return httpGet<PostVo[]>(SERVICE.USERCENTER, `/post/${userId}/list`)
+}
+
+/**
+ * 查询用户所属的主岗位（可能为null）
+ */
+export function getUserPrimaryPost(userId: number): Promise<PostVo | null> {
+  return httpGet<PostVo | null>(SERVICE.USERCENTER, `/post/${userId}/primary`)
+}

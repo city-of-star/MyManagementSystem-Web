@@ -133,3 +133,23 @@ export function switchDeptStatus(payload: DeptStatusSwitchRequest): Promise<void
   return httpPost<void>(SERVICE.USERCENTER, '/dept/switch-status', payload)
 }
 
+/**
+ * 查询用户所属的部门ID列表
+ */
+export function getUserDeptIds(userId: number): Promise<number[]> {
+  return httpGet<number[]>(SERVICE.USERCENTER, `/dept/${userId}/dept-ids`)
+}
+
+/**
+ * 查询用户所属的部门列表
+ */
+export function getUserDeptList(userId: number): Promise<DeptVo[]> {
+  return httpGet<DeptVo[]>(SERVICE.USERCENTER, `/dept/${userId}/list`)
+}
+
+/**
+ * 查询用户所属的主部门（可能为null）
+ */
+export function getUserPrimaryDept(userId: number): Promise<DeptVo | null> {
+  return httpGet<DeptVo | null>(SERVICE.USERCENTER, `/dept/${userId}/primary`)
+}

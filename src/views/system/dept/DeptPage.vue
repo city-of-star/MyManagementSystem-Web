@@ -273,7 +273,7 @@ const handleToggleStatus = async (row: DeptVo) => {
     <!-- 操作栏 -->
     <Toolbar>
       <PrimaryButton icon="Plus" type="primary" @click="handleCreateRoot">
-        新增顶级部门
+        新增部门
       </PrimaryButton>
     </Toolbar>
 
@@ -374,7 +374,6 @@ const handleToggleStatus = async (row: DeptVo) => {
   gap: 16px;
   height: 100%;
   overflow: hidden;
-  background: #ffffff;
 }
 
 .dept-table {

@@ -118,7 +118,6 @@ export interface UserLockRequest {
 // 重置用户密码请求 DTO
 export interface UserPasswordResetRequest {
   userId: number
-  newPassword: string
 }
 
 // 修改密码请求 DTO
@@ -201,20 +200,6 @@ export function assignUserRoles(payload: UserAssignRoleRequest): Promise<void> {
  */
 export function getUserRoleIds(userId: number): Promise<number[]> {
   return httpGet<number[]>(SERVICE.USERCENTER, `/user/${userId}/role-ids`)
-}
-
-/**
- * 获取用户所属的部门ID列表
- */
-export function getUserDeptIds(userId: number): Promise<number[]> {
-  return httpGet<number[]>(SERVICE.USERCENTER, `/dept/${userId}/dept-ids`)
-}
-
-/**
- * 获取用户所属的岗位ID列表
- */
-export function getUserPostIds(userId: number): Promise<number[]> {
-  return httpGet<number[]>(SERVICE.USERCENTER, `/post/${userId}/post-ids`)
 }
 
 
