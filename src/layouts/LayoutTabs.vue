@@ -135,7 +135,8 @@ const handleCloseOthers = () => {
 }
 
 const handleCloseAll = () => {
-  tabs.value.forEach(t => tabsStore.removeTab(t.fullPath))
+  // 使用 store 提供的统一方法，避免在遍历时修改同一个数组导致部分标签遗漏
+  tabsStore.closeAllTabs()
   hideContextMenu()
   router.push('/home')
 }
