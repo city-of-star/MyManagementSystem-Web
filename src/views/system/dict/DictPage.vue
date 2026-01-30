@@ -82,10 +82,12 @@ onMounted(async () => {
     statusLoad(),
     yesNoLoad(),
   ])
-  // 加载字典类型列表数据
-  fetchTypeData()
-  // 加载启用的字典类型列表
-  loadEnabledDictTypes()
+  await Promise.all([
+    // 加载字典类型列表数据
+    await fetchTypeData(),
+    // 加载启用的字典类型列表
+    await loadEnabledDictTypes()
+  ])
 })
 
 // 查询按钮

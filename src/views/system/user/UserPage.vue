@@ -166,7 +166,7 @@ onMounted(async () => {
     loadPosts(),
   ])
   // 加载列表数据
-  fetchData()
+  await fetchData()
 })
 
 // 加载部门树（仅启用）

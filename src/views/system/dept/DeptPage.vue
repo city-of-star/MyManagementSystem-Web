@@ -66,7 +66,7 @@ const form = reactive({
 // 初始化
 onMounted(async () => {
   await statusLoad()
-  fetchTree()
+  await fetchTree()
 })
 
 // 查询按钮

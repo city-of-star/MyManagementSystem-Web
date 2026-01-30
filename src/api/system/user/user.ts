@@ -17,9 +17,7 @@ export interface UserPageQuery {
   createTimeEnd?: string | null
   lastLoginTimeStart?: string | null
   lastLoginTimeEnd?: string | null
-  // 所属部门（用于列表筛选）
   deptId?: number | null
-  // 所属岗位（用于列表筛选）
   postId?: number | null
 }
 
@@ -183,11 +181,8 @@ export function resetUserPassword(payload: UserPasswordResetRequest): Promise<vo
 /**
  * 修改指定用户密码
  */
-export function changeUserPassword(
-  userId: number,
-  payload: UserPasswordChangeRequest,
-): Promise<void> {
-  return httpPost<void>(SERVICE.USERCENTER, `/user/change-password/${userId}`, payload)
+export function changeUserPassword(payload: UserPasswordChangeRequest): Promise<void> {
+  return httpPost<void>(SERVICE.USERCENTER, `/user/change-password`, payload)
 }
 
 /**

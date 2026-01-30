@@ -89,7 +89,7 @@ onMounted(async () => {
     statusLoad(),
     roleTypeLoad(),
   ])
-  fetchData()
+  await fetchData()
 })
 
 // 查询按钮

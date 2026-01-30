@@ -90,7 +90,7 @@ onMounted(async () => {
     visibleLoad(),
     typeLoad(),
   ])
-  fetchTree()
+  await fetchTree()
 })
 
 // 查询按钮

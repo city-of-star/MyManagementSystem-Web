@@ -70,7 +70,7 @@ onMounted(async () => {
     yesNoLoad(),
     configTypeLoad(),
   ])
-  fetchData()
+  await fetchData()
 })
 
 // 查询按钮

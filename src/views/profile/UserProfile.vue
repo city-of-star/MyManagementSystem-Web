@@ -42,14 +42,14 @@ const handleChangePassword = async () => {
 
   passwordLoading.value = true
   try {
-    await changeUserPassword(user.value.id, payload)
+    await changeUserPassword(payload)
     ElMessage.success('修改密码成功')
     passwordForm.value.oldPassword = ''
     passwordForm.value.newPassword = ''
     passwordForm.value.confirmPassword = ''
     passwordDialogVisible.value = false
   } catch (error) {
-    handleErrorToast(error, '修改密码失败')
+    handleErrorToast(error)
   } finally {
     passwordLoading.value = false
   }

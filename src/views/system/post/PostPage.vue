@@ -60,7 +60,7 @@ const form = reactive({
 // 初始化
 onMounted(async () => {
   await statusLoad()
-  fetchData()
+  await fetchData()
 })
 
 // 查询按钮
