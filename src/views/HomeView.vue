@@ -18,9 +18,15 @@ import {
   Tools,
   OfficeBuilding,
   Menu,
-  Briefcase
+  Briefcase,
+  Document
 } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import QuillEditor from '@/components/quill/QuillEditor.vue'
 import { appConfig } from '@/config/app/appConfig'
+
+// 首页富文本内容示例
+const homeIntro = ref<string>('<p>这里是首页的富文本示例内容，可以在此编辑系统简介。</p>')
 
 // 系统功能模块（根据实际菜单配置）
 const systemModules = [
@@ -297,6 +303,19 @@ const microservices = [
         <el-tag style="margin-left: 8px">链路追踪</el-tag>
       </el-descriptions-item>
     </el-descriptions>
+  </el-card>
+
+  <!-- 首页富文本编辑器示例 -->
+  <el-card class="section-card" shadow="hover">
+    <template #header>
+      <div class="card-header">
+        <el-icon :size="20" style="margin-right: 8px; color: #409EFF">
+          <Document />
+        </el-icon>
+        <span>首页简介（富文本示例）</span>
+      </div>
+    </template>
+    <QuillEditor v-model="homeIntro" />
   </el-card>
 </template>
 
