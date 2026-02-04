@@ -55,7 +55,6 @@ const handleChangePassword = async () => {
   }
 }
 
-// 可选：进入页面时从后端刷新一次当前用户信息
 onMounted(async () => {
   try {
     const data = await getCurrentUser()
@@ -140,26 +139,6 @@ onMounted(async () => {
               <div class="info-label">主岗位</div>
               <div class="info-value">
                 {{ user.primaryPost?.postName || '-' }}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">所属部门</div>
-              <div class="info-value">
-                {{
-                  user.depts && user.depts.length
-                    ? user.depts.map((d) => d.deptName).join('、')
-                    : '-'
-                }}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">所属岗位</div>
-              <div class="info-value">
-                {{
-                  user.posts && user.posts.length
-                    ? user.posts.map((p) => p.postName).join('、')
-                    : '-'
-                }}
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
+import { onMounted, reactive, ref } from 'vue'
 import { Message } from '@/utils/base/messageUtils.ts'
 import {
   assignUserRoles,
@@ -17,8 +18,8 @@ import {
 } from '@/api/system/user/user.ts'
 import { type PageResult } from '@/api/common/types.ts'
 import { getRolePage, type RoleVo } from '@/api/system/role/role.ts'
-import { getDeptTree, getUserDeptIds, getUserPrimaryDept, type DeptVo } from '@/api/system/dept/dept.ts'
-import { getPostPage, getUserPostIds, getUserPrimaryPost, type PostVo } from '@/api/system/post/post.ts'
+import { getDeptTree, getUserPrimaryDept, type DeptVo } from '@/api/system/dept/dept.ts'
+import { getPostPage, getUserPrimaryPost, type PostVo } from '@/api/system/post/post.ts'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
 import SearchForm from '@/components/layout/SearchForm.vue'
@@ -31,6 +32,8 @@ import DictSelect from '@/components/dict/DictSelect.vue'
 import DictText from '@/components/dict/DictText.vue'
 import DictTag from '@/components/dict/DictTag.vue'
 import DateRangePicker from '@/components/datePicker/DateRangePicker.vue'
+import TreeSelect from '@/components/select/TreeSelect.vue'
+import BaseSelect from '@/components/select/BaseSelect.vue'
 
 // 查询条件
 const query = reactive<UserPageQuery>({
@@ -39,8 +42,10 @@ const query = reactive<UserPageQuery>({
   username: '',
   nickname: '',
   realName: '',
-  email: '',
   phone: '',
+  email: '',
+  deptId: null,
+  postId: null,
   status: null,
   locked: null,
   gender: null,
@@ -48,8 +53,6 @@ const query = reactive<UserPageQuery>({
   createTimeEnd: null,
   lastLoginTimeStart: null,
   lastLoginTimeEnd: null,
-  deptId: null,
-  postId: null,
 })
 
 // 字典：性别
@@ -64,26 +67,11 @@ const deptTree = ref<DeptVo[]>([])
 const deptLoading = ref(false)
 const postOptions = ref<PostVo[]>([])
 const postLoading = ref(false)
-
 const deptTreeProps = {
   label: 'deptName',
   value: 'id',
   children: 'children',
 }
-
-type FlatDept = { id: number; deptName: string }
-const deptFlat = computed<FlatDept[]>(() => {
-  const res: FlatDept[] = []
-  const walk = (nodes?: DeptVo[]) => {
-    if (!nodes?.length) return
-    for (const n of nodes) {
-      res.push({ id: n.id, deptName: n.deptName })
-      walk(n.children)
-    }
-  }
-  walk(deptTree.value)
-  return res
-})
 
 // 列表 & 分页
 const loading = ref(false)
@@ -113,51 +101,17 @@ const form = reactive({
   nickname: '',
   realName: '',
   gender: null as number | null,
-  email: '',
   phone: '',
+  email: '',
   status: 1,
-  // 部门：多选 + 主部门
-  deptIds: [] as number[],
-  primaryDeptId: null as number | null | undefined,
-  // 岗位：多选 + 主岗位
-  postIds: [] as number[],
-  primaryPostId: null as number | null | undefined,
+  primaryDeptId: null as number | null,
+  primaryPostId: null as number | null,
   remark: '',
 })
 
-// deptIds / primaryDeptId 关联约束
-watch(
-  () => [...form.deptIds],
-  (ids) => {
-    if (!ids.length) {
-      form.primaryDeptId = null
-      return
-    }
-    // 不做“兜底造假”：如果主部门不在选择范围内，则置空让用户明确选择
-    if (form.primaryDeptId && !ids.includes(form.primaryDeptId)) {
-      form.primaryDeptId = null
-    }
-  },
-)
-
-// postIds / primaryPostId 关联约束
-watch(
-  () => [...form.postIds],
-  (ids) => {
-    if (!ids.length) {
-      form.primaryPostId = null
-      return
-    }
-    // 不做“兜底造假”：如果主岗位不在选择范围内，则置空让用户明确选择
-    if (form.primaryPostId && !ids.includes(form.primaryPostId)) {
-      form.primaryPostId = null
-    }
-  },
-)
-
 // 初始化
 onMounted(async () => {
-  // 并行加载所有字典 & 部门/岗位
+  // 并行加载所有字典
   await Promise.all([
     userGenderLoad(),
     statusLoad(),
@@ -211,8 +165,8 @@ const handleReset = () => {
   query.username = ''
   query.nickname = ''
   query.realName = ''
-  query.email = ''
   query.phone = ''
+  query.email = ''
   query.status = null
   query.locked = null
   query.gender = null
@@ -262,20 +216,16 @@ const handleEdit = async (row: UserVo) => {
   form.nickname = row.nickname || ''
   form.realName = row.realName || ''
   form.gender = row.gender ?? null
-  form.email = row.email || ''
   form.phone = row.phone || ''
+  form.email = row.email || ''
   form.status = row.status ?? 1
   form.remark = row.remark || ''
-  // 回显部门/岗位列表（从后端接口拉取）
+  // 回显主部门 / 主岗位
   try {
-    const [deptIds, postIds, primaryDept, primaryPost] = await Promise.all([
-      getUserDeptIds(row.id),
-      getUserPostIds(row.id),
+    const [primaryDept, primaryPost] = await Promise.all([
       getUserPrimaryDept(row.id),
       getUserPrimaryPost(row.id),
     ])
-    form.deptIds = deptIds || []
-    form.postIds = postIds || []
     form.primaryDeptId = primaryDept?.id ?? null
     form.primaryPostId = primaryPost?.id ?? null
   } catch (error) {
@@ -297,26 +247,6 @@ const handleSubmit = async () => {
       return
     }
 
-    const deptIds = form.deptIds
-    const postIds = form.postIds
-
-    // 如果选了部门/岗位，则必须选择主部门/主岗位
-    if (deptIds.length) {
-      if (!form.primaryDeptId || !deptIds.includes(form.primaryDeptId)) {
-        Message.warning('请选择主部门')
-        return
-      }
-    }
-    if (postIds.length) {
-      if (!form.primaryPostId || !postIds.includes(form.primaryPostId)) {
-        Message.warning('请选择主岗位')
-        return
-      }
-    }
-
-    const primaryDeptId = deptIds.length ? (form.primaryDeptId as number) : undefined
-    const primaryPostId = postIds.length ? (form.primaryPostId as number) : undefined
-
     if (editingUserId.value) {
       await updateUser({
         id: editingUserId.value,
@@ -324,13 +254,13 @@ const handleSubmit = async () => {
         nickname: form.nickname || undefined,
         realName: form.realName || undefined,
         gender: form.gender ?? undefined,
-        email: form.email || undefined,
         phone: form.phone || undefined,
+        email: form.email || undefined,
+        deptIds: form.primaryDeptId ? [form.primaryDeptId] : [],
+        primaryDeptId: form.primaryDeptId || undefined,
+        postIds: form.primaryPostId ? [form.primaryPostId] : [],
+        primaryPostId: form.primaryPostId || undefined,
         status: form.status,
-        deptIds,
-        primaryDeptId,
-        postIds,
-        primaryPostId,
         remark: form.remark || undefined,
       })
       Message.success('更新成功')
@@ -341,19 +271,19 @@ const handleSubmit = async () => {
         nickname: form.nickname || undefined,
         realName: form.realName || undefined,
         gender: form.gender ?? undefined,
-        email: form.email || undefined,
         phone: form.phone || undefined,
+        email: form.email || undefined,
+        deptIds: form.primaryDeptId ? [form.primaryDeptId] : [],
+        primaryDeptId: form.primaryDeptId || undefined,
+        postIds: form.primaryPostId ? [form.primaryPostId] : [],
+        primaryPostId: form.primaryPostId || undefined,
         status: form.status,
-        deptIds,
-        primaryDeptId,
-        postIds,
-        primaryPostId,
         remark: form.remark || undefined,
       })
       Message.success('创建成功')
     }
     dialogVisible.value = false
-    fetchData()
+    await fetchData()
   } catch (error) {
     handleErrorToast(error)
   }
@@ -368,12 +298,10 @@ const resetForm = () => {
   form.nickname = ''
   form.realName = ''
   form.gender = null
-  form.email = ''
   form.phone = ''
+  form.email = ''
   form.status = 1
-  form.deptIds = []
   form.primaryDeptId = null
-  form.postIds = []
   form.primaryPostId = null
   form.remark = ''
 }
@@ -384,7 +312,7 @@ const handleDelete = async (row: UserVo) => {
     await Message.confirm(`确定要删除用户【${row.username}】吗？`)
     await deleteUser(row.id)
     Message.success('删除成功')
-    fetchData()
+    await fetchData()
   } catch (error) {
     if (error !== 'cancel') {
       handleErrorToast(error)
@@ -403,7 +331,7 @@ const handleBatchDelete = async () => {
     const ids = multipleSelection.value.map((u) => u.id)
     await batchDeleteUser(ids)
     Message.success('批量删除成功')
-    fetchData()
+    await fetchData()
   } catch (error) {
     if (error !== 'cancel') {
       handleErrorToast(error)
@@ -417,7 +345,7 @@ const handleToggleStatus = async (row: UserVo) => {
   try {
     await switchUserStatus({ userId: row.id, status: targetStatus })
     Message.success(targetStatus === 1 ? '已启用' : '已禁用')
-    fetchData()
+    await fetchData()
   } catch (error) {
     handleErrorToast(error)
   }
@@ -430,10 +358,10 @@ const handleToggleLock = async (row: UserVo) => {
     await lockOrUnlockUser({
       userId: row.id,
       locked: targetLocked,
-      lockReason: targetLocked === 1 ? '后台锁定' : undefined,
+      lockReason: targetLocked === 1 ? '管理员锁定' : undefined,
     })
-    Message.success(targetLocked === 1 ? '已锁定用户' : '已解锁用户')
-    fetchData()
+    Message.success(targetLocked === 1 ? '已锁定' : '已解锁')
+    await fetchData()
   } catch (error) {
     handleErrorToast(error)
   }
@@ -443,13 +371,10 @@ const handleToggleLock = async (row: UserVo) => {
 const handleResetPassword = async (row: UserVo) => {
   try {
     await Message.confirm(`确定要重置用户【${row.username}】的密码吗？`)
-    // 简单演示：重置为固定密码；实际可弹窗输入新密码
     await resetUserPassword({ userId: row.id })
-    Message.success('密码已重置为 123456')
+    Message.success('密码已重置')
   } catch (error) {
-    if (error !== 'cancel') {
-      handleErrorToast(error)
-    }
+    handleErrorToast(error)
   }
 }
 
@@ -521,86 +446,39 @@ const handleSubmitRoles = async () => {
       <el-form-item label="真实姓名">
         <el-input v-model="query.realName" placeholder="请输入真实姓名" clearable />
       </el-form-item>
-      <el-form-item label="邮箱">
-        <el-input v-model="query.email" placeholder="请输入邮箱" clearable />
-      </el-form-item>
       <el-form-item label="手机号">
         <el-input v-model="query.phone" placeholder="请输入手机号" clearable />
       </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="query.email" placeholder="请输入邮箱" clearable />
+      </el-form-item>
       <el-form-item label="部门">
-        <el-tree-select
-          v-model="query.deptId"
-          :data="deptTree"
-          :props="deptTreeProps"
-          node-key="id"
-          check-strictly
-          :render-after-expand="false"
-          :loading="deptLoading"
-          placeholder="请选择部门"
-          clearable
-        />
+        <TreeSelect v-model.number="query.deptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
       </el-form-item>
       <el-form-item label="岗位">
-        <el-select
-          v-model="query.postId"
-          placeholder="请选择岗位"
-          clearable
-          filterable
-          :loading="postLoading"
-        >
-          <el-option
-            v-for="post in postOptions"
-            :key="post.id"
-            :label="`${post.postName}(${post.postCode})`"
-            :value="post.id"
-          />
-        </el-select>
+        <BaseSelect v-model.number="query.postId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
       </el-form-item>
       <el-form-item label="性别">
-        <DictSelect
-            :options="userGenderOptions"
-            :loading="userGenderLoading"
-            v-model.number="query.gender"
-        />
+        <DictSelect :options="userGenderOptions" :loading="userGenderLoading" v-model.number="query.gender"/>
       </el-form-item>
       <el-form-item label="状态">
-        <DictSelect
-            :options="statusOptions"
-            :loading="statusLoading"
-            v-model.number="query.status"
-        />
+        <DictSelect :options="statusOptions" :loading="statusLoading" v-model.number="query.status"/>
       </el-form-item>
       <el-form-item label="锁定状态">
-        <DictSelect
-            :options="userLockStatusOptions"
-            :loading="userLockStatusLoading"
-            v-model.number="query.locked"
-        />
+        <DictSelect :options="userLockStatusOptions" :loading="userLockStatusLoading" v-model.number="query.locked"/>
       </el-form-item>
       <el-form-item label="创建时间">
-        <DateRangePicker
-          v-model:start="query.createTimeStart"
-          v-model:end="query.createTimeEnd"
-          type="datetime"
-        />
+        <DateRangePicker v-model:start="query.createTimeStart" v-model:end="query.createTimeEnd" type="datetime"/>
       </el-form-item>
       <el-form-item label="最后登录时间">
-        <DateRangePicker
-          v-model:start="query.lastLoginTimeStart"
-          v-model:end="query.lastLoginTimeEnd"
-          type="datetime"
-        />
+        <DateRangePicker v-model:start="query.lastLoginTimeStart" v-model:end="query.lastLoginTimeEnd" type="datetime"/>
       </el-form-item>
     </SearchForm>
 
     <!-- 操作栏 -->
     <Toolbar>
-      <PrimaryButton icon="Plus" type="primary" @click="handleCreate">
-        新建用户
-      </PrimaryButton>
-      <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
-        批量删除
-      </PrimaryButton>
+      <PrimaryButton icon="Plus" type="primary" @click="handleCreate">新建用户</PrimaryButton>
+      <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">批量删除</PrimaryButton>
     </Toolbar>
 
     <!-- 表格 -->
@@ -614,14 +492,16 @@ const handleSubmitRoles = async () => {
       <el-table-column type="selection" width="48" />
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="nickname" label="昵称" min-width="120" />
-      <el-table-column prop="realName" label="真实姓名" min-width="120" />
-      <el-table-column prop="gender" label="性别" width="90">
+      <el-table-column prop="realName" label="真实姓名" min-width="100" />
+      <el-table-column prop="gender" label="性别" width="80">
         <template #default="{ row }">
           <DictText :options="userGenderOptions" :value="row.gender" />
         </template>
       </el-table-column>
       <el-table-column prop="phone" label="手机号" min-width="130" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
+      <el-table-column prop="primaryDept.deptName" label="部门" min-width="120" />
+      <el-table-column prop="primaryPost.postName" label="岗位" min-width="120" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>
@@ -633,7 +513,6 @@ const handleSubmitRoles = async () => {
         </template>
       </el-table-column>
       <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
-      <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
       <el-table-column label="操作" fixed="right" width="130">
         <template #default="{ row }">
           <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)"/>
@@ -650,18 +529,13 @@ const handleSubmitRoles = async () => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="560px" @confirm="handleSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="用户名" required>
           <el-input v-model="form.username" placeholder="请输入用户名" :disabled="!!editingUserId"/>
         </el-form-item>
         <el-form-item v-if="!editingUserId" label="密码" required>
-          <el-input
-            v-model="form.password"
-            type="password"
-            autocomplete="new-password"
-            placeholder="请输入密码"
-          />
+          <el-input v-model="form.password" type="password" autocomplete="new-password" placeholder="请输入密码"/>
         </el-form-item>
         <el-form-item label="昵称">
           <el-input v-model="form.nickname" placeholder="请输入昵称" />
@@ -669,73 +543,14 @@ const handleSubmitRoles = async () => {
         <el-form-item label="真实姓名">
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
         </el-form-item>
-        <el-form-item label="所属部门">
-          <el-tree-select
-            v-model="form.deptIds"
-            :data="deptTree"
-            :props="deptTreeProps"
-            node-key="id"
-            multiple
-            check-strictly
-            :render-after-expand="false"
-            :loading="deptLoading"
-            placeholder="请选择所属部门（可多选）"
-            clearable
-          />
-        </el-form-item>
         <el-form-item label="主部门">
-          <el-select
-            v-model="form.primaryDeptId"
-            placeholder="请选择主部门"
-            clearable
-            :disabled="!form.deptIds.length"
-          >
-            <el-option
-              v-for="dept in deptFlat.filter((d) => form.deptIds.includes(d.id))"
-              :key="dept.id"
-              :label="dept.deptName"
-              :value="dept.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="所属岗位">
-          <el-select
-            v-model="form.postIds"
-            multiple
-            placeholder="请选择所属岗位（可多选）"
-            clearable
-            filterable
-            :loading="postLoading"
-          >
-            <el-option
-              v-for="post in postOptions"
-              :key="post.id"
-              :label="`${post.postName}(${post.postCode})`"
-              :value="post.id"
-            />
-          </el-select>
+          <TreeSelect v-model.number="form.primaryDeptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
         </el-form-item>
         <el-form-item label="主岗位">
-          <el-select
-            v-model="form.primaryPostId"
-            placeholder="请选择主岗位"
-            clearable
-            :disabled="!form.postIds.length"
-          >
-            <el-option
-              v-for="post in postOptions.filter((p) => form.postIds.includes(p.id))"
-              :key="post.id"
-              :label="`${post.postName}(${post.postCode})`"
-              :value="post.id"
-            />
-          </el-select>
+          <BaseSelect v-model.number="form.primaryPostId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
         </el-form-item>
         <el-form-item label="性别">
-          <DictSelect
-              :options="userGenderOptions"
-              :loading="userGenderLoading"
-              v-model.number="form.gender"
-          />
+          <DictSelect :options="userGenderOptions" :loading="userGenderLoading" v-model.number="form.gender"/>
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
@@ -744,34 +559,17 @@ const handleSubmitRoles = async () => {
           <el-input v-model="form.email" placeholder="请输入邮箱" />
         </el-form-item>
         <el-form-item label="状态" v-if="!editingUserId">
-          <DictSelect
-            :options="statusOptions"
-            :loading="statusLoading"
-            v-model.number="form.status"
-            style="width: 140px"
-          />
+          <DictSelect :options="statusOptions" :loading="statusLoading" v-model.number="form.status"/>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
 
     <!-- 分配角色弹窗 -->
-    <el-dialog
-      v-model="roleDialogVisible"
-      :title="`分配角色 - ${assigningUserName}`"
-      width="500px"
-      destroy-on-close
-    >
-      <div v-loading="roleLoading" style="min-height: 300px">
+    <BaseDialog v-model="roleDialogVisible" title="分配角色" width="500px" :loading="roleLoading" @confirm="handleSubmitRoles">
+      <div style="min-height: 300px">
         <el-checkbox-group v-model="checkedRoleIds" style="display: flex; flex-direction: column; gap: 12px">
           <el-checkbox
             v-for="role in allRoles"
@@ -791,14 +589,7 @@ const handleSubmitRoles = async () => {
           暂无可用角色
         </div>
       </div>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="roleDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmitRoles">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 
@@ -807,12 +598,6 @@ const handleSubmitRoles = async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .dialog-form {
