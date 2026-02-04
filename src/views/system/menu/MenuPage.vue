@@ -22,6 +22,7 @@ import DictSelect from '@/components/dict/DictSelect.vue'
 import DictTag from '@/components/dict/DictTag.vue'
 import IconPicker from '@/components/icon/IconPicker.vue'
 import { iconMap, type IconName } from '@/assets/icon/icons'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 // 查询条件
 const query = reactive({
@@ -492,7 +493,7 @@ const handleRemoveRole = async (role: RoleVo) => {
     </el-table>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="620px" destroy-on-close>
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="620px" @confirm="handleSubmit">
       <el-form label-width="96px" class="dialog-form">
         <el-form-item label="类型">
           <template v-if="!typeLocked">
@@ -558,21 +559,13 @@ const handleRemoveRole = async (role: RoleVo) => {
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
 
     <!-- 查看角色弹窗 -->
-    <el-dialog
+    <BaseDialog
       v-model="roleDialogVisible"
       :title="`查看角色 - ${viewingPermissionName}`"
       width="880px"
-      destroy-on-close
     >
       <div v-loading="roleListLoading" style="min-height: 260px">
         <el-table v-if="roleList.length" :data="roleList" border stripe>
@@ -597,13 +590,12 @@ const handleRemoveRole = async (role: RoleVo) => {
         </el-table>
         <el-empty v-else description="暂无关联角色" />
       </div>
-
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="roleDialogVisible = false">关 闭</el-button>
         </span>
       </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 

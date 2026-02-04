@@ -37,6 +37,7 @@ import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
 import DictTag from '@/components/dict/DictTag.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 // 字典：通用状态、是否
 const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
@@ -750,7 +751,7 @@ const currentTypeName = computed(() => {
     </div>
 
     <!-- 新增/编辑弹窗（字典类型） -->
-    <el-dialog v-model="typeDialogVisible" :title="typeDialogTitle" width="520px" destroy-on-close>
+    <BaseDialog v-model="typeDialogVisible" :title="typeDialogTitle" width="520px" @confirm="handleTypeSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="类型编码" required>
           <el-input
@@ -772,17 +773,10 @@ const currentTypeName = computed(() => {
           <el-input v-model="typeForm.remark" type="textarea" rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="typeDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleTypeSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
 
     <!-- 新增/编辑弹窗（字典数据） -->
-    <el-dialog v-model="dataDialogVisible" :title="dataDialogTitle" width="560px" destroy-on-close>
+    <BaseDialog v-model="dataDialogVisible" :title="dataDialogTitle" width="560px" @confirm="handleDataSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="所属类型">
           <el-input :value="currentTypeName" disabled style="width: 220px" />
@@ -809,14 +803,7 @@ const currentTypeName = computed(() => {
           <el-input v-model="dataForm.remark" type="textarea" rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dataDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleDataSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 

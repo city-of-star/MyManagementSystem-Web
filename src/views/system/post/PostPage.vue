@@ -22,6 +22,7 @@ import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
 import DictTag from '@/components/dict/DictTag.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 // 查询条件
 const query = reactive<PostPageQuery>({
@@ -281,7 +282,7 @@ const handleToggleStatus = async (row: PostVo) => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="560px" @confirm="handleSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="岗位编码" required>
           <el-input v-model="form.postCode" placeholder="请输入岗位编码" :disabled="!!editingPostId" />
@@ -304,14 +305,7 @@ const handleToggleStatus = async (row: PostVo) => {
           <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 

@@ -30,6 +30,7 @@ import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
 import DictText from '@/components/dict/DictText.vue'
 import DictTag from '@/components/dict/DictTag.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 // 查询条件
 const query = reactive<RolePageQuery>({
@@ -456,7 +457,7 @@ const handleRemoveUser = async (user: UserVo) => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="520px" destroy-on-close>
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="520px" @confirm="handleSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="角色编码" required>
           <el-input v-model="form.roleCode" placeholder="请输入角色编码" :disabled="!!editingRoleId"/>
@@ -487,23 +488,17 @@ const handleRemoveUser = async (user: UserVo) => {
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
 
     <!-- 分配权限弹窗 -->
-    <el-dialog
+    <BaseDialog
       v-model="permissionDialogVisible"
       :title="`分配权限 - ${assigningRoleName}`"
       width="600px"
-      destroy-on-close
+      :loading="permissionTreeLoading"
+      @confirm="handleSubmitPermissions"
     >
-      <div v-loading="permissionTreeLoading" style="min-height: 300px">
+      <div style="min-height: 300px">
         <el-tree
           ref="permissionTreeRef"
           :data="permissionTree"
@@ -522,21 +517,13 @@ const handleRemoveUser = async (user: UserVo) => {
           </template>
         </el-tree>
       </div>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="permissionDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmitPermissions">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
 
     <!-- 查看用户弹窗 -->
-    <el-dialog
+    <BaseDialog
       v-model="userDialogVisible"
       :title="`查看用户 - ${viewingRoleName}`"
       width="1000px"
-      destroy-on-close
     >
       <div v-loading="userListLoading" style="min-height: 300px">
         <el-table :data="userList" border stripe v-if="userList.length > 0">
@@ -559,13 +546,12 @@ const handleRemoveUser = async (user: UserVo) => {
         </el-table>
         <el-empty v-else description="该角色暂未分配用户" />
       </div>
-
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="userDialogVisible = false">关 闭</el-button>
         </span>
       </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 

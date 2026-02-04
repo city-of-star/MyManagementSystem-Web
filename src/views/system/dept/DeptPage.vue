@@ -18,6 +18,7 @@ import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
 import DictTag from '@/components/dict/DictTag.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 // 查询条件
 const query = reactive<DeptTreeQuery>({
@@ -321,7 +322,7 @@ const handleToggleStatus = async (row: DeptVo) => {
     </el-table>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="560px" @confirm="handleSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="上级部门">
           <el-input :model-value="parentLabel" disabled />
@@ -356,14 +357,7 @@ const handleToggleStatus = async (row: DeptVo) => {
           <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 

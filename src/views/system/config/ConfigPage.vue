@@ -22,6 +22,7 @@ import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
 import DictTag from '@/components/dict/DictTag.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 // 查询条件
 const query = reactive<ConfigPageQuery>({
@@ -327,7 +328,7 @@ const handleToggleStatus = async (row: ConfigVo) => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" destroy-on-close>
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="600px" @confirm="handleSubmit">
       <el-form label-width="100px" class="dialog-form">
         <el-form-item label="配置键" required>
           <el-input
@@ -375,14 +376,7 @@ const handleToggleStatus = async (row: ConfigVo) => {
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleSubmit">确 定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </BaseDialog>
   </div>
 </template>
 
