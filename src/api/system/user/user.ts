@@ -37,6 +37,7 @@ export interface UserPageVo {
   status?: number
   locked?: number
   lastLoginTime?: string
+  createTime?: string
   remark?: string
 }
 
