@@ -17,7 +17,7 @@ import {
   updateRole,
 } from '@/api/system/role/role.ts'
 import { type PageResult } from '@/api/common/types.ts'
-import type { UserVo } from '@/api/system/user/user'
+import type { UserDetailVo } from '@/api/system/user/user'
 import { getPermissionTree, type PermissionTreeVo } from '@/api/system/permission/permission.ts'
 import { handleErrorToast } from '@/utils/http'
 import { useDict } from '@/utils/base/dictUtils.ts'
@@ -71,7 +71,7 @@ const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
 const userDialogVisible = ref(false)
 const viewingRoleId = ref<number | null>(null)
 const viewingRoleName = ref('')
-const userList = ref<UserVo[]>([])
+const userList = ref<UserDetailVo[]>([])
 const userListLoading = ref(false)
 
 // 表单（用于新增/编辑）
@@ -356,7 +356,7 @@ const loadRoleUsers = async (roleId: number) => {
 }
 
 // 移除用户按钮
-const handleRemoveUser = async (user: UserVo) => {
+const handleRemoveUser = async (user: UserDetailVo) => {
   if (!viewingRoleId.value) return
   try {
     await Message.confirm(

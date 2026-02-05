@@ -14,7 +14,7 @@ import {
   switchUserStatus,
   updateUser,
   type UserPageQuery,
-  type UserVo,
+  type UserPageVo,
 } from '@/api/system/user/user.ts'
 import { type PageResult } from '@/api/common/types.ts'
 import { getRolePage, type RoleVo } from '@/api/system/role/role.ts'
@@ -75,11 +75,11 @@ const deptTreeProps = {
 
 // 列表 & 分页
 const loading = ref(false)
-const tableData = ref<UserVo[]>([])
+const tableData = ref<UserPageVo[]>([])
 const total = ref(0)
 
 // 选中行
-const multipleSelection = ref<UserVo[]>([])
+const multipleSelection = ref<UserPageVo[]>([])
 
 // 弹窗
 const dialogVisible = ref(false)
@@ -183,7 +183,7 @@ const handleReset = () => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const resp: PageResult<UserVo> = await getUserPage(query)
+    const resp: PageResult<UserPageVo> = await getUserPage(query)
     tableData.value = resp.records
     total.value = resp.total
     query.pageNum = resp.current
@@ -196,7 +196,7 @@ const fetchData = async () => {
 }
 
 // 选中行变化
-const handleSelectionChange = (rows: UserVo[]) => {
+const handleSelectionChange = (rows: UserPageVo[]) => {
   multipleSelection.value = rows
 }
 
@@ -208,7 +208,7 @@ const handleCreate = () => {
 }
 
 // 编辑按钮
-const handleEdit = async (row: UserVo) => {
+const handleEdit = async (row: UserPageVo) => {
   resetForm()
   dialogTitle.value = '编辑用户'
   editingUserId.value = row.id
@@ -307,7 +307,7 @@ const resetForm = () => {
 }
 
 // 删除按钮
-const handleDelete = async (row: UserVo) => {
+const handleDelete = async (row: UserPageVo) => {
   try {
     await Message.confirm(`确定要删除用户【${row.username}】吗？`)
     await deleteUser(row.id)
@@ -340,7 +340,7 @@ const handleBatchDelete = async () => {
 }
 
 // 启用按钮 / 禁用按钮
-const handleToggleStatus = async (row: UserVo) => {
+const handleToggleStatus = async (row: UserPageVo) => {
   const targetStatus = row.status === 1 ? 0 : 1
   try {
     await switchUserStatus({ userId: row.id, status: targetStatus })
@@ -352,7 +352,7 @@ const handleToggleStatus = async (row: UserVo) => {
 }
 
 // 锁定按钮 / 解锁按钮
-const handleToggleLock = async (row: UserVo) => {
+const handleToggleLock = async (row: UserPageVo) => {
   const targetLocked = row.locked === 1 ? 0 : 1
   try {
     await lockOrUnlockUser({
@@ -368,7 +368,7 @@ const handleToggleLock = async (row: UserVo) => {
 }
 
 // 重置密码按钮
-const handleResetPassword = async (row: UserVo) => {
+const handleResetPassword = async (row: UserPageVo) => {
   try {
     await Message.confirm(`确定要重置用户【${row.username}】的密码吗？`)
     await resetUserPassword({ userId: row.id })
@@ -379,7 +379,7 @@ const handleResetPassword = async (row: UserVo) => {
 }
 
 // 分配角色按钮（加载数据并打开弹窗）
-const handleAssignRoles = async (row: UserVo) => {
+const handleAssignRoles = async (row: UserPageVo) => {
   assigningUserId.value = row.id
   assigningUserName.value = row.username
   roleDialogVisible.value = true
@@ -452,10 +452,10 @@ const handleSubmitRoles = async () => {
       <el-form-item label="邮箱">
         <el-input v-model="query.email" placeholder="请输入邮箱" clearable />
       </el-form-item>
-      <el-form-item label="部门">
+      <el-form-item label="主部门">
         <TreeSelect v-model.number="query.deptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
       </el-form-item>
-      <el-form-item label="岗位">
+      <el-form-item label="主岗位">
         <BaseSelect v-model.number="query.postId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
       </el-form-item>
       <el-form-item label="性别">
@@ -500,8 +500,8 @@ const handleSubmitRoles = async () => {
       </el-table-column>
       <el-table-column prop="phone" label="手机号" min-width="130" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
-      <el-table-column prop="primaryDept.deptName" label="部门" min-width="120" />
-      <el-table-column prop="primaryPost.postName" label="岗位" min-width="120" />
+      <el-table-column prop="primaryDeptName" label="主部门" min-width="120" />
+      <el-table-column prop="primaryPostName" label="主岗位" min-width="120" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>

@@ -1,5 +1,7 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
 import type { PageResult } from '@/api/common/types'
+import type { DeptVo } from '@/api/system/dept/dept.ts'
+import type { PostVo } from '@/api/system/post/post.ts'
 
 // 分页查询请求 DTO
 export interface UserPageQuery {
@@ -21,8 +23,25 @@ export interface UserPageQuery {
   postId?: number | null
 }
 
-// 用户信息 VO
-export interface UserVo {
+// 用户分页 VO
+export interface UserPageVo {
+  id: number
+  username: string
+  nickname?: string
+  realName?: string
+  gender?: number
+  phone?: string
+  email?: string
+  primaryDeptName?: string
+  primaryPostName?: string
+  status?: number
+  locked?: number
+  lastLoginTime?: string
+  remark?: string
+}
+
+// 用户详情 VO
+export interface UserDetailVo {
   id: number
   username: string
   nickname?: string
@@ -44,14 +63,10 @@ export interface UserVo {
   createTime?: string
   updateBy?: number
   updateTime?: string
-  primaryDept?: any
-  primaryPost?: any
-  depts?: any[]
-  posts?: any[]
-  primaryDeptId?: number
-  primaryPostId?: number
-  deptIds?: number[]
-  postIds?: number[]
+  primaryDept?: DeptVo | null
+  primaryPost?: PostVo | null
+  depts?: DeptVo[]
+  posts?: PostVo[]
 }
 
 // 创建用户请求 DTO
@@ -125,22 +140,22 @@ export interface UserAssignRoleRequest {
 /**
  * 分页查询用户
  */
-export function getUserPage(payload: UserPageQuery): Promise<PageResult<UserVo>> {
-  return httpPost<PageResult<UserVo>>(SERVICE.USERCENTER, '/user/page', payload)
+export function getUserPage(payload: UserPageQuery): Promise<PageResult<UserPageVo>> {
+  return httpPost<PageResult<UserPageVo>>(SERVICE.USERCENTER, '/user/page', payload)
 }
 
 /**
  * 创建用户
  */
-export function createUser(payload: UserCreateRequest): Promise<UserVo> {
-  return httpPost<UserVo>(SERVICE.USERCENTER, '/user/create', payload)
+export function createUser(payload: UserCreateRequest): Promise<UserDetailVo> {
+  return httpPost<UserDetailVo>(SERVICE.USERCENTER, '/user/create', payload)
 }
 
 /**
  * 更新用户
  */
-export function updateUser(payload: UserUpdateRequest): Promise<UserVo> {
-  return httpPut<UserVo>(SERVICE.USERCENTER, '/user/update', payload)
+export function updateUser(payload: UserUpdateRequest): Promise<UserDetailVo> {
+  return httpPut<UserDetailVo>(SERVICE.USERCENTER, '/user/update', payload)
 }
 
 /**

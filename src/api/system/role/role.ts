@@ -1,5 +1,5 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
-import type { UserVo } from '@/api/system/user/user'
+import type { UserDetailVo } from '@/api/system/user/user'
 import type { PageResult } from '@/api/common/types'
 
 // 分页查询请求 DTO
@@ -128,8 +128,8 @@ export function getRolePermissionIds(roleId: number): Promise<number[]> {
 /**
  * 获取角色关联的用户列表
  */
-export function getRoleUsers(roleId: number): Promise<UserVo[]> {
-  return httpGet<UserVo[]>(SERVICE.USERCENTER, `/role/${roleId}/users`)
+export function getRoleUsers(roleId: number): Promise<UserDetailVo[]> {
+  return httpGet<UserDetailVo[]>(SERVICE.USERCENTER, `/role/${roleId}/users`)
 }
 
 /**

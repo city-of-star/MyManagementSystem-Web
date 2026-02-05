@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
-import type { UserVo } from '@/api/system/user/user'
+import type { UserDetailVo } from '@/api/system/user/user'
 
 const USER_STORAGE_KEY = 'currentUser'
 
-const defaultState: UserVo = {
+const defaultState: UserDetailVo = {
   id: 0,
   username: '',
   nickname: '',
@@ -28,14 +28,14 @@ const defaultState: UserVo = {
 }
 
 export const useUserStore = defineStore('user', {
-  state: (): UserVo => {
+  state: (): UserDetailVo => {
     const cached = localStorage.getItem(USER_STORAGE_KEY)
     return cached ? { ...defaultState, ...JSON.parse(cached) } : { ...defaultState }
   },
 
   actions: {
     // 设置用户信息
-    setUser(userInfo: Partial<UserVo>) {
+    setUser(userInfo: Partial<UserDetailVo>) {
       Object.assign(this.$state, userInfo)
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(this.$state))
     },
