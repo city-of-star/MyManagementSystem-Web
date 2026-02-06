@@ -37,10 +37,13 @@ import type { UploadFile, UploadFiles, UploadProps, UploadRequestOptions } from 
 // 附件项类型定义
 export interface AttachmentItem {
   id?: string | number
+  // 前端展示的文件名（优先使用后端返回的 originalName）
   fileName: string
   fileUrl: string
   fileSize?: number
   fileType?: string
+  // 可选：后端存储用的文件名（如 UUID），方便后续调试/排查
+  storedFileName?: string
   uid?: string | number
 }
 
@@ -53,6 +56,9 @@ const props = withDefaults(
     accept?: string[] // 允许的文件类型（数组，如 ['doc', 'docx', 'pdf']）
     disabled?: boolean // 是否禁用
     showFileList?: boolean // 是否显示文件列表（默认 true）
+    businessType?: string // 业务类型（可选，对应后端的 businessType）
+    businessId?: string | number // 业务ID（可选，对应后端的 businessId）
+    remark?: string // 备注（可选，对应后端的 remark）
   }>(),
   {
     modelValue: () => [],
@@ -61,6 +67,9 @@ const props = withDefaults(
     accept: () => [],
     disabled: false,
     showFileList: true,
+    businessType: undefined,
+    businessId: undefined,
+    remark: undefined,
   },
 )
 
@@ -166,14 +175,25 @@ const handleUpload = async (options: UploadRequestOptions) => {
 
   try {
     const formData = new FormData()
+    // 与后端接口字段对齐：file / businessType / businessId / remark
     formData.append('file', file)
+    if (props.businessType) {
+      formData.append('businessType', props.businessType)
+    }
+    if (props.businessId !== undefined && props.businessId !== null) {
+      formData.append('businessId', String(props.businessId))
+    }
+    if (props.remark) {
+      formData.append('remark', props.remark)
+    }
 
     // 使用 http 实例上传文件（需要设置 Content-Type 为 multipart/form-data）
     const response = await http.post<{
       code: number
       data: {
         id: string | number
-        fileName: string
+        fileName: string // 存储用文件名（UUID 等）
+        originalName?: string // 原始文件名（用于前端展示）
         fileUrl: string
         fileSize: number
         fileType: string
@@ -192,12 +212,17 @@ const handleUpload = async (options: UploadRequestOptions) => {
     })
 
     if (response.data.code === 200 && response.data.data) {
+      const resp = response.data.data
+      // 前端显示用原始文件名，若后端未返回 originalName，则退回 fileName
+      const displayName = resp.originalName || resp.fileName
+
       const attachment: AttachmentItem = {
-        id: response.data.data.id,
-        fileName: response.data.data.fileName,
-        fileUrl: response.data.data.fileUrl,
-        fileSize: response.data.data.fileSize,
-        fileType: response.data.data.fileType,
+        id: resp.id,
+        fileName: displayName,
+        fileUrl: resp.fileUrl,
+        fileSize: resp.fileSize,
+        fileType: resp.fileType,
+        storedFileName: resp.fileName,
       }
 
       // 更新文件列表

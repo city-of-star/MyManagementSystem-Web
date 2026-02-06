@@ -59,7 +59,14 @@ const handleUserCommand = async (command: string) => {
       <el-dropdown trigger="click" @command="handleUserCommand">
         <div class="user-info">
           <div class="user-avatar">
+            <img
+              v-if="userStore.avatar"
+              :src="userStore.avatar"
+              alt="头像"
+              class="user-avatar-img"
+            />
             <svg
+              v-else
               width="20"
               height="20"
               viewBox="0 0 24 24"
@@ -177,6 +184,13 @@ const handleUserCommand = async (command: string) => {
   justify-content: center;
   color: #ffffff;
   box-shadow: 0 2px 4px rgba(22, 119, 255, 0.2);
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .username {

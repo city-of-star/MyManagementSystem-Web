@@ -23,14 +23,10 @@ import {
 } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import QuillEditor from '@/components/quill/QuillEditor.vue'
-import FileUpload, { type AttachmentItem } from '@/components/upload/FileUpload.vue'
 import { appConfig } from '@/config/app/appConfig'
 
 // 首页富文本内容示例
 const homeIntro = ref<string>('<p>这里是首页的富文本示例内容，可以在此编辑系统简介。</p>')
-
-// 附件列表示例
-const attachments = ref<AttachmentItem[]>([])
 
 // 系统功能模块（根据实际菜单配置）
 const systemModules = [
@@ -141,28 +137,6 @@ const microservices = [
       </div>
     </template>
     <QuillEditor v-model="homeIntro" />
-  </el-card>
-
-  <!-- 附件上传示例 -->
-  <el-card class="section-card" shadow="hover">
-    <template #header>
-      <div class="card-header">
-        <el-icon :size="20" style="margin-right: 8px; color: #67C23A">
-          <Files />
-        </el-icon>
-        <span>附件上传示例</span>
-      </div>
-    </template>
-    <FileUpload
-      v-model="attachments"
-      upload-url="/api/files/upload"
-      :max-size="10"
-      :max-count="5"
-      :accept="['doc', 'docx', 'pdf', 'txt', 'xls', 'xlsx', 'jpg', 'png']"
-      @upload-success="(file) => console.log('上传成功:', file)"
-      @upload-error="(error) => console.error('上传失败:', error)"
-      @remove="(file) => console.log('删除文件:', file)"
-    />
   </el-card>
 
   <!-- 系统标题区域 -->

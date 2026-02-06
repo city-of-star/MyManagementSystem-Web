@@ -29,7 +29,6 @@ import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
-import DictText from '@/components/dict/DictText.vue'
 import DictTag from '@/components/dict/DictTag.vue'
 import DateRangePicker from '@/components/datePicker/DateRangePicker.vue'
 import TreeSelect from '@/components/select/TreeSelect.vue'
@@ -74,7 +73,7 @@ const deptTreeProps = {
 }
 
 // 列表 & 分页
-const loading = ref(false)
+const loading = ref(true)
 const tableData = ref<UserPageVo[]>([])
 const total = ref(0)
 

@@ -2,9 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '@/store/user/user'
 import { getCurrentUser } from '@/api/auth/auth'
-import { changeUserPassword, type UserPasswordChangeRequest } from '@/api/system/user/user'
-import { handleErrorSilent, handleErrorToast } from '@/utils/http'
+import { changeUserPassword, type UserPasswordChangeRequest, updateUser } from '@/api/system/user/user'
+import { handleErrorSilent, handleErrorToast, http } from '@/utils/http'
 import { ElMessage } from 'element-plus'
+import type { UploadRequestOptions, UploadProps } from 'element-plus'
 
 const userStore = useUserStore()
 
@@ -20,6 +21,7 @@ const passwordForm = ref({
 const passwordLoading = ref(false)
 const passwordDialogVisible = ref(false)
 
+// 处理密码修改
 const handleChangePassword = async () => {
   if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword) {
     ElMessage.warning('请输入旧密码和新密码')
@@ -55,6 +57,71 @@ const handleChangePassword = async () => {
   }
 }
 
+// 头像上传前校验（仅允许图片，最大 5MB）
+const beforeAvatarUpload: UploadProps['beforeUpload'] = (file) => {
+  const isImage = file.type.startsWith('image/')
+  if (!isImage) {
+    ElMessage.error('只能上传图片类型文件')
+    return false
+  }
+  const maxSizeMb = 5
+  const isLtMax = file.size / 1024 / 1024 <= maxSizeMb
+  if (!isLtMax) {
+    ElMessage.error(`头像大小不能超过 ${maxSizeMb}MB`)
+    return false
+  }
+  return true
+}
+
+// 自定义头像上传请求：调用附件上传接口 + 更新当前用户 avatar 字段
+const handleAvatarUpload = async (options: UploadRequestOptions) => {
+  const { file, onError, onSuccess } = options
+
+  if (!user.value.id) {
+    ElMessage.error('当前用户信息异常，请重新登录后重试')
+    onError?.({ name: 'UploadError', message: '当前用户信息异常，请重新登录后重试' } as any)
+    return
+  }
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('businessType', 'USER_AVATAR')
+    formData.append('businessId', String(user.value.id))
+    formData.append('remark', '用户头像')
+
+    const response = await http.post<{
+      code: number
+      data: {
+        id: number | string
+        fileUrl: string
+      }
+      message: string
+    }>('/base/attachment/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    if (response.data.code !== 200 || !response.data.data) {
+      throw new Error(response.data.message || '头像上传失败')
+    }
+
+    const avatarUrl = response.data.data.fileUrl
+
+    await updateUser({
+      id: user.value.id,
+      avatar: avatarUrl,
+    })
+
+    // 更新前端当前用户头像（全局生效：个人页 + 右上角）
+    userStore.setUser({ avatar: avatarUrl })
+    ElMessage.success('头像更新成功')
+    onSuccess?.(response.data.data as any)
+  } catch (error: any) {
+    handleErrorToast(error)
+    onError?.(error as any)
+  }
+}
+
 onMounted(async () => {
   try {
     const data = await getCurrentUser()
@@ -69,14 +136,26 @@ onMounted(async () => {
   <main class="profile-page">
     <section class="profile-card">
       <header class="profile-header">
-        <div class="avatar">
-          <span v-if="user.avatar" class="avatar-image">
-            <img :src="user.avatar" alt="头像" />
-          </span>
-          <span v-else class="avatar-fallback">
-            {{ (user.nickname || user.username || 'U').charAt(0).toUpperCase() }}
-          </span>
-        </div>
+        <!-- 头像上传：鼠标悬浮时出现灰色幕布和白色加号，点击上传头像 -->
+        <el-upload
+          class="avatar-uploader"
+          :show-file-list="false"
+          :http-request="handleAvatarUpload"
+          :before-upload="beforeAvatarUpload"
+          accept="image/*"
+        >
+          <div class="avatar">
+            <span v-if="user.avatar" class="avatar-image">
+              <img :src="user.avatar" alt="头像" />
+            </span>
+            <span v-else class="avatar-fallback">
+              {{ (user.nickname || user.username || 'U').charAt(0).toUpperCase() }}
+            </span>
+            <div class="avatar-mask">
+              <div class="avatar-plus"></div>
+            </div>
+          </div>
+        </el-upload>
         <div class="profile-main">
           <h1 class="name">
             {{ user.nickname || user.realName || user.username || '未设置昵称' }}
@@ -91,7 +170,7 @@ onMounted(async () => {
         <section class="profile-section profile-section--wide">
           <header class="section-header">
             <h2 class="section-title">基本信息</h2>
-            <p class="section-subtitle">当前账号的基础资料</p>
+            <p class="section-subtitle">当前账号的基础资料与头像设置</p>
           </header>
           <div class="info-list">
             <div class="info-row">
@@ -250,7 +329,12 @@ onMounted(async () => {
   border-bottom: 1px solid #f3f4f6;
 }
 
+.avatar-uploader {
+  cursor: pointer;
+}
+
 .avatar {
+  position: relative;
   width: 64px;
   height: 64px;
   border-radius: 999px;
@@ -276,6 +360,48 @@ onMounted(async () => {
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+
+.avatar-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.avatar-plus {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.avatar-plus::before,
+.avatar-plus::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #ffffff;
+  border-radius: 999px;
+}
+
+.avatar-plus::before {
+  width: 14px;
+  height: 2px;
+}
+
+.avatar-plus::after {
+  width: 2px;
+  height: 14px;
+}
+
+.avatar:hover .avatar-mask {
+  opacity: 1;
 }
 
 .profile-main .name {
