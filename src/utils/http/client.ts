@@ -3,7 +3,7 @@
  * 提供便捷的 HTTP 请求方法
  */
 
-import { type Method } from 'axios'
+import { type Method, type AxiosRequestConfig } from 'axios'
 import { http } from './instance'
 import type { HttpResponse } from './types'
 import type { ServicePrefix } from './config'
@@ -17,8 +17,9 @@ async function httpRequest<T = unknown>(options: {
   path: string
   params?: Record<string, unknown>
   body?: unknown
+  config?: AxiosRequestConfig
 }): Promise<T> {
-  const { service, method, path, params, body } = options
+  const { service, method, path, params, body, config } = options
   const url = `${service}${path}`
 
   const resp = await http.request<HttpResponse<T>>({
@@ -26,6 +27,7 @@ async function httpRequest<T = unknown>(options: {
     method,
     params,
     data: body ?? {},
+    ...config,
   })
 
   return resp.data.data
@@ -44,13 +46,15 @@ export function httpGet<T = unknown>(
 
 /**
  * POST 请求（按服务 + 相对路径）
+ * 支持透传 AxiosRequestConfig（用于 multipart/form-data、blob 等场景）
  */
 export function httpPost<T = unknown>(
   service: ServicePrefix,
   path: string,
-  body?: unknown
+  body?: unknown,
+  config?: AxiosRequestConfig
 ): Promise<T> {
-  return httpRequest<T>({ service, method: 'POST', path, body })
+  return httpRequest<T>({ service, method: 'POST', path, body, config })
 }
 
 /**

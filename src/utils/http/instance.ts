@@ -17,9 +17,6 @@ import { requestInterceptor, requestErrorInterceptor, createResponseInterceptors
 export const http: AxiosInstance = axios.create({
   baseURL: API_BASE_URL || undefined,
   timeout: REQUEST_TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
 // 注册请求拦截器
