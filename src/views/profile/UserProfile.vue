@@ -3,7 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '@/store/user/user'
 import { getCurrentUser } from '@/api/auth/auth'
 import { changeUserPassword, type UserPasswordChangeRequest, updateUser } from '@/api/system/user/user'
-import { handleErrorSilent, handleErrorToast, http } from '@/utils/http'
+import { uploadAttachment } from '@/api/attachment/attachment'
+import { handleErrorSilent, handleErrorToast } from '@/utils/http'
 import { ElMessage } from 'element-plus'
 import type { UploadRequestOptions, UploadProps } from 'element-plus'
 
@@ -90,22 +91,9 @@ const handleAvatarUpload = async (options: UploadRequestOptions) => {
     formData.append('businessId', String(user.value.id))
     formData.append('remark', '用户头像')
 
-    const response = await http.post<{
-      code: number
-      data: {
-        id: number | string
-        fileUrl: string
-      }
-      message: string
-    }>('/base/attachment/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-
-    if (response.data.code !== 200 || !response.data.data) {
-      throw new Error(response.data.message || '头像上传失败')
-    }
-
-    const avatarUrl = response.data.data.fileUrl
+    // 调用统一的附件上传 API，返回附件信息
+    const attachment = await uploadAttachment(formData)
+    const avatarUrl = attachment.fileUrl
 
     await updateUser({
       id: user.value.id,
@@ -115,7 +103,7 @@ const handleAvatarUpload = async (options: UploadRequestOptions) => {
     // 更新前端当前用户头像（全局生效：个人页 + 右上角）
     userStore.setUser({ avatar: avatarUrl })
     ElMessage.success('头像更新成功')
-    onSuccess?.(response.data.data as any)
+    onSuccess?.(attachment as any)
   } catch (error: any) {
     handleErrorToast(error)
     onError?.(error as any)
@@ -192,6 +180,7 @@ onMounted(async () => {
             <div class="info-row">
               <div class="info-label">性别</div>
               <div class="info-value">
+
                 <span v-if="user.gender === 1">男</span>
                 <span v-else-if="user.gender === 2">女</span>
                 <span v-else>未知</span>
