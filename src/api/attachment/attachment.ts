@@ -119,9 +119,48 @@ export function switchAttachmentStatus(payload: AttachmentStatusSwitchRequest): 
 }
 
 /**
- * 上传附件
+ * 上传附件（基础方法，直接接收 FormData）
+ * @param formData FormData 对象
+ * @returns 附件详情
  */
 export function uploadAttachment(formData: FormData): Promise<AttachmentDetailVo> {
-  return httpPost<AttachmentDetailVo>(SERVICE.BASE, '/attachment/upload', formData)
+  return httpPost<AttachmentDetailVo>(
+    SERVICE.BASE,
+    '/attachment/upload',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  )
+}
+
+/**
+ * 上传附件（增强方法，支持进度回调）
+ * @param formData FormData 对象
+ * @param onProgress 上传进度回调（0-100）
+ * @returns 附件详情
+ */
+export function uploadAttachmentWithProgress(
+  formData: FormData,
+  onProgress?: (percent: number) => void
+): Promise<AttachmentDetailVo> {
+  return httpPost<AttachmentDetailVo>(
+    SERVICE.BASE,
+    '/attachment/upload',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(percent)
+        }
+      },
+    }
+  )
 }
 

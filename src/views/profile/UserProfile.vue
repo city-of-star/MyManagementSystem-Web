@@ -3,10 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '@/store/user/user'
 import { getCurrentUser } from '@/api/auth/auth'
 import { changeUserPassword, type UserPasswordChangeRequest, updateUser } from '@/api/system/user/user'
-import { uploadAttachment } from '@/api/attachment/attachment'
+import { uploadAttachmentWithProgress } from '@/api/attachment/attachment'
 import { handleErrorSilent, handleErrorToast } from '@/utils/http'
 import { ElMessage } from 'element-plus'
-import type { UploadRequestOptions, UploadProps } from 'element-plus'
+import { Message } from "@/utils/base/messageUtils.ts";
+import { createBeforeUploadValidator, createUploadRequest } from '@/utils/upload/uploadUtils'
 
 const userStore = useUserStore()
 
@@ -32,21 +33,18 @@ const handleChangePassword = async () => {
     ElMessage.warning('两次输入的新密码不一致')
     return
   }
-
   if (!user.value.id) {
     ElMessage.error('当前用户信息异常，请重新登录后重试')
     return
   }
-
   const payload: UserPasswordChangeRequest = {
     oldPassword: passwordForm.value.oldPassword,
     newPassword: passwordForm.value.newPassword,
   }
-
   passwordLoading.value = true
   try {
     await changeUserPassword(payload)
-    ElMessage.success('修改密码成功')
+    Message.success('修改密码成功')
     passwordForm.value.oldPassword = ''
     passwordForm.value.newPassword = ''
     passwordForm.value.confirmPassword = ''
@@ -58,57 +56,49 @@ const handleChangePassword = async () => {
   }
 }
 
-// 头像上传前校验（仅允许图片，最大 5MB）
-const beforeAvatarUpload: UploadProps['beforeUpload'] = (file) => {
-  const isImage = file.type.startsWith('image/')
-  if (!isImage) {
-    ElMessage.error('只能上传图片类型文件')
-    return false
-  }
-  const maxSizeMb = 5
-  const isLtMax = file.size / 1024 / 1024 <= maxSizeMb
-  if (!isLtMax) {
-    ElMessage.error(`头像大小不能超过 ${maxSizeMb}MB`)
-    return false
-  }
-  return true
-}
+/**
+ * 头像上传前校验
+ */
+const beforeAvatarUpload = createBeforeUploadValidator({
+  accept: 'image/*', // 支持所有图片类型
+  maxSize: 5, // 最大 5MB
+})
 
-// 自定义头像上传请求：调用附件上传接口 + 更新当前用户 avatar 字段
-const handleAvatarUpload = async (options: UploadRequestOptions) => {
-  const { file, onError, onSuccess } = options
+/**
+ * 头像上传请求
+ */
+const handleAvatarUpload = createUploadRequest(
+  // 上传函数：处理实际的上传逻辑
+  async (formData, onProgress) => {
+    // 校验用户信息
+    if (!user.value.id) {
+      throw new Error('当前用户信息异常，请重新登录后重试')
+    }
 
-  if (!user.value.id) {
-    ElMessage.error('当前用户信息异常，请重新登录后重试')
-    onError?.({ name: 'UploadError', message: '当前用户信息异常，请重新登录后重试' } as any)
-    return
-  }
-
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('businessType', 'USER_AVATAR')
-    formData.append('businessId', String(user.value.id))
-    formData.append('remark', '用户头像')
-
-    // 调用统一的附件上传 API，返回附件信息
-    const attachment = await uploadAttachment(formData)
+    // 调用附件上传 API（支持进度回调）
+    const attachment = await uploadAttachmentWithProgress(formData, onProgress)
     const avatarUrl = attachment.fileUrl
 
+    // 更新后端用户头像
     await updateUser({
       id: user.value.id,
       avatar: avatarUrl,
     })
 
-    // 更新前端当前用户头像（全局生效：个人页 + 右上角）
+    // 更新前端用户状态
     userStore.setUser({ avatar: avatarUrl })
-    ElMessage.success('头像更新成功')
-    onSuccess?.(attachment as any)
-  } catch (error: any) {
-    handleErrorToast(error)
-    onError?.(error as any)
+    Message.success('头像更新成功')
+
+    // 返回附件信息
+    return attachment
+  },
+  // 上传选项：自动构建 FormData 的字段
+  {
+    businessType: 'USER_AVATAR', // 业务类型
+    businessId: () => user.value.id, // 关联业务ID
+    remark: '用户头像', // 备注
   }
-}
+)
 
 onMounted(async () => {
   try {
@@ -124,7 +114,6 @@ onMounted(async () => {
   <main class="profile-page">
     <section class="profile-card">
       <header class="profile-header">
-        <!-- 头像上传：鼠标悬浮时出现灰色幕布和白色加号，点击上传头像 -->
         <el-upload
           class="avatar-uploader"
           :show-file-list="false"
@@ -455,12 +444,6 @@ onMounted(async () => {
   color: #9ca3af;
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px 18px;
-}
-
 .info-list {
   border-top: 1px solid #e5e7eb;
   margin-top: 4px;
@@ -487,21 +470,6 @@ onMounted(async () => {
   word-break: break-all;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-}
-
-.label {
-  color: #9ca3af;
-}
-
-.value {
-  color: #111827;
-}
-
 .status {
   display: inline-flex;
   align-items: center;
@@ -509,16 +477,6 @@ onMounted(async () => {
   padding: 1px 6px;
   font-size: 12px;
   border-radius: 999px;
-}
-
-.status-active {
-  background: #ecfdf3;
-  color: #15803d;
-}
-
-.status-inactive {
-  background: #fef2f2;
-  color: #b91c1c;
 }
 
 .security-tips {

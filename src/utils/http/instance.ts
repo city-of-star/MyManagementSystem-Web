@@ -1,6 +1,6 @@
 /**
  * Axios 实例创建和配置
- * 
+ *
  * 这是 HTTP 模块的核心文件，负责：
  * - 创建 Axios 实例
  * - 注册请求拦截器（添加 Token）
@@ -17,6 +17,9 @@ import { requestInterceptor, requestErrorInterceptor, createResponseInterceptors
 export const http: AxiosInstance = axios.create({
   baseURL: API_BASE_URL || undefined,
   timeout: REQUEST_TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+  }
 })
 
 // 注册请求拦截器
