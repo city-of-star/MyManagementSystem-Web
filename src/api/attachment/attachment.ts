@@ -73,6 +73,13 @@ export interface AttachmentStatusSwitchRequest {
 }
 
 /**
+ * 硬删除附件请求 DTO
+ */
+export interface AttachmentHardDeleteRequest {
+  id: number
+}
+
+/**
  * 分页查询附件
  */
 export function getAttachmentPage(payload: AttachmentPageQuery): Promise<PageResult<AttachmentPageVo>> {
@@ -105,6 +112,13 @@ export function updateAttachment(payload: AttachmentUpdateRequest): Promise<Atta
  */
 export function deleteAttachment(attachmentId: number): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/attachment/${attachmentId}`)
+}
+
+/**
+ * 硬删除附件（删除物理文件并逻辑删除记录）
+ */
+export function hardDeleteAttachment(attachmentId: number): Promise<void> {
+  return httpDelete<void>(SERVICE.BASE, `/attachment/${attachmentId}/hard`)
 }
 
 /**

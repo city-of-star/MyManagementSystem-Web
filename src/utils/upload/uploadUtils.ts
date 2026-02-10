@@ -15,7 +15,8 @@ import { Message } from "@/utils/base/messageUtils.ts";
  * 文件业务类型（常量）
  */
 export const ATTACHMENT_BUSINESS_TYPE = {
-  user_avatar: 'user_avatar',
+  user_avatar: 'user_avatar', // 用户头像
+  system_attachment: 'system_attachment', // 系统附件管理-资源库上传
 } as const
 
 /**

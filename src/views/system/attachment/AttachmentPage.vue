@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { Message } from '@/utils/base/messageUtils.ts'
+import {onMounted, reactive, ref} from 'vue'
+import {Message} from '@/utils/base/messageUtils.ts'
 import {
+  type AttachmentPageQuery,
+  type AttachmentPageVo,
   batchDeleteAttachment,
   deleteAttachment,
   getAttachmentPage,
   switchAttachmentStatus,
-  type AttachmentPageQuery,
-  type AttachmentPageVo,
+  uploadAttachmentWithProgress,
+  hardDeleteAttachment,
 } from '@/api/attachment/attachment'
-import type { PageResult } from '@/api/common/types'
-import { handleErrorToast } from '@/utils/http'
-import { useDict } from '@/utils/base/dictUtils.ts'
+import type {PageResult} from '@/api/common/types'
+import {handleErrorToast} from '@/utils/http'
+import {useDict} from '@/utils/base/dictUtils.ts'
+import {ATTACHMENT_BUSINESS_TYPE, createBeforeUploadValidator, createUploadRequest} from '@/utils/upload/uploadUtils'
 
 import SearchForm from '@/components/layout/SearchForm.vue'
 import DataTable from '@/components/layout/DataTable.vue'
@@ -51,6 +54,10 @@ const total = ref(0)
 
 // 选中行
 const multipleSelection = ref<AttachmentPageVo[]>([])
+
+// 上传状态
+const uploading = ref(false)
+const uploadProgress = ref(0)
 
 // 初始化
 onMounted(async () => {
@@ -117,6 +124,22 @@ const handleDelete = async (row: AttachmentPageVo) => {
   }
 }
 
+// 硬删除（删除物理文件）
+const handleHardDelete = async (row: AttachmentPageVo) => {
+  try {
+    await Message.confirm(
+      `【危险操作】\n确定要硬删除附件【${row.originalName || row.fileName}】吗？\n该操作会删除底层存储中的物理文件，且无法恢复。`
+    )
+    await hardDeleteAttachment(row.id)
+    Message.success('硬删除成功')
+    await fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
 // 批量删除
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
@@ -148,7 +171,7 @@ const handleToggleStatus = async (row: AttachmentPageVo) => {
   }
 }
 
-// 预览（直接打开 fileUrl）
+// 预览
 const handlePreview = (row: AttachmentPageVo) => {
   if (!row.fileUrl) {
     Message.warning('文件地址不存在')
@@ -156,6 +179,53 @@ const handlePreview = (row: AttachmentPageVo) => {
   }
   window.open(row.fileUrl, '_blank')
 }
+
+// 下载
+const handleDownload = (row: AttachmentPageVo) => {
+  if (!row.fileUrl) {
+    Message.warning('文件地址不存在')
+    return
+  }
+  const a = document.createElement('a')
+  a.href = row.fileUrl
+  a.download = row.originalName || row.fileName
+  a.target = '_blank'
+  a.rel = 'noopener'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
+// 上传前校验：默认限制 100MB（可按需调整）
+const beforeUpload = createBeforeUploadValidator({
+  maxSize: 100,
+})
+
+// 实际上传请求（系统附件管理资源库上传）
+const doUpload = createUploadRequest(
+  async (formData: FormData, onProgress?: (percent: number) => void) => {
+    try {
+      uploading.value = true
+      uploadProgress.value = 0
+      const attachment = await uploadAttachmentWithProgress(formData, (p) => {
+        uploadProgress.value = p
+        onProgress?.(p)
+      })
+      Message.success('上传成功')
+      await fetchData()
+      return attachment
+    } catch (error) {
+      handleErrorToast(error)
+      throw error
+    } finally {
+      uploading.value = false
+      uploadProgress.value = 0
+    }
+  },
+  {
+    businessType: ATTACHMENT_BUSINESS_TYPE.system_attachment,
+  }
+)
 
 // 文件大小格式化函数
 const formatFileSize = (bytes: number): string => {
@@ -201,10 +271,38 @@ const formatFileSize = (bytes: number): string => {
 
     <!-- 操作栏 -->
     <Toolbar>
+      <el-upload
+        :show-file-list="false"
+        :auto-upload="true"
+        :multiple="false"
+        :http-request="doUpload"
+        :before-upload="beforeUpload"
+      >
+        <PrimaryButton icon="Upload" type="primary">
+          上传附件
+        </PrimaryButton>
+      </el-upload>
+      <el-upload
+        :show-file-list="false"
+        :auto-upload="true"
+        :multiple="true"
+        :http-request="doUpload"
+        :before-upload="beforeUpload"
+      >
+        <PrimaryButton icon="Upload" type="primary">
+          批量上传
+        </PrimaryButton>
+      </el-upload>
       <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">
         批量删除
       </PrimaryButton>
     </Toolbar>
+    <el-progress
+      v-if="uploading"
+      class="upload-progress"
+      :percentage="uploadProgress"
+      :stroke-width="10"
+    />
 
     <!-- 表格 -->
     <DataTable
@@ -237,11 +335,13 @@ const formatFileSize = (bytes: number): string => {
       </el-table-column>
       <el-table-column prop="createTime" label="创建时间" min-width="170" />
       <el-table-column prop="updateTime" label="更新时间" min-width="170" />
-      <el-table-column label="操作" fixed="right" width="120">
+      <el-table-column label="操作" fixed="right" width="190">
         <template #default="{ row }">
           <IconButton type="primary" icon="View" tooltip="预览" @click="handlePreview(row)"/>
+          <IconButton type="primary" icon="Download" tooltip="下载" @click="handleDownload(row)"/>
           <IconButton type="primary" :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'" :tooltip="row.status === 1 ? '禁用' : '启用'" @click="handleToggleStatus(row)"/>
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)"/>
+          <IconButton type="danger" icon="Warning" tooltip="硬删除" @click="handleHardDelete(row)"/>
         </template>
       </el-table-column>
     </DataTable>
@@ -256,5 +356,9 @@ const formatFileSize = (bytes: number): string => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.upload-progress {
+  margin-top: -8px;
 }
 </style>
