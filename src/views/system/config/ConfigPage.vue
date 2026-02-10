@@ -291,14 +291,14 @@ const handleToggleStatus = async (row: ConfigVo) => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="48" />
-      <el-table-column prop="configKey" label="配置键" min-width="180" />
       <el-table-column prop="configName" label="配置名称" min-width="180" />
+      <el-table-column prop="configKey" label="配置键" min-width="180" />
+      <el-table-column prop="configValue" label="配置值" min-width="200" show-overflow-tooltip />
       <el-table-column prop="configType" label="类型" width="100">
         <template #default="{ row }">
           <DictTag :options="configTypeOptions" :value="row.configType" />
         </template>
       </el-table-column>
-      <el-table-column prop="configValue" label="配置值" min-width="200" show-overflow-tooltip />
       <el-table-column label="可编辑" width="90">
         <template #default="{ row }">
           <DictTag :options="yesNoOptions" :value="row.editable" :type-map="{ '1': 'success', '0': 'info' }" />
@@ -330,22 +330,14 @@ const handleToggleStatus = async (row: ConfigVo) => {
     <!-- 新增/编辑弹窗 -->
     <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="600px" @confirm="handleSubmit">
       <el-form label-width="100px" class="dialog-form">
+        <el-form-item label="配置名称" required>
+          <el-input v-model="form.configName" placeholder="请输入配置名称" />
+        </el-form-item>
         <el-form-item label="配置键" required>
           <el-input
             v-model="form.configKey"
             placeholder="请输入配置键，例如：system.name"
             :disabled="!!editingId"
-          />
-        </el-form-item>
-        <el-form-item label="配置名称" required>
-          <el-input v-model="form.configName" placeholder="请输入配置名称" />
-        </el-form-item>
-        <el-form-item label="配置类型">
-          <DictSelect
-            v-model="form.configType"
-            :options="configTypeOptions"
-            :loading="configTypeLoading"
-            style="width: 160px"
           />
         </el-form-item>
         <el-form-item label="配置值">
@@ -354,6 +346,14 @@ const handleToggleStatus = async (row: ConfigVo) => {
               type="textarea"
               :rows="3"
               placeholder="请输入配置值，JSON 类型请填写合法 JSON 文本"
+          />
+        </el-form-item>
+        <el-form-item label="配置类型">
+          <DictSelect
+              v-model="form.configType"
+              :options="configTypeOptions"
+              :loading="configTypeLoading"
+              style="width: 160px"
           />
         </el-form-item>
         <el-form-item label="状态">

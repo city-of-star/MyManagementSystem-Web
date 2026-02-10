@@ -489,12 +489,12 @@ const handleSubmitRoles = async () => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="40" />
-      <el-table-column prop="username" label="用户名" min-width="120" />
-      <el-table-column prop="realName" label="姓名" min-width="90" />
-      <el-table-column prop="phone" label="手机号" min-width="130" />
-      <el-table-column prop="email" label="邮箱" min-width="180" />
-      <el-table-column prop="primaryDeptName" label="主部门" min-width="110" />
-      <el-table-column prop="primaryPostName" label="主岗位" min-width="110" />
+      <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="realName" label="姓名" min-width="90" show-overflow-tooltip />
+      <el-table-column prop="phone" label="手机号" min-width="130" show-overflow-tooltip />
+      <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
+      <el-table-column prop="primaryDeptName" label="主部门" min-width="110" show-overflow-tooltip />
+      <el-table-column prop="primaryPostName" label="主岗位" min-width="110" show-overflow-tooltip />
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
           <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }"/>
@@ -505,8 +505,8 @@ const handleSubmitRoles = async () => {
           <DictTag :options="userLockStatusOptions" :value="row.locked" :type-map="{ '1': 'danger', '0': 'success' }"/>
         </template>
       </el-table-column>
-      <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" />
-      <el-table-column prop="createTime" label="创建时间" min-width="170" />
+      <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="170" show-overflow-tooltip />
+      <el-table-column prop="createTime" label="创建时间" min-width="170" show-overflow-tooltip />
       <el-table-column label="操作" fixed="right" width="250">
         <template #default="{ row }">
           <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)"/>

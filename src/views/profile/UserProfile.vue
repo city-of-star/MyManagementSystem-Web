@@ -7,7 +7,7 @@ import { uploadAttachmentWithProgress } from '@/api/attachment/attachment'
 import { handleErrorSilent, handleErrorToast } from '@/utils/http'
 import { ElMessage } from 'element-plus'
 import { Message } from "@/utils/base/messageUtils.ts";
-import { createBeforeUploadValidator, createUploadRequest } from '@/utils/upload/uploadUtils'
+import { ATTACHMENT_BUSINESS_TYPE, createBeforeUploadValidator, createUploadRequest} from '@/utils/upload/uploadUtils'
 
 const userStore = useUserStore()
 
@@ -94,7 +94,7 @@ const handleAvatarUpload = createUploadRequest(
   },
   // 上传选项：自动构建 FormData 的字段
   {
-    businessType: 'USER_AVATAR', // 业务类型
+    businessType: ATTACHMENT_BUSINESS_TYPE.user_avatar, // 业务类型
     businessId: () => user.value.id, // 关联业务ID
     remark: '用户头像', // 备注
   }

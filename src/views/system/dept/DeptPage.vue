@@ -303,7 +303,7 @@ const handleToggleStatus = async (row: DeptVo) => {
           <DictTag :options="statusOptions" :value="row.status" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
-      <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip align="left" />
+      <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip align="left"  />
       <el-table-column label="操作" fixed="right" width="260">
         <template #default="{ row }">
           <div class="action-buttons">
@@ -387,12 +387,6 @@ const handleToggleStatus = async (row: DeptVo) => {
   justify-content: center;
   gap: 4px;
   flex-wrap: wrap;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .dialog-form {

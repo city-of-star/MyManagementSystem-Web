@@ -12,6 +12,13 @@ import type { UploadRequestOptions } from 'element-plus'
 import { Message } from "@/utils/base/messageUtils.ts";
 
 /**
+ * 文件业务类型（常量）
+ */
+export const ATTACHMENT_BUSINESS_TYPE = {
+  user_avatar: 'user_avatar',
+} as const
+
+/**
  * 文件校验规则
  */
 export interface FileValidateRule {

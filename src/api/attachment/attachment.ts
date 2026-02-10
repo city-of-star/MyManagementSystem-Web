@@ -7,9 +7,12 @@ export interface AttachmentPageQuery {
   pageSize?: number
   fileName?: string
   originalName?: string
+  fileType?: string
   businessType?: string
   businessId?: number | null
   status?: number | null
+  createTimeStart?: string | null
+  createTimeEnd?: string | null
 }
 
 // 附件分页 VO
