@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useUserStore } from '@/store/user/user'
-import { getCurrentUser } from '@/api/auth/auth'
-import { changeUserPassword, type UserPasswordChangeRequest, updateUser } from '@/api/system/user/user'
-import { uploadAttachmentWithProgress } from '@/api/attachment/attachment'
-import { handleErrorSilent, handleErrorToast } from '@/utils/http'
-import { ElMessage } from 'element-plus'
-import { Message } from "@/utils/base/messageUtils.ts";
-import { ATTACHMENT_BUSINESS_TYPE, createBeforeUploadValidator, createUploadRequest} from '@/utils/upload/uploadUtils'
+import {computed, onMounted, ref} from 'vue'
+import {useUserStore} from '@/store/user/user'
+import {getCurrentUser} from '@/api/auth/auth'
+import {changeUserPassword, updateUser, type UserPasswordChangeRequest} from '@/api/system/user/user'
+import {uploadAttachmentWithProgress} from '@/api/attachment/attachment'
+import {handleErrorSilent, handleErrorToast} from '@/utils/http'
+import type {UploadRawFile} from 'element-plus'
+import {ElMessage} from 'element-plus'
+import {Message} from '@/utils/base/messageUtils.ts'
+import {ATTACHMENT_BUSINESS_TYPE, createBeforeUploadValidator, createUploadRequest} from '@/utils/upload/uploadUtils'
+import AvatarCropperDialog from '@/components/cropper/cropper.vue'
 
 const userStore = useUserStore()
 
@@ -22,6 +24,12 @@ const passwordForm = ref({
 
 const passwordLoading = ref(false)
 const passwordDialogVisible = ref(false)
+
+// 裁剪组件实例
+interface AvatarCropperInstance {
+  open: (file: UploadRawFile) => Promise<UploadRawFile>
+}
+const avatarCropperRef = ref<AvatarCropperInstance | null>(null)
 
 // 处理密码修改
 const handleChangePassword = async () => {
@@ -57,12 +65,35 @@ const handleChangePassword = async () => {
 }
 
 /**
- * 头像上传前校验
+ * 头像上传前基础校验（类型、大小等）
  */
-const beforeAvatarUpload = createBeforeUploadValidator({
+const rawBeforeAvatarUpload = createBeforeUploadValidator({
   accept: 'image/*', // 支持所有图片类型
   maxSize: 5, // 最大 5MB
 })
+
+/**
+ * 头像上传前：先进行基础校验，再弹出裁剪弹窗；
+ * 裁剪确定后，将裁剪后的 File 返回给 el-upload 继续后续上传流程
+ */
+const beforeAvatarUpload = async (rawFile: UploadRawFile) => {
+  const valid = await rawBeforeAvatarUpload(rawFile)
+  if (!valid) {
+    return false
+  }
+
+  if (!avatarCropperRef.value) {
+    Message.error('裁剪组件未就绪，请稍后重试')
+    return false
+  }
+
+  try {
+    return await avatarCropperRef.value.open(rawFile)
+  } catch {
+    // 用户取消裁剪
+    return false
+  }
+}
 
 /**
  * 头像上传请求
@@ -74,21 +105,17 @@ const handleAvatarUpload = createUploadRequest(
     if (!user.value.id) {
       throw new Error('当前用户信息异常，请重新登录后重试')
     }
-
     // 调用附件上传 API（支持进度回调）
     const attachment = await uploadAttachmentWithProgress(formData, onProgress)
     const avatarUrl = attachment.fileUrl
-
     // 更新后端用户头像
     await updateUser({
       id: user.value.id,
       avatar: avatarUrl,
     })
-
     // 更新前端用户状态
     userStore.setUser({ avatar: avatarUrl })
     Message.success('头像更新成功')
-
     // 返回附件信息
     return attachment
   },
@@ -235,6 +262,9 @@ onMounted(async () => {
         </section>
       </section>
 
+      <!-- 头像裁剪弹窗 -->
+      <AvatarCropperDialog ref="avatarCropperRef" />
+
       <el-dialog
         v-model="passwordDialogVisible"
         title="修改密码"
@@ -326,7 +356,16 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+.avatar-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
 .avatar-image img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
