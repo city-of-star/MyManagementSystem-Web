@@ -83,14 +83,14 @@ const multipleSelection = ref<UserPageVo[]>([])
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建用户')
-const editingUserId = ref<number | null>(null)
+const editingUserId = ref<string | null>(null)
 
 // 分配角色相关
 const roleDialogVisible = ref(false)
-const assigningUserId = ref<number | null>(null)
+const assigningUserId = ref<string | null>(null)
 const assigningUserName = ref('')
 const allRoles = ref<RoleVo[]>([])
-const checkedRoleIds = ref<number[]>([])
+const checkedRoleIds = ref<string[]>([])
 const roleLoading = ref(false)
 
 // 表单（用于新增/编辑）
@@ -103,8 +103,8 @@ const form = reactive({
   phone: '',
   email: '',
   status: 1,
-  primaryDeptId: null as number | null,
-  primaryPostId: null as number | null,
+  primaryDeptId: null as string | null,
+  primaryPostId: null as string | null,
   remark: '',
 })
 
@@ -404,7 +404,7 @@ const loadAllRoles = async () => {
 }
 
 // 获取指定用户拥有的角色列表
-const loadUserRoles = async (userId: number) => {
+const loadUserRoles = async (userId: string) => {
   try {
     checkedRoleIds.value = await getUserRoleIds(userId)
   } catch (error) {
@@ -452,10 +452,10 @@ const handleSubmitRoles = async () => {
         <el-input v-model="query.email" placeholder="请输入邮箱" clearable />
       </el-form-item>
       <el-form-item label="主部门">
-        <TreeSelect v-model.number="query.deptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
+        <TreeSelect v-model="query.deptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
       </el-form-item>
       <el-form-item label="主岗位">
-        <BaseSelect v-model.number="query.postId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
+        <BaseSelect v-model="query.postId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
       </el-form-item>
       <el-form-item label="性别">
         <DictSelect :options="userGenderOptions" :loading="userGenderLoading" v-model.number="query.gender"/>
@@ -538,10 +538,10 @@ const handleSubmitRoles = async () => {
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
         </el-form-item>
         <el-form-item label="主部门">
-          <TreeSelect v-model.number="form.primaryDeptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
+          <TreeSelect v-model="form.primaryDeptId" :data="deptTree" :props="deptTreeProps" node-key="id" :loading="deptLoading"/>
         </el-form-item>
         <el-form-item label="主岗位">
-          <BaseSelect v-model.number="form.primaryPostId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
+          <BaseSelect v-model="form.primaryPostId" :options="postOptions" label-key="postName" value-key="id" :loading="postLoading"/>
         </el-form-item>
         <el-form-item label="性别">
           <DictSelect :options="userGenderOptions" :loading="userGenderLoading" v-model.number="form.gender"/>

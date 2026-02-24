@@ -51,7 +51,7 @@ const multipleSelection = ref<ConfigVo[]>([])
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建配置')
-const editingId = ref<number | null>(null)
+const editingId = ref<string | null>(null)
 
 // 表单（用于新增/编辑）
 const form = reactive({
@@ -385,12 +385,6 @@ const handleToggleStatus = async (row: ConfigVo) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .dialog-form {

@@ -41,7 +41,7 @@ const { options: typeOptions, loading: typeLoading, load: typeLoad } = useDict('
 // 列表
 const loading = ref(false)
 const treeData = ref<PermissionTreeVo[]>([])
-const defaultExpandKeys = ref<(number | string)[]>([]) // 进入页面默认展开的一级目录
+const defaultExpandKeys = ref<string[]>([]) // 进入页面默认展开的一级目录
 
 // 表格样式（与DataTable保持一致）
 const headerCellStyle = {
@@ -57,14 +57,14 @@ const cellStyle = {
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建菜单')
-const editingPermissionId = ref<number | null>(null)
+const editingPermissionId = ref<string | null>(null)
 const codePrefix = ref('')
 const parentLabel = ref('根目录')
 const typeLocked = ref(false)
 
 // 表单（用于新增/编辑）
 const form = reactive({
-  parentId: 0 as number | null,
+  parentId: '0' as string | null,
   permissionType: 'catalog' as 'catalog' | 'menu' | 'button',
   permissionName: '',
   permissionCode: '',
@@ -79,7 +79,7 @@ const form = reactive({
 
 // 查看角色相关
 const roleDialogVisible = ref(false)
-const viewingPermissionId = ref<number | null>(null)
+const viewingPermissionId = ref<string | null>(null)
 const viewingPermissionName = ref('')
 const roleList = ref<RoleVo[]>([])
 const roleListLoading = ref(false)
@@ -121,8 +121,8 @@ const fetchTree = async () => {
       visible: query.visible ?? undefined,
     })
     treeData.value = resp || []
-    // 默认展开第一个一级目录
-    const roots = (treeData.value || []).filter((item) => !item.parentId || item.parentId === 0)
+    // 默认展开第一个一级目录（父ID为空或'0'视为根）
+    const roots = (treeData.value || []).filter((item) => !item.parentId || item.parentId === '0')
     const firstRoot = roots[0]
     defaultExpandKeys.value = firstRoot ? [String(firstRoot.id)] : []
   } catch (error) {
@@ -136,7 +136,7 @@ const fetchTree = async () => {
 const resetForm = () => {
   editingPermissionId.value = null
   dialogTitle.value = '新建菜单'
-  form.parentId = 0
+  form.parentId = '0'
   form.permissionType = 'catalog'
   form.permissionName = ''
   form.permissionCode = ''
@@ -153,7 +153,7 @@ const resetForm = () => {
 // 打开新建弹窗（新建目录、菜单、按钮）
 const openCreateDialog = (parent: PermissionTreeVo | null, type: 'catalog' | 'menu' | 'button', title?: string) => {
   resetForm()
-  form.parentId = parent?.id ?? 0
+  form.parentId = parent?.id ?? '0'
   form.permissionType = type
   typeLocked.value = true
   parentLabel.value = parent ? parent.permissionName : '根目录'
@@ -179,8 +179,8 @@ const handleCreateChild = (node: PermissionTreeVo, type: 'catalog' | 'menu' | 'b
 }
 
 // 查找父节点名称的辅助函数
-const findParentName = (parentId: number | null, nodes: PermissionTreeVo[]): string => {
-  if (!parentId || parentId === 0) return '根目录'
+const findParentName = (parentId: string | number | null, nodes: PermissionTreeVo[]): string => {
+  if (!parentId || parentId === 0 || parentId === '0') return '根目录'
   for (const node of nodes) {
     if (node.id === parentId) return node.permissionName
     if (node.children && node.children.length > 0) {
@@ -196,7 +196,7 @@ const handleEdit = (node: PermissionTreeVo) => {
   resetForm()
   dialogTitle.value = '编辑'
   editingPermissionId.value = node.id
-  form.parentId = node.parentId ?? 0
+  form.parentId = (node.parentId ?? '0') as string
   form.permissionType = (node.permissionType as 'catalog' | 'menu' | 'button') || 'catalog'
   typeLocked.value = true // 编辑时类型不可修改
   form.permissionName = node.permissionName
@@ -208,7 +208,7 @@ const handleEdit = (node: PermissionTreeVo) => {
   form.visible = node.visible ?? 1
   form.status = node.status ?? 1
   form.remark = node.remark || ''
-  parentLabel.value = findParentName(node.parentId ?? 0, treeData.value)
+  parentLabel.value = findParentName(node.parentId ?? '0', treeData.value)
   codePrefix.value = '' // 编辑不强制前缀
   dialogVisible.value = true
 }
@@ -272,7 +272,7 @@ const handleSubmit = async () => {
       editingPermissionId.value || !codePrefix.value ? form.permissionCode : `${codePrefix.value}${form.permissionCode}`
 
     const payload = {
-      parentId: form.parentId ?? 0,
+      parentId: form.parentId ?? '0',
       permissionType: form.permissionType,
       permissionName: form.permissionName,
       permissionCode: finalCode,
@@ -308,7 +308,7 @@ const handleViewRoles = async (node: PermissionTreeVo) => {
   await loadPermissionRoles(node.id)
 }
 
-const loadPermissionRoles = async (permissionId: number) => {
+const loadPermissionRoles = async (permissionId: string) => {
   roleListLoading.value = true
   try {
     roleList.value = await getPermissionRoles(permissionId)

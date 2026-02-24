@@ -57,11 +57,11 @@ const multipleSelection = ref<RoleVo[]>([])
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建角色')
-const editingRoleId = ref<number | null>(null)
+const editingRoleId = ref<string | null>(null)
 
 // 分配权限相关
 const permissionDialogVisible = ref(false)
-const assigningRoleId = ref<number | null>(null)
+const assigningRoleId = ref<string | null>(null)
 const assigningRoleName = ref('')
 const permissionTree = ref<PermissionTreeVo[]>([])
 const permissionTreeLoading = ref(false)
@@ -69,7 +69,7 @@ const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
 
 // 查看用户相关
 const userDialogVisible = ref(false)
-const viewingRoleId = ref<number | null>(null)
+const viewingRoleId = ref<string | null>(null)
 const viewingRoleName = ref('')
 const userList = ref<UserDetailVo[]>([])
 const userListLoading = ref(false)
@@ -258,7 +258,7 @@ const handleAssignPermissions = async (row: RoleVo) => {
 }
 
 // 获取权限树（加载权限树并设置选中状态）
-const loadPermissionTree = async (roleId: number) => {
+const loadPermissionTree = async (roleId: string) => {
   permissionTreeLoading.value = true
   try {
     // 并行加载权限树和角色已分配的权限ID列表
@@ -277,11 +277,11 @@ const loadPermissionTree = async (roleId: number) => {
       await nextTick()
 
       // 将权限ID列表转换为 Set，便于快速查找
-      const permissionIdSet = new Set(permissionIds)
+      const permissionIdSet = new Set<string>(permissionIds)
 
       // 只收集叶子节点（没有子节点的节点）中在权限ID列表中的权限ID
       // Tree 组件会自动处理父子关联，父节点会自动变成半选中状态
-      const checkedIds: number[] = []
+      const checkedIds: string[] = []
       const collectLeafCheckedIds = (nodes: PermissionTreeVo[]) => {
         nodes.forEach(node => {
           if (!node.children || node.children.length === 0) {
@@ -298,7 +298,7 @@ const loadPermissionTree = async (roleId: number) => {
       collectLeafCheckedIds(permissionTree.value)
 
       // 设置选中状态（只设置叶子节点，父节点会自动变成半选中状态）
-      permissionTreeRef.value.setCheckedKeys(checkedIds)
+      permissionTreeRef.value.setCheckedKeys(checkedIds as (string | number)[])
     }
   } catch (error) {
     handleErrorToast(error)
@@ -312,11 +312,11 @@ const handleSubmitPermissions = async () => {
   if (!assigningRoleId.value) return
 
   // 获取所有选中的节点（包括完全选中和半选中的）
-  const checkedKeys = permissionTreeRef.value?.getCheckedKeys() as number[] || []
-  const halfCheckedKeys = permissionTreeRef.value?.getHalfCheckedKeys() as number[] || []
+  const checkedKeys = permissionTreeRef.value?.getCheckedKeys() as (string | number)[] || []
+  const halfCheckedKeys = permissionTreeRef.value?.getHalfCheckedKeys() as (string | number)[] || []
 
   // 合并完全选中和半选中的节点，传给后端
-  const allPermissionIds = [...new Set([...checkedKeys, ...halfCheckedKeys])]
+  const allPermissionIds = [...new Set<string>([...checkedKeys, ...halfCheckedKeys].map((k) => String(k)))]
 
   if (allPermissionIds.length === 0) {
     Message.warning('请至少选择一个权限')
@@ -344,7 +344,7 @@ const handleViewUsers = async (row: RoleVo) => {
 }
 
 // 获取指定角色拥有的用户列表
-const loadRoleUsers = async (roleId: number) => {
+const loadRoleUsers = async (roleId: string) => {
   userListLoading.value = true
   try {
     userList.value = await getRoleUsers(roleId)

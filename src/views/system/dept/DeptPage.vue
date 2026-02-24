@@ -33,7 +33,7 @@ const { options: statusOptions, loading: statusLoading, load: statusLoad } = use
 // 列表（树）
 const loading = ref(false)
 const treeData = ref<DeptVo[]>([])
-const defaultExpandKeys = ref<(number | string)[]>([])
+const defaultExpandKeys = ref<string[]>([])
 
 // 表格样式（与DataTable保持一致）
 const headerCellStyle = {
@@ -49,11 +49,11 @@ const cellStyle = {
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建部门')
-const editingDeptId = ref<number | null>(null)
+const editingDeptId = ref<string | null>(null)
 
 // 表单（用于新增/编辑）
 const form = reactive({
-  parentId: 0 as number,
+  parentId: '0' as string,
   deptCode: '',
   deptName: '',
   leader: '',
@@ -98,7 +98,7 @@ const fetchTree = async () => {
     const resp = await getDeptTree(params)
     treeData.value = resp || []
     // 默认展开第一个一级部门
-    const roots = (treeData.value || []).filter((item) => !item.parentId || item.parentId === 0)
+    const roots = (treeData.value || []).filter((item) => !item.parentId || item.parentId === '0')
     const firstRoot = roots[0]
     defaultExpandKeys.value = firstRoot ? [String(firstRoot.id)] : []
   } catch (error) {
@@ -112,7 +112,7 @@ const fetchTree = async () => {
 const handleCreateRoot = () => {
   resetForm()
   dialogTitle.value = '新建部门'
-  form.parentId = 0
+  form.parentId = '0'
   parentLabel.value = '顶级部门'
   dialogVisible.value = true
 }
@@ -121,8 +121,8 @@ const handleCreateRoot = () => {
 const parentLabel = ref('顶级部门')
 
 // 查找父节点名称的辅助函数
-const findParentName = (parentId: number | null | undefined, nodes: DeptVo[]): string => {
-  if (!parentId || parentId === 0) return '顶级部门'
+const findParentName = (parentId: string | null | undefined, nodes: DeptVo[]): string => {
+  if (!parentId || parentId === '0') return '顶级部门'
   for (const node of nodes) {
     if (node.id === parentId) return node.deptName
     if (node.children && node.children.length > 0) {
@@ -147,8 +147,8 @@ const handleEdit = (row: DeptVo) => {
   resetForm()
   dialogTitle.value = '编辑部门'
   editingDeptId.value = row.id
-  form.parentId = row.parentId ?? 0
-  parentLabel.value = findParentName(row.parentId, treeData.value)
+  form.parentId = row.parentId ?? '0'
+  parentLabel.value = findParentName(row.parentId ?? '0', treeData.value)
   form.deptCode = row.deptCode
   form.deptName = row.deptName
   form.leader = row.leader || ''
@@ -175,7 +175,7 @@ const handleSubmit = async () => {
     if (editingDeptId.value) {
       await updateDept({
         id: editingDeptId.value,
-        parentId: form.parentId ?? 0,
+        parentId: form.parentId ?? '0',
         deptCode: form.deptCode,
         deptName: form.deptName,
         leader: form.leader || undefined,
@@ -188,7 +188,7 @@ const handleSubmit = async () => {
       Message.success('更新成功')
     } else {
       await createDept({
-        parentId: form.parentId ?? 0,
+        parentId: form.parentId ?? '0',
         deptCode: form.deptCode,
         deptName: form.deptName,
         leader: form.leader || undefined,
@@ -212,7 +212,7 @@ const resetForm = () => {
   editingDeptId.value = null
   dialogTitle.value = '新建部门'
   parentLabel.value = '顶级部门'
-  form.parentId = 0
+  form.parentId = '0'
   form.deptCode = ''
   form.deptName = ''
   form.leader = ''

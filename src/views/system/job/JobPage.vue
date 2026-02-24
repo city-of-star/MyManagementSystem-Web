@@ -51,7 +51,7 @@ const multipleSelection = ref<JobVo[]>([])
 // 弹窗
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建定时任务')
-const editingJobId = ref<number | null>(null)
+const editingJobId = ref<string | null>(null)
 
 // 表单（用于新增/编辑）
 const form = reactive({

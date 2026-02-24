@@ -61,15 +61,15 @@ const typeTotal = ref(0)
 
 // 选中行
 const typeMultipleSelection = ref<DictTypeVo[]>([])
-const currentTypeId = ref<number | null>(null)
+const currentTypeId = ref<string | null>(null)
 
 // 弹窗
 const typeDialogVisible = ref(false)
 const typeDialogTitle = ref('新建字典类型')
-const editingTypeId = ref<number | null>(null)
+const editingTypeId = ref<string | null>(null)
 
 // 表单（用于新增/编辑）
-const typeForm = reactive<DictTypeCreateRequest & { id?: number }>({
+const typeForm = reactive<DictTypeCreateRequest & { id?: string }>({
   dictTypeCode: '',
   dictTypeName: '',
   status: 1,
@@ -310,10 +310,10 @@ const dataMultipleSelection = ref<DictDataVo[]>([])
 // 弹窗
 const dataDialogVisible = ref(false)
 const dataDialogTitle = ref('新建字典数据')
-const editingDataId = ref<number | null>(null)
+const editingDataId = ref<string | null>(null)
 
 // 表单（用于新增/编辑）
-const dataForm = reactive<Omit<DictDataCreateRequest, 'dictTypeId'> & { id?: number }>({
+const dataForm = reactive<Omit<DictDataCreateRequest, 'dictTypeId'> & { id?: string }>({
   dictLabel: '',
   dictValue: '',
   dictSort: 0,
@@ -859,12 +859,6 @@ const currentTypeName = computed(() => {
   font-weight: 400;
   color: #6b7280;
   margin-left: 4px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .dialog-form {
