@@ -14,7 +14,7 @@ export interface RolePageQuery {
 
 // 角色信息 VO
 export interface RoleVo {
-  id: number
+  id: string
   roleCode: string
   roleName: string
   roleType?: string
@@ -31,42 +31,42 @@ export interface RoleCreateRequest {
   sortOrder?: number
   status?: number
   remark?: string
-  permissionIds?: number[]
+  permissionIds?: string[]
 }
 
 // 更新角色请求 DTO
 export interface RoleUpdateRequest {
-  id: number
+  id: string
   roleCode?: string
   roleName?: string
   roleType?: string
   sortOrder?: number
   status?: number
   remark?: string
-  permissionIds?: number[]
+  permissionIds?: string[]
 }
 
 // 切换角色状态请求 DTO
 export interface RoleStatusSwitchRequest {
-  roleId: number
+  roleId: string
   status: number
 }
 
 // 批量删除角色请求 DTO
 export interface RoleBatchDeleteRequest {
-  roleIds: number[]
+  roleIds: string[]
 }
 
 // 角色分配权限请求 DTO
 export interface RoleAssignPermissionRequest {
-  roleId: number
-  permissionIds: number[]
+  roleId: string
+  permissionIds: string[]
 }
 
 // 角色移除用户请求 DTO
 export interface RoleRemoveUserRequest {
-  roleId: number
-  userId: number
+  roleId: string
+  userId: string
 }
 
 /**
@@ -93,7 +93,7 @@ export function updateRole(payload: RoleUpdateRequest): Promise<RoleVo> {
 /**
  * 删除角色
  */
-export function deleteRole(roleId: number): Promise<void> {
+export function deleteRole(roleId: string): Promise<void> {
   return httpDelete<void>(SERVICE.USERCENTER, `/role/${roleId}`)
 }
 
@@ -121,14 +121,14 @@ export function assignRolePermissions(payload: RoleAssignPermissionRequest): Pro
 /**
  * 获取角色已分配的权限ID列表
  */
-export function getRolePermissionIds(roleId: number): Promise<number[]> {
-  return httpGet<number[]>(SERVICE.USERCENTER, `/role/${roleId}/permission-ids`)
+export function getRolePermissionIds(roleId: string): Promise<string[]> {
+  return httpGet<string[]>(SERVICE.USERCENTER, `/role/${roleId}/permission-ids`)
 }
 
 /**
  * 获取角色关联的用户列表
  */
-export function getRoleUsers(roleId: number): Promise<UserDetailVo[]> {
+export function getRoleUsers(roleId: string): Promise<UserDetailVo[]> {
   return httpGet<UserDetailVo[]>(SERVICE.USERCENTER, `/role/${roleId}/users`)
 }
 

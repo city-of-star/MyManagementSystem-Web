@@ -6,7 +6,7 @@ import type { PageResult } from '@/api/common/types'
 export interface PermissionPageQuery {
   pageNum?: number
   pageSize?: number
-  parentId?: number
+  parentId?: string
   permissionType?: string
   permissionName?: string
   permissionCode?: string
@@ -16,8 +16,8 @@ export interface PermissionPageQuery {
 
 // 权限信息 VO
 export interface PermissionVo {
-  id: number
-  parentId?: number
+  id: string
+  parentId?: string
   permissionType: string
   permissionName: string
   permissionCode: string
@@ -34,7 +34,7 @@ export interface PermissionVo {
 
 // 创建权限请求 DTO
 export interface PermissionCreateRequest {
-  parentId?: number
+  parentId?: string
   permissionType: string
   permissionName: string
   permissionCode: string
@@ -51,8 +51,8 @@ export interface PermissionCreateRequest {
 
 // 更新权限请求 DTO
 export interface PermissionUpdateRequest {
-  id: number
-  parentId?: number
+  id: string
+  parentId?: string
   permissionType?: string
   permissionName?: string
   permissionCode?: string
@@ -69,19 +69,19 @@ export interface PermissionUpdateRequest {
 
 // 切换权限状态请求 DTO
 export interface PermissionStatusSwitchRequest {
-  permissionId: number
+  permissionId: string
   status: number
 }
 
 // 批量删除权限请求 DTO
 export interface PermissionBatchDeleteRequest {
-  permissionIds: number[]
+  permissionIds: string[]
 }
 
 // 权限移除角色请求 DTO
 export interface PermissionRemoveRoleRequest {
-  permissionId: number
-  roleId: number
+  permissionId: string
+  roleId: string
 }
 
 // 权限树 VO（扩展 PermissionVo 以支持 children）
@@ -113,7 +113,7 @@ export function updatePermission(payload: PermissionUpdateRequest): Promise<Perm
 /**
  * 删除权限
  */
-export function deletePermission(permissionId: number): Promise<void> {
+export function deletePermission(permissionId: string): Promise<void> {
   return httpDelete<void>(SERVICE.USERCENTER, `/permission/${permissionId}`)
 }
 
@@ -134,7 +134,7 @@ export function switchPermissionStatus(payload: PermissionStatusSwitchRequest): 
 /**
  * 获取权限关联的角色列表
  */
-export function getPermissionRoles(permissionId: number): Promise<RoleVo[]> {
+export function getPermissionRoles(permissionId: string): Promise<RoleVo[]> {
   return httpGet<RoleVo[]>(SERVICE.USERCENTER, `/permission/${permissionId}/roles`)
 }
 

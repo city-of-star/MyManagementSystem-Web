@@ -14,15 +14,15 @@ export interface DictTypePageQuery {
 
 // 字典类型信息 VO
 export interface DictTypeVo {
-  id: number
+  id: string
   dictTypeCode: string
   dictTypeName: string
   status?: number
   sortOrder?: number
   remark?: string
-  createBy?: number
+  createBy?: string
   createTime?: string
-  updateBy?: number
+  updateBy?: string
   updateTime?: string
 }
 
@@ -37,7 +37,7 @@ export interface DictTypeCreateRequest {
 
 // 更新字典类型请求 DTO
 export interface DictTypeUpdateRequest {
-  id: number
+  id: string
   dictTypeCode?: string
   dictTypeName?: string
   status?: number
@@ -47,13 +47,13 @@ export interface DictTypeUpdateRequest {
 
 // 切换字典类型状态请求 DTO
 export interface DictTypeStatusSwitchRequest {
-  dictTypeId: number
+  dictTypeId: string
   status: number
 }
 
 // 批量删除字典类型请求 DTO
 export interface DictTypeBatchDeleteRequest {
-  dictTypeIds: number[]
+  dictTypeIds: string[]
 }
 
 /**
@@ -80,7 +80,7 @@ export function updateDictType(payload: DictTypeUpdateRequest): Promise<DictType
 /**
  * 删除字典类型
  */
-export function deleteDictType(dictTypeId: number): Promise<void> {
+export function deleteDictType(dictTypeId: string): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/dict-type/${dictTypeId}`)
 }
 

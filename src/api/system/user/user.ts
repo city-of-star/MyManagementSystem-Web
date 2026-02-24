@@ -19,13 +19,13 @@ export interface UserPageQuery {
   createTimeEnd?: string | null
   lastLoginTimeStart?: string | null
   lastLoginTimeEnd?: string | null
-  deptId?: number | null
-  postId?: number | null
+  deptId?: string | null
+  postId?: string | null
 }
 
 // 用户分页 VO
 export interface UserPageVo {
-  id: number
+  id: string
   username: string
   nickname?: string
   realName?: string
@@ -43,7 +43,7 @@ export interface UserPageVo {
 
 // 用户详情 VO
 export interface UserDetailVo {
-  id: number
+  id: string
   username: string
   nickname?: string
   realName?: string
@@ -60,9 +60,9 @@ export interface UserDetailVo {
   lastLoginIp?: string
   passwordUpdateTime?: string
   remark?: string
-  createBy?: number
+  createBy?: string
   createTime?: string
-  updateBy?: number
+  updateBy?: string
   updateTime?: string
   primaryDept?: DeptVo | null
   primaryPost?: PostVo | null
@@ -83,15 +83,15 @@ export interface UserCreateRequest {
   birthday?: string
   status?: number
   remark?: string
-  deptIds?: number[]
-  primaryDeptId?: number
-  postIds?: number[]
-  primaryPostId?: number
+  deptIds?: string[]
+  primaryDeptId?: string
+  postIds?: string[]
+  primaryPostId?: string
 }
 
 // 更新用户请求 DTO
 export interface UserUpdateRequest {
-  id: number
+  id: string
   username?: string
   nickname?: string
   realName?: string
@@ -102,28 +102,28 @@ export interface UserUpdateRequest {
   birthday?: string
   status?: number
   remark?: string
-  primaryDeptId?: number
-  primaryPostId?: number
-  deptIds?: number[]
-  postIds?: number[]
+  primaryDeptId?: string
+  primaryPostId?: string
+  deptIds?: string[]
+  postIds?: string[]
 }
 
 // 切换用户状态请求 DTO
 export interface UserStatusSwitchRequest {
-  userId: number
+  userId: string
   status: number
 }
 
 // 锁定/解锁用户请求 DTO
 export interface UserLockRequest {
-  userId: number
+  userId: string
   locked: number
   lockReason?: string
 }
 
 // 重置用户密码请求 DTO
 export interface UserPasswordResetRequest {
-  userId: number
+  userId: string
 }
 
 // 修改密码请求 DTO
@@ -134,8 +134,8 @@ export interface UserPasswordChangeRequest {
 
 // 用户分配角色请求 DTO
 export interface UserAssignRoleRequest {
-  userId: number
-  roleIds: number[]
+  userId: string
+  roleIds: string[]
 }
 
 /**
@@ -162,14 +162,14 @@ export function updateUser(payload: UserUpdateRequest): Promise<UserDetailVo> {
 /**
  * 删除用户
  */
-export function deleteUser(userId: number): Promise<void> {
+export function deleteUser(userId: string): Promise<void> {
   return httpDelete<void>(SERVICE.USERCENTER, `/user/${userId}`)
 }
 
 /**
  * 批量删除用户
  */
-export function batchDeleteUser(userIds: number[]): Promise<void> {
+export function batchDeleteUser(userIds: string[]): Promise<void> {
   return httpPost<void>(SERVICE.USERCENTER, '/user/batch-delete', { userIds })
 }
 
@@ -211,6 +211,6 @@ export function assignUserRoles(payload: UserAssignRoleRequest): Promise<void> {
 /**
  * 获取用户已分配的角色ID列表
  */
-export function getUserRoleIds(userId: number): Promise<number[]> {
-  return httpGet<number[]>(SERVICE.USERCENTER, `/user/${userId}/role-ids`)
+export function getUserRoleIds(userId: string): Promise<string[]> {
+  return httpGet<string[]>(SERVICE.USERCENTER, `/user/${userId}/role-ids`)
 }

@@ -13,9 +13,9 @@ export interface JobPageQuery {
   createTimeEnd?: string | null
 }
 
-// 定时任务分页 VO / 详情 VO（目前字段一致）
+// 定时任务分页 VO / 详情 VO
 export interface JobVo {
-  id: number
+  id: string
   serviceName: string
   jobCode: string
   jobName: string
@@ -25,9 +25,9 @@ export interface JobVo {
   timeoutMs: number
   remark?: string
   paramsJson?: string
-  createBy?: number
+  createBy?: string
   createTime?: string
-  updateBy?: number
+  updateBy?: string
   updateTime?: string
 }
 
@@ -46,7 +46,7 @@ export interface JobCreateRequest {
 
 // 更新定时任务请求 DTO
 export interface JobUpdateRequest {
-  id: number
+  id: string
   serviceName?: string
   jobName?: string
   cronExpr?: string
@@ -59,13 +59,13 @@ export interface JobUpdateRequest {
 
 // 切换启用状态请求 DTO
 export interface JobStatusSwitchRequest {
-  jobId: number
+  jobId: string
   enabled: number
 }
 
 // 批量删除请求 DTO
 export interface JobBatchDeleteRequest {
-  jobIds: number[]
+  jobIds: string[]
 }
 
 /**
@@ -78,7 +78,7 @@ export function getJobPage(payload: JobPageQuery): Promise<PageResult<JobVo>> {
 /**
  * 根据 ID 查询定时任务详情
  */
-export function getJobById(jobId: number): Promise<JobVo> {
+export function getJobById(jobId: string): Promise<JobVo> {
   return httpGet<JobVo>(SERVICE.BASE, `/job/${jobId}`)
 }
 
@@ -99,7 +99,7 @@ export function updateJob(payload: JobUpdateRequest): Promise<JobVo> {
 /**
  * 删除定时任务
  */
-export function deleteJob(jobId: number): Promise<void> {
+export function deleteJob(jobId: string): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/job/${jobId}`)
 }
 

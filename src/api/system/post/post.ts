@@ -15,16 +15,16 @@ export interface PostPageQuery {
 
 // 岗位信息 VO
 export interface PostVo {
-  id: number
+  id: string
   postCode: string
   postName: string
   postLevel?: string
   sortOrder?: number
   status?: number
   remark?: string
-  createBy?: number
+  createBy?: string
   createTime?: string
-  updateBy?: number
+  updateBy?: string
   updateTime?: string
 }
 
@@ -40,7 +40,7 @@ export interface PostCreateRequest {
 
 // 更新岗位请求 DTO
 export interface PostUpdateRequest {
-  id: number
+  id: string
   postCode?: string
   postName?: string
   postLevel?: string
@@ -51,13 +51,13 @@ export interface PostUpdateRequest {
 
 // 岗位状态切换请求 DTO
 export interface PostStatusSwitchRequest {
-  postId: number
+  postId: string
   status: number
 }
 
 // 批量删除岗位请求 DTO
 export interface PostBatchDeleteRequest {
-  postIds: number[]
+  postIds: string[]
 }
 
 /**
@@ -70,7 +70,7 @@ export function getPostPage(payload: PostPageQuery): Promise<PageResult<PostVo>>
 /**
  * 根据ID查询岗位详情
  */
-export function getPostById(postId: number): Promise<PostVo> {
+export function getPostById(postId: string): Promise<PostVo> {
   return httpGet<PostVo>(SERVICE.USERCENTER, `/post/${postId}`)
 }
 
@@ -91,7 +91,7 @@ export function updatePost(payload: PostUpdateRequest): Promise<PostVo> {
 /**
  * 删除岗位
  */
-export function deletePost(postId: number): Promise<void> {
+export function deletePost(postId: string): Promise<void> {
   return httpDelete<void>(SERVICE.USERCENTER, `/post/${postId}`)
 }
 
@@ -112,20 +112,20 @@ export function switchPostStatus(payload: PostStatusSwitchRequest): Promise<void
 /**
  * 查询用户所属的岗位ID列表
  */
-export function getUserPostIds(userId: number): Promise<number[]> {
-  return httpGet<number[]>(SERVICE.USERCENTER, `/post/${userId}/post-ids`)
+export function getUserPostIds(userId: string): Promise<string[]> {
+  return httpGet<string[]>(SERVICE.USERCENTER, `/post/${userId}/post-ids`)
 }
 
 /**
  * 查询用户所属的岗位列表
  */
-export function getUserPostList(userId: number): Promise<PostVo[]> {
+export function getUserPostList(userId: string): Promise<PostVo[]> {
   return httpGet<PostVo[]>(SERVICE.USERCENTER, `/post/${userId}/list`)
 }
 
 /**
  * 查询用户所属的主岗位（可能为null）
  */
-export function getUserPrimaryPost(userId: number): Promise<PostVo | null> {
+export function getUserPrimaryPost(userId: string): Promise<PostVo | null> {
   return httpGet<PostVo | null>(SERVICE.USERCENTER, `/post/${userId}/primary`)
 }

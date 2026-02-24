@@ -5,7 +5,7 @@ import type { PageResult } from '@/api/common/types'
 export interface DictDataPageQuery {
   pageNum?: number
   pageSize?: number
-  dictTypeId?: number
+  dictTypeId?: string
   dictLabel?: string
   dictValue?: string
   status?: number | null
@@ -15,8 +15,8 @@ export interface DictDataPageQuery {
 
 // 字典数据信息 VO
 export interface DictDataVo {
-  id: number
-  dictTypeId: number
+  id: string
+  dictTypeId: string
   dictTypeCode?: string
   dictTypeName?: string
   dictLabel: string
@@ -25,15 +25,15 @@ export interface DictDataVo {
   isDefault?: number
   status?: number
   remark?: string
-  createBy?: number
+  createBy?: string
   createTime?: string
-  updateBy?: number
+  updateBy?: string
   updateTime?: string
 }
 
 // 创建字典数据请求 DTO
 export interface DictDataCreateRequest {
-  dictTypeId: number
+  dictTypeId: string
   dictLabel: string
   dictValue: string
   dictSort?: number
@@ -44,8 +44,8 @@ export interface DictDataCreateRequest {
 
 // 更新字典数据请求 DTO
 export interface DictDataUpdateRequest {
-  id: number
-  dictTypeId?: number
+  id: string
+  dictTypeId?: string
   dictLabel?: string
   dictValue?: string
   dictSort?: number
@@ -56,13 +56,13 @@ export interface DictDataUpdateRequest {
 
 // 切换字典数据状态请求 DTO
 export interface DictDataStatusSwitchRequest {
-  dictDataId: number
+  dictDataId: string
   status: number
 }
 
 // 批量删除字典数据请求 DTO
 export interface DictDataBatchDeleteRequest {
-  dictDataIds: number[]
+  dictDataIds: string[]
 }
 
 /**
@@ -75,7 +75,7 @@ export function getDictDataPage(payload: DictDataPageQuery): Promise<PageResult<
 /**
  * 通过字典类型ID查询数据列表
  */
-export function getDictDataListByTypeId(dictTypeId: number): Promise<DictDataVo[]> {
+export function getDictDataListByTypeId(dictTypeId: string): Promise<DictDataVo[]> {
   return httpGet<DictDataVo[]>(SERVICE.BASE, `/dict-data/type-id/${dictTypeId}`)
 }
 
@@ -103,7 +103,7 @@ export function updateDictData(payload: DictDataUpdateRequest): Promise<DictData
 /**
  * 删除字典数据
  */
-export function deleteDictData(dictDataId: number): Promise<void> {
+export function deleteDictData(dictDataId: string): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/dict-data/${dictDataId}`)
 }
 

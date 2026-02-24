@@ -7,7 +7,7 @@ export interface DeptPageQuery {
   pageSize?: number
   deptName?: string
   deptCode?: string
-  parentId?: number
+  parentId?: string
   status?: number | null
   createTimeStart?: string | null
   createTimeEnd?: string | null
@@ -22,8 +22,8 @@ export interface DeptTreeQuery {
 
 // 部门信息 VO
 export interface DeptVo {
-  id: number
-  parentId?: number
+  id: string
+  parentId?: string
   deptName: string
   deptCode: string
   leader?: string
@@ -32,16 +32,16 @@ export interface DeptVo {
   sortOrder?: number
   status?: number
   remark?: string
-  createBy?: number
+  createBy?: string
   createTime?: string
-  updateBy?: number
+  updateBy?: string
   updateTime?: string
   children?: DeptVo[]
 }
 
 // 创建部门请求 DTO
 export interface DeptCreateRequest {
-  parentId?: number
+  parentId?: string
   deptName: string
   deptCode: string
   leader?: string
@@ -54,8 +54,8 @@ export interface DeptCreateRequest {
 
 // 更新部门请求 DTO
 export interface DeptUpdateRequest {
-  id: number
-  parentId?: number
+  id: string
+  parentId?: string
   deptName?: string
   deptCode?: string
   leader?: string
@@ -68,13 +68,13 @@ export interface DeptUpdateRequest {
 
 // 部门状态切换请求 DTO
 export interface DeptStatusSwitchRequest {
-  deptId: number
+  deptId: string
   status: number
 }
 
 // 批量删除部门请求 DTO
 export interface DeptBatchDeleteRequest {
-  deptIds: number[]
+  deptIds: string[]
 }
 
 /**
@@ -94,7 +94,7 @@ export function getDeptTree(payload: DeptTreeQuery = {}): Promise<DeptVo[]> {
 /**
  * 根据ID查询部门详情
  */
-export function getDeptById(deptId: number): Promise<DeptVo> {
+export function getDeptById(deptId: string): Promise<DeptVo> {
   return httpGet<DeptVo>(SERVICE.USERCENTER, `/dept/${deptId}`)
 }
 
@@ -115,7 +115,7 @@ export function updateDept(payload: DeptUpdateRequest): Promise<DeptVo> {
 /**
  * 删除部门
  */
-export function deleteDept(deptId: number): Promise<void> {
+export function deleteDept(deptId: string): Promise<void> {
   return httpDelete<void>(SERVICE.USERCENTER, `/dept/${deptId}`)
 }
 
@@ -136,20 +136,20 @@ export function switchDeptStatus(payload: DeptStatusSwitchRequest): Promise<void
 /**
  * 查询用户所属的部门ID列表
  */
-export function getUserDeptIds(userId: number): Promise<number[]> {
-  return httpGet<number[]>(SERVICE.USERCENTER, `/dept/${userId}/dept-ids`)
+export function getUserDeptIds(userId: string): Promise<string[]> {
+  return httpGet<string[]>(SERVICE.USERCENTER, `/dept/${userId}/dept-ids`)
 }
 
 /**
  * 查询用户所属的部门列表
  */
-export function getUserDeptList(userId: number): Promise<DeptVo[]> {
+export function getUserDeptList(userId: string): Promise<DeptVo[]> {
   return httpGet<DeptVo[]>(SERVICE.USERCENTER, `/dept/${userId}/list`)
 }
 
 /**
  * 查询用户所属的主部门（可能为null）
  */
-export function getUserPrimaryDept(userId: number): Promise<DeptVo | null> {
+export function getUserPrimaryDept(userId: string): Promise<DeptVo | null> {
   return httpGet<DeptVo | null>(SERVICE.USERCENTER, `/dept/${userId}/primary`)
 }

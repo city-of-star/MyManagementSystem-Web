@@ -14,7 +14,7 @@ export interface ConfigPageQuery {
 
 // 系统配置信息 VO
 export interface ConfigVo {
-  id: number
+  id: string
   configKey: string
   configValue?: string
   configType: string
@@ -37,7 +37,7 @@ export interface ConfigCreateRequest {
 
 // 更新系统配置请求 DTO
 export interface ConfigUpdateRequest {
-  id: number
+  id: string
   configKey?: string
   configValue?: string
   configType?: string
@@ -49,13 +49,13 @@ export interface ConfigUpdateRequest {
 
 // 切换系统配置状态请求 DTO
 export interface ConfigStatusSwitchRequest {
-  configId: number
+  configId: string
   status: number
 }
 
 // 批量删除系统配置请求 DTO
 export interface ConfigBatchDeleteRequest {
-  configIds: number[]
+  configIds: string[]
 }
 
 /**
@@ -82,7 +82,7 @@ export function updateConfig(payload: ConfigUpdateRequest): Promise<ConfigVo> {
 /**
  * 删除系统配置
  */
-export function deleteConfigApi(configId: number): Promise<void> {
+export function deleteConfigApi(configId: string): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/config/${configId}`)
 }
 

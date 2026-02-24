@@ -9,7 +9,7 @@ export interface AttachmentPageQuery {
   originalName?: string
   fileType?: string
   businessType?: string
-  businessId?: number | null
+  businessId?: string | null
   status?: number | null
   createTimeStart?: string | null
   createTimeEnd?: string | null
@@ -17,7 +17,7 @@ export interface AttachmentPageQuery {
 
 // 附件分页 VO
 export interface AttachmentPageVo {
-  id: number
+  id: string
   fileName: string
   originalName: string
   filePath: string
@@ -27,7 +27,7 @@ export interface AttachmentPageVo {
   mimeType: string
   storageType: string
   businessType?: string
-  businessId?: number | null
+  businessId?: string | null
   status?: number
   remark?: string
   createTime?: string
@@ -48,27 +48,27 @@ export interface AttachmentCreateRequest {
   mimeType: string
   storageType?: string
   businessType?: string
-  businessId?: number | null
+  businessId?: string | null
   status?: number
   remark?: string
 }
 
 // 更新附件请求 DTO
 export interface AttachmentUpdateRequest {
-  id: number
+  id: string
   businessType?: string
-  businessId?: number | null
+  businessId?: string | null
   remark?: string
 }
 
 // 批量删除附件请求 DTO
 export interface AttachmentBatchDeleteRequest {
-  ids: number[]
+  ids: string[]
 }
 
 // 切换附件状态请求 DTO
 export interface AttachmentStatusSwitchRequest {
-  id: number
+  id: string
   status: number
 }
 
@@ -76,7 +76,7 @@ export interface AttachmentStatusSwitchRequest {
  * 硬删除附件请求 DTO
  */
 export interface AttachmentHardDeleteRequest {
-  id: number
+  id: string
 }
 
 /**
@@ -89,7 +89,7 @@ export function getAttachmentPage(payload: AttachmentPageQuery): Promise<PageRes
 /**
  * 根据ID查询附件详情
  */
-export function getAttachmentById(attachmentId: number): Promise<AttachmentDetailVo> {
+export function getAttachmentById(attachmentId: string): Promise<AttachmentDetailVo> {
   return httpGet<AttachmentDetailVo>(SERVICE.BASE, `/attachment/${attachmentId}`)
 }
 
@@ -110,14 +110,14 @@ export function updateAttachment(payload: AttachmentUpdateRequest): Promise<Atta
 /**
  * 删除附件（逻辑删除）
  */
-export function deleteAttachment(attachmentId: number): Promise<void> {
+export function deleteAttachment(attachmentId: string): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/attachment/${attachmentId}`)
 }
 
 /**
  * 硬删除附件（删除物理文件并逻辑删除记录）
  */
-export function hardDeleteAttachment(attachmentId: number): Promise<void> {
+export function hardDeleteAttachment(attachmentId: string): Promise<void> {
   return httpDelete<void>(SERVICE.BASE, `/attachment/${attachmentId}/hard`)
 }
 
