@@ -8,6 +8,7 @@ export interface JobPageQuery {
   serviceName?: string
   jobCode?: string
   jobName?: string
+  jobType?: string,
   enabled?: number | null
   createTimeStart?: string | null
   createTimeEnd?: string | null
@@ -19,6 +20,7 @@ export interface JobVo {
   serviceName: string
   jobCode: string
   jobName: string
+  jobType: string
   cronExpr: string
   runMode: string
   enabled: number
@@ -36,6 +38,7 @@ export interface JobCreateRequest {
   serviceName: string
   jobCode: string
   jobName: string
+  jobType: string
   cronExpr: string
   runMode: string
   enabled?: number
@@ -49,6 +52,7 @@ export interface JobUpdateRequest {
   id: string
   serviceName?: string
   jobName?: string
+  jobType?: string
   cronExpr?: string
   runMode?: string
   enabled?: number
@@ -72,48 +76,48 @@ export interface JobBatchDeleteRequest {
  * 分页查询定时任务
  */
 export function getJobPage(payload: JobPageQuery): Promise<PageResult<JobVo>> {
-  return httpPost<PageResult<JobVo>>(SERVICE.BASE, '/job/page', payload)
+  return httpPost<PageResult<JobVo>>(SERVICE.JOB, '/job/page', payload)
 }
 
 /**
  * 根据 ID 查询定时任务详情
  */
 export function getJobById(jobId: string): Promise<JobVo> {
-  return httpGet<JobVo>(SERVICE.BASE, `/job/${jobId}`)
+  return httpGet<JobVo>(SERVICE.JOB, `/job/${jobId}`)
 }
 
 /**
  * 创建定时任务
  */
 export function createJob(payload: JobCreateRequest): Promise<JobVo> {
-  return httpPost<JobVo>(SERVICE.BASE, '/job/create', payload)
+  return httpPost<JobVo>(SERVICE.JOB, '/job/create', payload)
 }
 
 /**
  * 更新定时任务
  */
 export function updateJob(payload: JobUpdateRequest): Promise<JobVo> {
-  return httpPut<JobVo>(SERVICE.BASE, '/job/update', payload)
+  return httpPut<JobVo>(SERVICE.JOB, '/job/update', payload)
 }
 
 /**
  * 删除定时任务
  */
 export function deleteJob(jobId: string): Promise<void> {
-  return httpDelete<void>(SERVICE.BASE, `/job/${jobId}`)
+  return httpDelete<void>(SERVICE.JOB, `/job/${jobId}`)
 }
 
 /**
  * 批量删除定时任务
  */
 export function batchDeleteJob(payload: JobBatchDeleteRequest): Promise<void> {
-  return httpPost<void>(SERVICE.BASE, '/job/batch-delete', payload)
+  return httpPost<void>(SERVICE.JOB, '/job/batch-delete', payload)
 }
 
 /**
  * 切换定时任务启用状态
  */
 export function switchJobStatus(payload: JobStatusSwitchRequest): Promise<void> {
-  return httpPost<void>(SERVICE.BASE, '/job/switch-status', payload)
+  return httpPost<void>(SERVICE.JOB, '/job/switch-status', payload)
 }
 

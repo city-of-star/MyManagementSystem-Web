@@ -1,6 +1,6 @@
 /**
  * HTTP 请求配置和常量
- * 
+ *
  * 集中管理所有 HTTP 相关的配置和常量
  */
 
@@ -39,6 +39,7 @@ export const REQUEST_TIMEOUT = 10_000
 export const SERVICE = {
   USERCENTER: '/usercenter',
   BASE: '/base',
+  JOB: '/job',
 } as const
 
 export type ServicePrefix = (typeof SERVICE)[keyof typeof SERVICE]

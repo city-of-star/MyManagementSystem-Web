@@ -39,9 +39,10 @@ import DictSelect from '@/components/dict/DictSelect.vue'
 import DictTag from '@/components/dict/DictTag.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
-// 字典：通用状态、是否
+// 字典：通用状态
 const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
-const { options: yesNoOptions, load: yesNoLoad } = useDict('yes_no')
+// 字典：是否
+const { options: yesNoOptions, loading: yesNoLoading, load: yesNoLoad } = useDict('yes_no')
 
 // ====== 字典类型（左侧） ======
 
@@ -600,12 +601,7 @@ const currentTypeName = computed(() => {
             <el-input v-model="typeQuery.dictTypeName" placeholder="请输入类型名称" clearable />
           </el-form-item>
           <el-form-item label="状态">
-            <DictSelect
-              v-model.number="typeQuery.status"
-              :options="statusOptions"
-              :loading="statusLoading"
-              placeholder="全部"
-            />
+            <DictSelect v-model.number="typeQuery.status" :options="statusOptions" :loading="statusLoading"/>
           </el-form-item>
         </SearchForm>
 
@@ -614,12 +610,7 @@ const currentTypeName = computed(() => {
           <PrimaryButton icon="Plus" type="primary" @click="handleTypeCreate">
             新建类型
           </PrimaryButton>
-          <PrimaryButton
-            icon="Delete"
-            type="danger"
-            :disabled="!typeMultipleSelection.length"
-            @click="handleTypeBatchDelete"
-          >
+          <PrimaryButton icon="Delete" type="danger" :disabled="!typeMultipleSelection.length" @click="handleTypeBatchDelete">
             批量删除
           </PrimaryButton>
         </Toolbar>
@@ -631,10 +622,8 @@ const currentTypeName = computed(() => {
           :page-num="typeQuery.pageNum"
           :page-size="typeQuery.pageSize"
           @selection-change="handleTypeSelectionChange"
-          highlight-current-row
           @row-click="handleTypeRowClick"
           :row-class-name="getTypeRowClassName"
-          height="430"
         >
           <el-table-column type="selection" width="48" />
           <el-table-column prop="dictTypeCode" label="类型编码" min-width="100" show-overflow-tooltip />
@@ -648,12 +637,7 @@ const currentTypeName = computed(() => {
           <el-table-column label="操作" fixed="right" width="120">
             <template #default="{ row }">
               <IconButton type="primary" icon="Edit" tooltip="编辑" @click.stop="handleTypeEdit(row)" />
-              <IconButton
-                type="primary"
-                :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-                :tooltip="row.status === 1 ? '禁用' : '启用'"
-                @click.stop="handleTypeToggleStatus(row)"
-              />
+              <IconButton type="primary" :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'" :tooltip="row.status === 1 ? '禁用' : '启用'" @click.stop="handleTypeToggleStatus(row)"/>
               <IconButton type="danger" icon="Delete" tooltip="删除" @click.stop="handleTypeDelete(row)" />
             </template>
           </el-table-column>
@@ -683,12 +667,7 @@ const currentTypeName = computed(() => {
             <el-input v-model="dataQuery.dictValue" placeholder="请输入字典值" clearable />
           </el-form-item>
           <el-form-item label="状态">
-            <DictSelect
-              v-model.number="dataQuery.status"
-              :options="statusOptions"
-              :loading="statusLoading"
-              placeholder="全部"
-            />
+            <DictSelect v-model.number="dataQuery.status" :options="statusOptions" :loading="statusLoading"/>
           </el-form-item>
         </SearchForm>
 
@@ -697,12 +676,7 @@ const currentTypeName = computed(() => {
           <PrimaryButton icon="Plus" type="primary" @click="handleDataCreate">
             新建数据
           </PrimaryButton>
-          <PrimaryButton
-            icon="Delete"
-            type="danger"
-            :disabled="!dataMultipleSelection.length"
-            @click="handleDataBatchDelete"
-          >
+          <PrimaryButton icon="Delete" type="danger" :disabled="!dataMultipleSelection.length" @click="handleDataBatchDelete">
             批量删除
           </PrimaryButton>
         </Toolbar>
@@ -714,7 +688,6 @@ const currentTypeName = computed(() => {
           :page-num="dataQuery.pageNum"
           :page-size="dataQuery.pageSize"
           @selection-change="handleDataSelectionChange"
-          height="430"
         >
           <el-table-column type="selection" width="48" />
           <el-table-column prop="dictLabel" label="字典标签" min-width="100" show-overflow-tooltip />
@@ -734,12 +707,7 @@ const currentTypeName = computed(() => {
           <el-table-column label="操作" fixed="right" width="120">
             <template #default="{ row }">
               <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleDataEdit(row)" />
-              <IconButton
-                type="primary"
-                :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-                :tooltip="row.status === 1 ? '禁用' : '启用'"
-                @click="handleDataToggleStatus(row)"
-              />
+              <IconButton type="primary" :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'" :tooltip="row.status === 1 ? '禁用' : '启用'" @click="handleDataToggleStatus(row)"/>
               <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDataDelete(row)" />
             </template>
           </el-table-column>
@@ -757,11 +725,7 @@ const currentTypeName = computed(() => {
           <el-input v-model="typeForm.dictTypeName" placeholder="请输入字典类型名称" />
         </el-form-item>
         <el-form-item label="类型编码" required>
-          <el-input
-            v-model="typeForm.dictTypeCode"
-            placeholder="请输入字典类型编码"
-            :disabled="!!editingTypeId"
-          />
+          <el-input v-model="typeForm.dictTypeCode" placeholder="请输入字典类型编码" :disabled="!!editingTypeId"/>
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="typeForm.sortOrder" :min="0" :max="9999" />
@@ -779,7 +743,7 @@ const currentTypeName = computed(() => {
     <BaseDialog v-model="dataDialogVisible" :title="dataDialogTitle" width="560px" @confirm="handleDataSubmit">
       <el-form label-width="90px" class="dialog-form">
         <el-form-item label="所属类型">
-          <el-input :value="currentTypeName" disabled style="width: 220px" />
+          <el-input :value="currentTypeName" disabled />
         </el-form-item>
         <el-form-item label="字典标签" required>
           <el-input v-model="dataForm.dictLabel" placeholder="请输入字典标签（显示文本）" />
@@ -791,13 +755,10 @@ const currentTypeName = computed(() => {
           <el-input-number v-model="dataForm.dictSort" :min="0" :max="9999" />
         </el-form-item>
         <el-form-item label="是否默认">
-          <el-radio-group v-model="dataForm.isDefault">
-            <el-radio :value="1">是</el-radio>
-            <el-radio :value="0">否</el-radio>
-          </el-radio-group>
+          <DictSelect v-model.number="dataForm.isDefault" :options="yesNoOptions" :loading="yesNoLoading" />
         </el-form-item>
         <el-form-item label="状态">
-          <DictSelect v-model.number="dataForm.status" :options="statusOptions" :loading="statusLoading" style="width: 140px" />
+          <DictSelect v-model.number="dataForm.status" :options="statusOptions" :loading="statusLoading" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="dataForm.remark" type="textarea" rows="3" placeholder="请输入备注" />
@@ -835,7 +796,7 @@ const currentTypeName = computed(() => {
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  padding: 12px 16px 16px;
+  padding: 8px 12px 12px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -865,7 +826,7 @@ const currentTypeName = computed(() => {
   padding-top: 8px;
 }
 
-.dict-type-row--active > td {
+:deep(.dict-type-row--active) > td {
   background-color: #ecf5ff !important;
 }
 

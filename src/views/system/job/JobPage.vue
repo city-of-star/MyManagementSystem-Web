@@ -9,7 +9,8 @@ import Toolbar from '@/components/layout/Toolbar.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DictSelect from '@/components/dict/DictSelect.vue'
-import DictTag from '@/components/dict/DictTag.vue'
+import DictTag from "@/components/dict/DictTag.vue";
+import DictText from '@/components/dict/DictText.vue'
 import DateRangePicker from '@/components/datePicker/DateRangePicker.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import { useDict } from '@/utils/base/dictUtils.ts'
@@ -32,6 +33,7 @@ const query = reactive<JobPageQuery>({
   serviceName: '',
   jobCode: '',
   jobName: '',
+  jobType: '',
   enabled: null,
   createTimeStart: null,
   createTimeEnd: null,
@@ -39,6 +41,12 @@ const query = reactive<JobPageQuery>({
 
 // 字典：通用状态（用于启用/禁用）
 const { options: statusOptions, loading: statusLoading, load: statusLoad } = useDict('common_status')
+// 字典：服务名
+const { options: serviceNameOptions, loading: serviceNameLoading, load: serviceNameLoad } = useDict('service_name')
+// 字典：定时任务类型
+const { options: jobTypeOptions, loading: jobTypeLoading, load: jobTypeLoad } = useDict('job_type')
+// 字典：定时任务运行模式
+const { options: jobRunModeOptions, loading: jobRunModeLoading, load: jobRunModeLoad } = useDict('Job_run_mode')
 
 // 列表 & 分页
 const loading = ref(true)
@@ -58,6 +66,7 @@ const form = reactive({
   serviceName: '',
   jobCode: '',
   jobName: '',
+  jobType: '',
   cronExpr: '',
   runMode: 'single',
   enabled: 1,
@@ -68,7 +77,12 @@ const form = reactive({
 
 // 初始化
 onMounted(async () => {
-  await statusLoad()
+  await Promise.all([
+    statusLoad(),
+    serviceNameLoad(),
+    jobTypeLoad(),
+    jobRunModeLoad()
+  ])
   await fetchData()
 })
 
@@ -164,6 +178,7 @@ const handleSubmit = async () => {
         id: editingJobId.value,
         serviceName: form.serviceName || undefined,
         jobName: form.jobName || undefined,
+        jobType: form.jobType || undefined,
         cronExpr: form.cronExpr || undefined,
         runMode: form.runMode || undefined,
         enabled: form.enabled,
@@ -177,6 +192,7 @@ const handleSubmit = async () => {
         serviceName: form.serviceName,
         jobCode: form.jobCode,
         jobName: form.jobName,
+        jobType: form.jobType,
         cronExpr: form.cronExpr,
         runMode: form.runMode,
         enabled: form.enabled,
@@ -259,13 +275,16 @@ const handleToggleStatus = async (row: JobVo) => {
     <!-- 查询区域 -->
     <SearchForm @search="handleSearch" @reset="handleReset">
       <el-form-item label="所属服务">
-        <el-input v-model="query.serviceName" placeholder="请输入所属服务名称" clearable />
+        <DictSelect :options="serviceNameOptions" :loading="serviceNameLoading" v-model="query.serviceName"/>
       </el-form-item>
       <el-form-item label="任务编码">
         <el-input v-model="query.jobCode" placeholder="请输入任务编码" clearable />
       </el-form-item>
       <el-form-item label="任务名称">
         <el-input v-model="query.jobName" placeholder="请输入任务名称" clearable />
+      </el-form-item>
+      <el-form-item label="任务类型">
+        <DictSelect :options="jobTypeOptions" :loading="jobTypeLoading" v-model="query.jobType"/>
       </el-form-item>
       <el-form-item label="启用状态">
         <DictSelect :options="statusOptions" :loading="statusLoading" v-model.number="query.enabled" />
@@ -297,20 +316,29 @@ const handleToggleStatus = async (row: JobVo) => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="40" />
-      <el-table-column prop="serviceName" label="所属服务" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="serviceName" label="所属服务" min-width="110" show-overflow-tooltip />
       <el-table-column prop="jobCode" label="任务编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="jobName" label="任务名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="cronExpr" label="Cron 表达式" min-width="180" show-overflow-tooltip />
-      <el-table-column prop="runMode" label="运行模式" width="120" show-overflow-tooltip />
+      <el-table-column label="任务类型" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">
+          <DictText :options="jobTypeOptions" :value="row.jobType" :type-map="{ '1': 'success', '0': 'info' }" />
+        </template>
+      </el-table-column>
+      <el-table-column prop="cronExpr" label="Cron 表达式" min-width="140" show-overflow-tooltip />
+      <el-table-column label="运行模式" width="100" show-overflow-tooltip>
+        <template #default="{ row }">
+          <DictText :options="jobRunModeOptions" :value="row.runMode" />
+        </template>
+      </el-table-column>
       <el-table-column label="启用状态" width="110">
         <template #default="{ row }">
           <DictTag :options="statusOptions" :value="row.enabled" :type-map="{ '1': 'success', '0': 'info' }" />
         </template>
       </el-table-column>
-      <el-table-column prop="timeoutMs" label="超时(毫秒)" width="120" />
+      <el-table-column prop="timeoutMs" label="超时(毫秒)" width="100" />
       <el-table-column prop="createTime" label="创建时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="updateTime" label="更新时间" min-width="170" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="220">
+      <el-table-column label="操作" fixed="right" width="150">
         <template #default="{ row }">
           <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)" />
           <IconButton
@@ -331,7 +359,7 @@ const handleToggleStatus = async (row: JobVo) => {
     <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="560px" @confirm="handleSubmit">
       <el-form label-width="120px" class="dialog-form">
         <el-form-item label="所属服务" required>
-          <el-input v-model="form.serviceName" placeholder="请输入所属服务名称" />
+          <DictSelect :options="serviceNameOptions" :loading="serviceNameLoading" v-model="form.serviceName"/>
         </el-form-item>
         <el-form-item label="任务编码" required>
           <el-input v-model="form.jobCode" placeholder="请输入任务编码" :disabled="!!editingJobId" />
@@ -339,14 +367,14 @@ const handleToggleStatus = async (row: JobVo) => {
         <el-form-item label="任务名称" required>
           <el-input v-model="form.jobName" placeholder="请输入任务名称" />
         </el-form-item>
+        <el-form-item label="任务类型">
+          <DictSelect :options="jobTypeOptions" :loading="jobTypeLoading" v-model="form.jobType"/>
+        </el-form-item>
         <el-form-item label="Cron 表达式" required>
           <el-input v-model="form.cronExpr" placeholder="请输入 Cron 表达式" />
         </el-form-item>
         <el-form-item label="运行模式" required>
-          <el-select v-model="form.runMode" placeholder="请选择运行模式" style="width: 100%">
-            <el-option label="single（集群只跑一份）" value="single" />
-            <el-option label="all（每实例都跑）" value="all" />
-          </el-select>
+          <DictSelect :options="jobRunModeOptions" :loading="jobRunModeLoading" v-model="form.runMode"/>
         </el-form-item>
         <el-form-item label="启用状态">
           <DictSelect :options="statusOptions" :loading="statusLoading" v-model.number="form.enabled" />
