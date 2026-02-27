@@ -10,6 +10,7 @@ import IconButton from '@/components/button/IconButton.vue'
 import PrimaryButton from '@/components/button/PrimaryButton.vue'
 import DateRangePicker from '@/components/datePicker/DateRangePicker.vue'
 import type {PageResult} from '@/api/common/types.ts'
+import { useDict } from '@/utils/base/dictUtils.ts'
 import {
   batchDeleteJobRunLog,
   deleteJobRunLog,
@@ -22,6 +23,7 @@ import {
   retryJobRun,
   terminateJobRun,
 } from '@/api/job/jobRunLog.ts'
+import DictSelect from "@/components/dict/DictSelect.vue";
 
 // 查询条件
 const query = reactive<JobRunLogPageQuery>({
@@ -34,15 +36,8 @@ const query = reactive<JobRunLogPageQuery>({
   startTimeEnd: null,
 })
 
-// 状态选项（简单本地枚举）
-const statusOptions = [
-  { label: '全部', value: null },
-  { label: '运行中', value: 'RUNNING' },
-  { label: '成功', value: 'SUCCESS' },
-  { label: '失败', value: 'FAIL' },
-  { label: '超时', value: 'TIMEOUT' },
-  { label: '跳过', value: 'SKIP' },
-]
+// 字典：定时任务状态
+const { options: jobStatusOptions, loading: jobStatusLoading, load: jobStatusLoad } = useDict('job_status')
 
 // 列表 & 分页
 const loading = ref(true)
@@ -58,6 +53,7 @@ const detailData = ref<JobRunLogVo | null>(null)
 
 // 初始化
 onMounted(async () => {
+  await jobStatusLoad()
   await fetchData()
 })
 
@@ -203,9 +199,7 @@ const canTerminate = (row: JobRunLogVo) => {
         <el-input v-model="query.runId" placeholder="请输入执行ID" clearable />
       </el-form-item>
       <el-form-item label="执行状态">
-        <el-select v-model="query.status" placeholder="请选择执行状态" clearable>
-          <el-option v-for="item in statusOptions" :key="String(item.value)" :label="item.label" :value="item.value"/>
-        </el-select>
+        <DictSelect :options="jobStatusOptions" :loading="jobStatusLoading" v-model="query.status" />
       </el-form-item>
       <el-form-item label="开始时间">
         <DateRangePicker v-model:start="query.startTimeStart" v-model:end="query.startTimeEnd" type="datetime"/>
