@@ -4,7 +4,8 @@ import { useRouter } from 'vue-router'
 import { getCurrentUser, login, type LoginRequest } from '@/api/auth/auth.ts'
 import { useAuthStore } from '@/store/auth/auth'
 import { handleErrorToast } from '@/utils/http'
-import {useUserStore} from "@/store/user/user.ts";
+import { useUserStore } from "@/store/user/user.ts";
+import { Message } from "@/utils/base/messageUtils.ts";
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -33,6 +34,8 @@ const handleSubmit = async () => {
     userStore.setUser(user)
     // 跳转到首页
     await router.push('/home')
+    // 提示信息
+    Message.success("登录成功")
   } catch (error) {
     handleErrorToast(error)
   } finally {
