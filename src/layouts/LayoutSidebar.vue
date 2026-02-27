@@ -25,22 +25,25 @@ const isFolderActive = (menu: MenuItem): boolean => {
   return menu.children.some(child => child.path && isActive(child.path))
 }
 
-// 切换菜单展开/折叠
+// 切换菜单展开/折叠（手风琴模式：同一时间只展开一个目录）
 const toggleMenu = (label: string) => {
   if (expandedMenus.value.has(label)) {
-    expandedMenus.value.delete(label)
+    // 当前已展开则收起，清空所有展开状态
+    expandedMenus.value.clear()
   } else {
-    expandedMenus.value.add(label)
+    // 展开新的目录前，先关闭其他目录
+    expandedMenus.value = new Set([label])
   }
 }
 
-// 初始化时展开包含当前路由的目录
+// 初始化时展开包含当前路由的目录（只展开第一个匹配的目录）
 const initExpandedMenus = () => {
-  menus.value.forEach(menu => {
+  for (const menu of menus.value) {
     if (menu.children && isFolderActive(menu)) {
-      expandedMenus.value.add(menu.label)
+      expandedMenus.value = new Set([menu.label])
+      break
     }
-  })
+  }
 }
 
 initExpandedMenus()
