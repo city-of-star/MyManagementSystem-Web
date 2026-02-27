@@ -16,6 +16,7 @@ export interface JobRunLogPageQuery {
 export interface JobRunLogVo {
   id: string
   jobId: string
+  jobName?: string
   runId: string
   status: string
   startTime?: string

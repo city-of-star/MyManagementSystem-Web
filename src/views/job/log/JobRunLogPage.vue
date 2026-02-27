@@ -204,40 +204,18 @@ const canTerminate = (row: JobRunLogVo) => {
       </el-form-item>
       <el-form-item label="执行状态">
         <el-select v-model="query.status" placeholder="请选择执行状态" clearable>
-          <el-option
-            v-for="item in statusOptions"
-            :key="String(item.value)"
-            :label="item.label"
-            :value="item.value"
-          />
+          <el-option v-for="item in statusOptions" :key="String(item.value)" :label="item.label" :value="item.value"/>
         </el-select>
       </el-form-item>
       <el-form-item label="开始时间">
-        <DateRangePicker
-          v-model:start="query.startTimeStart"
-          v-model:end="query.startTimeEnd"
-          type="datetime"
-        />
+        <DateRangePicker v-model:start="query.startTimeStart" v-model:end="query.startTimeEnd" type="datetime"/>
       </el-form-item>
     </SearchForm>
 
     <!-- 操作栏 -->
     <Toolbar>
-      <PrimaryButton
-        icon="Delete"
-        type="danger"
-        :disabled="!multipleSelection.length"
-        @click="handleBatchDelete"
-      >
-        批量删除
-      </PrimaryButton>
-      <PrimaryButton
-        icon="Download"
-        type="primary"
-        @click="handleExport"
-      >
-        导出
-      </PrimaryButton>
+      <PrimaryButton icon="Delete" type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">批量删除</PrimaryButton>
+      <PrimaryButton icon="Download" type="primary" @click="handleExport">导出</PrimaryButton>
     </Toolbar>
 
     <!-- 表格 -->
@@ -249,43 +227,22 @@ const canTerminate = (row: JobRunLogVo) => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="40" />
-      <el-table-column prop="jobId" label="任务ID" min-width="90" />
+      <el-table-column prop="jobId" label="任务ID" min-width="80" />
+      <el-table-column prop="jobName" label="任务名称" min-width="140" show-overflow-tooltip />
       <el-table-column prop="runId" label="执行ID" min-width="160" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="100" />
       <el-table-column prop="startTime" label="开始时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="endTime" label="结束时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="durationMs" label="耗时(毫秒)" width="110" />
-      <el-table-column prop="instanceId" label="实例ID" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="instanceId" label="实例ID" min-width="120" show-overflow-tooltip />
       <el-table-column prop="host" label="主机" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="errorMessage" label="错误摘要" min-width="200" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="220">
+      <el-table-column prop="errorMessage" label="错误摘要" min-width="160" show-overflow-tooltip />
+      <el-table-column label="操作" fixed="right" width="160">
         <template #default="{ row }">
-          <IconButton
-            type="primary"
-            icon="View"
-            tooltip="详情"
-            @click="handleViewDetail(row)"
-          />
-          <IconButton
-            type="primary"
-            icon="Refresh"
-            tooltip="重试执行"
-            :disabled="!canRetry(row)"
-            @click="handleRetry(row)"
-          />
-          <IconButton
-            type="warning"
-            icon="CircleClose"
-            tooltip="终止执行"
-            :disabled="!canTerminate(row)"
-            @click="handleTerminate(row)"
-          />
-          <IconButton
-            type="danger"
-            icon="Delete"
-            tooltip="删除"
-            @click="handleDelete(row)"
-          />
+          <IconButton type="primary" icon="View" tooltip="详情" @click="handleViewDetail(row)"/>
+          <IconButton type="primary" icon="Refresh" tooltip="重试执行" :disabled="!canRetry(row)" @click="handleRetry(row)"/>
+          <IconButton type="warning" icon="CircleClose" tooltip="终止执行" :disabled="!canTerminate(row)" @click="handleTerminate(row)"/>
+          <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)"/>
         </template>
       </el-table-column>
     </DataTable>
@@ -310,6 +267,9 @@ const canTerminate = (row: JobRunLogVo) => {
         </el-descriptions-item>
         <el-descriptions-item label="任务ID">
           {{ detailData.jobId }}
+        </el-descriptions-item>
+        <el-descriptions-item label="任务名称">
+          {{ detailData.jobName }}
         </el-descriptions-item>
         <el-descriptions-item label="执行ID">
           {{ detailData.runId }}
