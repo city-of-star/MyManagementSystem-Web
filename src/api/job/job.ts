@@ -1,5 +1,5 @@
 import { httpPost, httpPut, httpDelete, httpGet, SERVICE } from '@/utils/http'
-import type { PageResult } from '@/api/common/types'
+import type { PageResult } from '@/api/common/types.ts'
 
 // 分页查询请求 DTO
 export interface JobPageQuery {

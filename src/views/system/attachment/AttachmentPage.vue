@@ -10,7 +10,7 @@ import {
   switchAttachmentStatus,
   uploadAttachmentWithProgress,
   hardDeleteAttachment,
-} from '@/api/attachment/attachment'
+} from '@/api/system/attachment/attachment'
 import type {PageResult} from '@/api/common/types'
 import {handleErrorToast} from '@/utils/http'
 import {useDict} from '@/utils/base/dictUtils.ts'

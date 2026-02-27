@@ -23,7 +23,7 @@ import {
   updateJob,
   type JobPageQuery,
   type JobVo,
-} from '@/api/system/job/job.ts'
+} from '@/api/job/job.ts'
 import type { PageResult } from '@/api/common/types.ts'
 
 // 查询条件
