@@ -25,6 +25,7 @@ import {
   terminateJobRun,
 } from '@/api/job/jobRunLog.ts'
 import DictSelect from "@/components/dict/DictSelect.vue";
+import DictTag from "@/components/dict/DictTag.vue";
 import DictText from "@/components/dict/DictText.vue";
 
 // 路由
@@ -265,7 +266,9 @@ const canTerminate = (row: JobRunLogVo) => {
         <el-descriptions-item label="执行ID">{{ detailData.runId }}</el-descriptions-item>
         <el-descriptions-item label="任务名称">{{ detailData.jobName }}</el-descriptions-item>
         <el-descriptions-item label="任务ID">{{ detailData.jobId }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ detailData.status }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <DictTag :options="jobStatusOptions" :value="detailData.status" :type-map="{ running: 'warning', success: 'success', fail: 'danger', timeout: 'danger', skip: 'info' }"/>
+        </el-descriptions-item>
         <el-descriptions-item label="耗时(毫秒)">{{ detailData.durationMs }}</el-descriptions-item>
         <el-descriptions-item label="开始时间">{{ detailData.startTime }}</el-descriptions-item>
         <el-descriptions-item label="结束时间">{{ detailData.endTime }}</el-descriptions-item>
