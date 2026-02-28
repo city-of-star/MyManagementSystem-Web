@@ -26,7 +26,6 @@ import {
 } from '@/api/job/jobRunLog.ts'
 import DictSelect from "@/components/dict/DictSelect.vue";
 import DictTag from "@/components/dict/DictTag.vue";
-import DictText from "@/components/dict/DictText.vue";
 
 // 路由
 const route = useRoute()
@@ -166,7 +165,7 @@ const handleRetry = async (row: JobRunLogVo) => {
   try {
     await Message.confirm(`确定要重试执行任务（执行ID：${row.runId}）吗？`)
     await retryJobRun(row.id)
-    Message.success('已触发重试（如后端已实现）')
+    Message.success('已重试')
     await fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -180,7 +179,7 @@ const handleTerminate = async (row: JobRunLogVo) => {
   try {
     await Message.confirm(`确定要终止本次执行（执行ID：${row.runId}）吗？`)
     await terminateJobRun(row.id)
-    Message.success('已触发终止（如后端已实现）')
+    Message.success('已终止')
     await fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -191,12 +190,12 @@ const handleTerminate = async (row: JobRunLogVo) => {
 
 // 状态是否允许重试
 const canRetry = (row: JobRunLogVo) => {
-  return row.status === 'FAIL' || row.status === 'TIMEOUT' || row.status === 'SKIP'
+  return row.status === 'fail' || row.status === 'timeout' || row.status === 'skip'
 }
 
 // 状态是否允许终止
 const canTerminate = (row: JobRunLogVo) => {
-  return row.status === 'RUNNING'
+  return row.status === 'running'
 }
 </script>
 
@@ -236,16 +235,16 @@ const canTerminate = (row: JobRunLogVo) => {
       <el-table-column prop="runId" label="执行ID" min-width="160" show-overflow-tooltip />
       <el-table-column prop="jobId" label="任务ID" min-width="80" />
       <el-table-column prop="jobName" label="任务名称" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="durationMs" label="耗时(毫秒)" width="110" />
+      <el-table-column prop="instanceId" label="实例ID" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="host" label="主机" min-width="140" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <DictText :options="jobStatusOptions" :value="row.status" />
+          <DictTag :options="jobStatusOptions" :value="row.status" :type-map="{ running: 'warning', success: 'success', fail: 'danger', timeout: 'danger', skip: 'info' }"/>
         </template>
       </el-table-column>
       <el-table-column prop="startTime" label="开始时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="endTime" label="结束时间" min-width="170" show-overflow-tooltip />
-      <el-table-column prop="durationMs" label="耗时(毫秒)" width="110" />
-      <el-table-column prop="instanceId" label="实例ID" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="host" label="主机" min-width="140" show-overflow-tooltip />
       <el-table-column label="操作" fixed="right" width="160">
         <template #default="{ row }">
           <IconButton type="primary" icon="View" tooltip="详情" @click="handleViewDetail(row)"/>
@@ -270,12 +269,10 @@ const canTerminate = (row: JobRunLogVo) => {
           <DictTag :options="jobStatusOptions" :value="detailData.status" :type-map="{ running: 'warning', success: 'success', fail: 'danger', timeout: 'danger', skip: 'info' }"/>
         </el-descriptions-item>
         <el-descriptions-item label="耗时(毫秒)">{{ detailData.durationMs }}</el-descriptions-item>
-        <el-descriptions-item label="开始时间">{{ detailData.startTime }}</el-descriptions-item>
-        <el-descriptions-item label="结束时间">{{ detailData.endTime }}</el-descriptions-item>
         <el-descriptions-item label="实例ID">{{ detailData.instanceId }}</el-descriptions-item>
         <el-descriptions-item label="主机">{{ detailData.host }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detailData.updateTime }}</el-descriptions-item>
+        <el-descriptions-item label="开始时间">{{ detailData.startTime }}</el-descriptions-item>
+        <el-descriptions-item label="结束时间">{{ detailData.endTime }}</el-descriptions-item>
       </el-descriptions>
       <el-divider content-position="left">错误信息</el-divider>
       <el-input :model-value="detailData?.errorMessage || ''" type="textarea" :rows="1" readonly placeholder="无"/>

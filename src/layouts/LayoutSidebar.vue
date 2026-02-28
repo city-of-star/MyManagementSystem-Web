@@ -235,11 +235,6 @@ const resolveIcon = (icon?: string) => {
   border-left: 3px solid #1677ff;
 }
 
-.menu-icon {
-  flex-shrink: 0;
-  color: inherit;
-}
-
 .menu-icon-comp {
   width: 16px;
   height: 16px;

@@ -27,8 +27,6 @@ export interface JobRunLogVo {
   errorMessage?: string
   errorStack?: string
   resultJson?: string
-  createTime?: string
-  updateTime?: string
 }
 
 // 批量删除请求 DTO
