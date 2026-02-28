@@ -221,16 +221,15 @@ const canTerminate = (row: JobRunLogVo) => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="40" />
+      <el-table-column prop="runId" label="执行ID" min-width="160" show-overflow-tooltip />
       <el-table-column prop="jobId" label="任务ID" min-width="80" />
       <el-table-column prop="jobName" label="任务名称" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="runId" label="执行ID" min-width="160" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="100" />
       <el-table-column prop="startTime" label="开始时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="endTime" label="结束时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="durationMs" label="耗时(毫秒)" width="110" />
       <el-table-column prop="instanceId" label="实例ID" min-width="120" show-overflow-tooltip />
       <el-table-column prop="host" label="主机" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="errorMessage" label="错误摘要" min-width="160" show-overflow-tooltip />
       <el-table-column label="操作" fixed="right" width="160">
         <template #default="{ row }">
           <IconButton type="primary" icon="View" tooltip="详情" @click="handleViewDetail(row)"/>
@@ -245,81 +244,27 @@ const canTerminate = (row: JobRunLogVo) => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 详情弹窗 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="执行记录详情"
-      width="640px"
-    >
-      <el-descriptions
-        v-if="detailData"
-        :column="2"
-        border
-        size="small"
-      >
-        <el-descriptions-item label="记录ID">
-          {{ detailData.id }}
-        </el-descriptions-item>
-        <el-descriptions-item label="任务ID">
-          {{ detailData.jobId }}
-        </el-descriptions-item>
-        <el-descriptions-item label="任务名称">
-          {{ detailData.jobName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="执行ID">
-          {{ detailData.runId }}
-        </el-descriptions-item>
-        <el-descriptions-item label="状态">
-          {{ detailData.status }}
-        </el-descriptions-item>
-        <el-descriptions-item label="开始时间">
-          {{ detailData.startTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="结束时间">
-          {{ detailData.endTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="耗时(毫秒)">
-          {{ detailData.durationMs }}
-        </el-descriptions-item>
-        <el-descriptions-item label="实例ID">
-          {{ detailData.instanceId }}
-        </el-descriptions-item>
-        <el-descriptions-item label="主机">
-          {{ detailData.host }}
-        </el-descriptions-item>
-        <el-descriptions-item label="创建时间">
-          {{ detailData.createTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="更新时间">
-          {{ detailData.updateTime }}
-        </el-descriptions-item>
+    <el-dialog v-model="detailDialogVisible" title="执行记录详情" width="640px">
+      <el-descriptions v-if="detailData" :column="2" border size="small">
+        <el-descriptions-item label="记录ID">{{ detailData.id }}</el-descriptions-item>
+        <el-descriptions-item label="执行ID">{{ detailData.runId }}</el-descriptions-item>
+        <el-descriptions-item label="任务名称">{{ detailData.jobName }}</el-descriptions-item>
+        <el-descriptions-item label="任务ID">{{ detailData.jobId }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ detailData.status }}</el-descriptions-item>
+        <el-descriptions-item label="耗时(毫秒)">{{ detailData.durationMs }}</el-descriptions-item>
+        <el-descriptions-item label="开始时间">{{ detailData.startTime }}</el-descriptions-item>
+        <el-descriptions-item label="结束时间">{{ detailData.endTime }}</el-descriptions-item>
+        <el-descriptions-item label="实例ID">{{ detailData.instanceId }}</el-descriptions-item>
+        <el-descriptions-item label="主机">{{ detailData.host }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ detailData.updateTime }}</el-descriptions-item>
       </el-descriptions>
-
       <el-divider content-position="left">错误信息</el-divider>
-      <el-input
-        :model-value="detailData?.errorMessage || ''"
-        type="textarea"
-        :rows="2"
-        readonly
-        placeholder="无"
-      />
-
+      <el-input :model-value="detailData?.errorMessage || ''" type="textarea" :rows="2" readonly placeholder="无"/>
       <el-divider content-position="left">错误堆栈</el-divider>
-      <el-input
-        :model-value="detailData?.errorStack || ''"
-        type="textarea"
-        :rows="6"
-        readonly
-        placeholder="无"
-      />
-
+      <el-input :model-value="detailData?.errorStack || ''" type="textarea" :rows="6" readonly placeholder="无"/>
       <el-divider content-position="left">结果 / 统计 JSON</el-divider>
-      <el-input
-        :model-value="detailData?.resultJson || ''"
-        type="textarea"
-        :rows="6"
-        readonly
-        placeholder="无"
-      />
+      <el-input :model-value="detailData?.resultJson || ''" type="textarea" :rows="6" readonly placeholder="无"/>
     </el-dialog>
   </div>
 </template>

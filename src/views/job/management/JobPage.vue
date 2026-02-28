@@ -13,6 +13,7 @@ import DictTag from "@/components/dict/DictTag.vue";
 import DictText from '@/components/dict/DictText.vue'
 import DateRangePicker from '@/components/datePicker/DateRangePicker.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
+import JsonEditor from '@/components/editor/JsonEditor.vue'
 import { useDict } from '@/utils/base/dictUtils.ts'
 import {
   batchDeleteJob,
@@ -98,6 +99,7 @@ const handleReset = () => {
   query.serviceName = ''
   query.jobCode = ''
   query.jobName = ''
+  query.jobType = ''
   query.enabled = null
   query.createTimeStart = null
   query.createTimeEnd = null
@@ -140,6 +142,7 @@ const handleEdit = (row: JobVo) => {
   form.serviceName = row.serviceName
   form.jobCode = row.jobCode
   form.jobName = row.jobName
+  form.jobType = row.jobType
   form.cronExpr = row.cronExpr
   form.runMode = row.runMode
   form.enabled = row.enabled ?? 1
@@ -162,6 +165,10 @@ const handleSubmit = async () => {
     }
     if (!form.jobName) {
       Message.warning('请填写任务名称')
+      return
+    }
+    if (!form.jobType) {
+      Message.warning('请选择任务类型')
       return
     }
     if (!form.cronExpr) {
@@ -216,6 +223,7 @@ const resetForm = () => {
   form.serviceName = ''
   form.jobCode = ''
   form.jobName = ''
+  form.jobType = ''
   form.cronExpr = ''
   form.runMode = 'single'
   form.enabled = 1
@@ -356,43 +364,60 @@ const handleToggleStatus = async (row: JobVo) => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 新增/编辑弹窗 -->
-    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="560px" @confirm="handleSubmit">
+    <BaseDialog v-model="dialogVisible" :title="dialogTitle" width="1000px" @confirm="handleSubmit">
       <el-form label-width="120px" class="dialog-form">
-        <el-form-item label="所属服务" required>
-          <DictSelect :options="serviceNameOptions" :loading="serviceNameLoading" v-model="form.serviceName"/>
-        </el-form-item>
-        <el-form-item label="任务编码" required>
-          <el-input v-model="form.jobCode" placeholder="请输入任务编码" :disabled="!!editingJobId" />
-        </el-form-item>
-        <el-form-item label="任务名称" required>
-          <el-input v-model="form.jobName" placeholder="请输入任务名称" />
-        </el-form-item>
-        <el-form-item label="任务类型">
-          <DictSelect :options="jobTypeOptions" :loading="jobTypeLoading" v-model="form.jobType"/>
-        </el-form-item>
-        <el-form-item label="Cron 表达式" required>
-          <el-input v-model="form.cronExpr" placeholder="请输入 Cron 表达式" />
-        </el-form-item>
-        <el-form-item label="运行模式" required>
-          <DictSelect :options="jobRunModeOptions" :loading="jobRunModeLoading" v-model="form.runMode"/>
-        </el-form-item>
-        <el-form-item label="启用状态">
-          <DictSelect :options="statusOptions" :loading="statusLoading" v-model.number="form.enabled" />
-        </el-form-item>
-        <el-form-item label="超时毫秒">
-          <el-input-number v-model="form.timeoutMs" :min="0" :step="1000" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="任务参数JSON">
-          <el-input
-            v-model="form.paramsJson"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入任务参数（JSON 字符串，可选）"
-          />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="所属服务" required>
+              <DictSelect :options="serviceNameOptions" :loading="serviceNameLoading" v-model="form.serviceName" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="任务编码" required>
+              <el-input v-model="form.jobCode" placeholder="请输入任务编码" :disabled="!!editingJobId" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="任务名称" required>
+              <el-input v-model="form.jobName" placeholder="请输入任务名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="任务类型" required>
+              <DictSelect :options="jobTypeOptions" :loading="jobTypeLoading" v-model="form.jobType" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="Cron 表达式" required>
+              <el-input v-model="form.cronExpr" placeholder="请输入 Cron 表达式" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="运行模式" required>
+              <DictSelect :options="jobRunModeOptions" :loading="jobRunModeLoading" v-model="form.runMode" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="启用状态">
+              <DictSelect :options="statusOptions" :loading="statusLoading" v-model.number="form.enabled" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="超时毫秒">
+              <el-input-number v-model="form.timeoutMs" :min="0" :step="1000" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="任务参数" required>
+              <JsonEditor v-model="form.paramsJson" placeholder="请输入任务参数（JSON 字符串）" height="300px" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }" placeholder="请输入备注"/>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </BaseDialog>
   </div>
