@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
+import { useRoute } from 'vue-router'
 import {Message} from '@/utils/base/messageUtils.ts'
 import {handleErrorToast} from '@/utils/http'
 import SearchForm from '@/components/layout/SearchForm.vue'
@@ -24,6 +25,10 @@ import {
   terminateJobRun,
 } from '@/api/job/jobRunLog.ts'
 import DictSelect from "@/components/dict/DictSelect.vue";
+import DictText from "@/components/dict/DictText.vue";
+
+// 路由
+const route = useRoute()
 
 // 查询条件
 const query = reactive<JobRunLogPageQuery>({
@@ -35,6 +40,12 @@ const query = reactive<JobRunLogPageQuery>({
   startTimeStart: null,
   startTimeEnd: null,
 })
+
+// 如果通过路由 query 传入了 jobId，则自动带入并查询
+const routeJobId = route.query.jobId as string | undefined
+if (routeJobId) {
+  query.jobId = routeJobId
+}
 
 // 字典：定时任务状态
 const { options: jobStatusOptions, loading: jobStatusLoading, load: jobStatusLoad } = useDict('job_status')
@@ -224,7 +235,11 @@ const canTerminate = (row: JobRunLogVo) => {
       <el-table-column prop="runId" label="执行ID" min-width="160" show-overflow-tooltip />
       <el-table-column prop="jobId" label="任务ID" min-width="80" />
       <el-table-column prop="jobName" label="任务名称" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="status" label="状态" width="100" />
+      <el-table-column prop="status" label="状态" width="100">
+        <template #default="{ row }">
+          <DictText :options="jobStatusOptions" :value="row.status" />
+        </template>
+      </el-table-column>
       <el-table-column prop="startTime" label="开始时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="endTime" label="结束时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="durationMs" label="耗时(毫秒)" width="110" />
@@ -244,7 +259,7 @@ const canTerminate = (row: JobRunLogVo) => {
     <Pagination :query="query" :total="total" @change="fetchData" />
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailDialogVisible" title="执行记录详情" width="640px">
+    <el-dialog v-model="detailDialogVisible" title="执行记录详情" width="1000px" align-center>
       <el-descriptions v-if="detailData" :column="2" border size="small">
         <el-descriptions-item label="记录ID">{{ detailData.id }}</el-descriptions-item>
         <el-descriptions-item label="执行ID">{{ detailData.runId }}</el-descriptions-item>
@@ -260,9 +275,9 @@ const canTerminate = (row: JobRunLogVo) => {
         <el-descriptions-item label="更新时间">{{ detailData.updateTime }}</el-descriptions-item>
       </el-descriptions>
       <el-divider content-position="left">错误信息</el-divider>
-      <el-input :model-value="detailData?.errorMessage || ''" type="textarea" :rows="2" readonly placeholder="无"/>
+      <el-input :model-value="detailData?.errorMessage || ''" type="textarea" :rows="1" readonly placeholder="无"/>
       <el-divider content-position="left">错误堆栈</el-divider>
-      <el-input :model-value="detailData?.errorStack || ''" type="textarea" :rows="6" readonly placeholder="无"/>
+      <el-input :model-value="detailData?.errorStack || ''" type="textarea" :rows="12" readonly placeholder="无"/>
       <el-divider content-position="left">结果 / 统计 JSON</el-divider>
       <el-input :model-value="detailData?.resultJson || ''" type="textarea" :rows="6" readonly placeholder="无"/>
     </el-dialog>

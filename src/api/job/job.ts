@@ -72,6 +72,11 @@ export interface JobBatchDeleteRequest {
   jobIds: string[]
 }
 
+// 执行定时任务请求 DTO
+export interface JobExecuteRequest {
+  jobId: string
+}
+
 /**
  * 分页查询定时任务
  */
@@ -121,3 +126,7 @@ export function switchJobStatus(payload: JobStatusSwitchRequest): Promise<void> 
   return httpPost<void>(SERVICE.JOB, '/job/switch-status', payload)
 }
 
+// 执行定时任务
+export function executeJob(payload: JobExecuteRequest): Promise<void> {
+  return httpPost<void>(SERVICE.JOB, '/job/execute', payload)
+}

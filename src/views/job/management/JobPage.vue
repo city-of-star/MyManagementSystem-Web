@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Message } from '@/utils/base/messageUtils.ts'
 import { handleErrorToast } from '@/utils/http'
 import SearchForm from '@/components/layout/SearchForm.vue'
@@ -20,12 +21,16 @@ import {
   createJob,
   deleteJob,
   getJobPage,
+  executeJob,
   switchJobStatus,
   updateJob,
   type JobPageQuery,
   type JobVo,
 } from '@/api/job/job.ts'
 import type { PageResult } from '@/api/common/types.ts'
+
+// 路由
+const router = useRouter()
 
 // 查询条件
 const query = reactive<JobPageQuery>({
@@ -276,6 +281,29 @@ const handleToggleStatus = async (row: JobVo) => {
     handleErrorToast(error)
   }
 }
+
+// 执行定时任务
+const handleExecute = async (row: JobVo) => {
+  try {
+    await Message.confirm(`确定要执行定时任务【${row.jobName}】吗？`)
+    await executeJob({ jobId: row.id })
+    Message.success('任务已提交执行')
+  } catch (error) {
+    if (error !== 'cancel') {
+      handleErrorToast(error)
+    }
+  }
+}
+
+// 查看执行日志
+const handleViewLog = (row: JobVo) => {
+  router.push({
+    path: '/mms-job/jobRunLogPage',
+    query: {
+      jobId: row.id,
+    },
+  })
+}
 </script>
 
 <template>
@@ -325,14 +353,14 @@ const handleToggleStatus = async (row: JobVo) => {
     >
       <el-table-column type="selection" width="40" />
       <el-table-column prop="serviceName" label="所属服务" min-width="110" show-overflow-tooltip />
-      <el-table-column prop="jobCode" label="任务编码" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="jobName" label="任务名称" min-width="160" show-overflow-tooltip />
-      <el-table-column label="任务类型" min-width="160" show-overflow-tooltip>
+      <el-table-column prop="jobCode" label="任务编码" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="jobName" label="任务名称" min-width="140" show-overflow-tooltip />
+      <el-table-column label="任务类型" min-width="140" show-overflow-tooltip>
         <template #default="{ row }">
-          <DictText :options="jobTypeOptions" :value="row.jobType" :type-map="{ '1': 'success', '0': 'info' }" />
+          <DictText :options="jobTypeOptions" :value="row.jobType" />
         </template>
       </el-table-column>
-      <el-table-column prop="cronExpr" label="Cron 表达式" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="cronExpr" label="Cron 表达式" min-width="120" show-overflow-tooltip />
       <el-table-column label="运行模式" width="100" show-overflow-tooltip>
         <template #default="{ row }">
           <DictText :options="jobRunModeOptions" :value="row.runMode" />
@@ -346,15 +374,12 @@ const handleToggleStatus = async (row: JobVo) => {
       <el-table-column prop="timeoutMs" label="超时(毫秒)" width="100" />
       <el-table-column prop="createTime" label="创建时间" min-width="170" show-overflow-tooltip />
       <el-table-column prop="updateTime" label="更新时间" min-width="170" show-overflow-tooltip />
-      <el-table-column label="操作" fixed="right" width="150">
+      <el-table-column label="操作" fixed="right" width="180">
         <template #default="{ row }">
           <IconButton type="primary" icon="Edit" tooltip="编辑" @click="handleEdit(row)" />
-          <IconButton
-            type="primary"
-            :icon="row.enabled === 1 ? 'CircleClose' : 'CircleCheck'"
-            :tooltip="row.enabled === 1 ? '禁用' : '启用'"
-            @click="handleToggleStatus(row)"
-          />
+          <IconButton type="primary" icon="VideoPlay" tooltip="执行" @click="handleExecute(row)" />
+          <IconButton type="primary" icon="List" tooltip="日志" @click="handleViewLog(row)" />
+          <IconButton type="primary" :icon="row.enabled === 1 ? 'CircleClose' : 'CircleCheck'" :tooltip="row.enabled === 1 ? '禁用' : '启用'" @click="handleToggleStatus(row)" />
           <IconButton type="danger" icon="Delete" tooltip="删除" @click="handleDelete(row)" />
         </template>
       </el-table-column>
