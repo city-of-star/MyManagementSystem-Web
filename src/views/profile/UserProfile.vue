@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue'
-import {useUserStore} from '@/store/user/user'
-import {getCurrentUser} from '@/api/auth/auth'
-import {changeUserPassword, updateUser, type UserPasswordChangeRequest} from '@/api/system/user/user'
-import {uploadAttachmentWithProgress} from '@/api/system/attachment/attachment'
-import {handleErrorSilent, handleErrorToast} from '@/utils/http'
-import type {UploadRawFile} from 'element-plus'
-import {ElMessage} from 'element-plus'
-import {Message} from '@/utils/base/messageUtils.ts'
-import {ATTACHMENT_BUSINESS_TYPE, createBeforeUploadValidator, createUploadRequest} from '@/utils/upload/uploadUtils'
+import { computed, onMounted, ref } from 'vue'
+import { useUserStore } from '@/store/user/user'
+import { getCurrentUser } from '@/api/auth/auth'
+import { changeUserPassword, updateUser, type UserPasswordChangeRequest } from '@/api/system/user/user'
+import { uploadAttachmentWithProgress } from '@/api/system/attachment/attachment'
+import { handleErrorSilent, handleErrorToast } from '@/utils/http'
+import type { UploadRawFile } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { Message } from '@/utils/base/messageUtils.ts'
+import { ATTACHMENT_BUSINESS_TYPE, createBeforeUploadValidator, createUploadRequest } from '@/utils/upload/uploadUtils'
 import AvatarCropperDialog from '@/components/cropper/cropper.vue'
 
 const userStore = useUserStore()
@@ -77,7 +77,7 @@ const rawBeforeAvatarUpload = createBeforeUploadValidator({
  * 裁剪确定后，将裁剪后的 File 返回给 el-upload 继续后续上传流程
  */
 const beforeAvatarUpload = async (rawFile: UploadRawFile) => {
-  const valid = await rawBeforeAvatarUpload(rawFile)
+  const valid = rawBeforeAvatarUpload(rawFile)
   if (!valid) {
     return false
   }
@@ -196,21 +196,9 @@ onMounted(async () => {
             <div class="info-row">
               <div class="info-label">性别</div>
               <div class="info-value">
-
                 <span v-if="user.gender === 1">男</span>
                 <span v-else-if="user.gender === 2">女</span>
                 <span v-else>未知</span>
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">状态</div>
-              <div class="info-value">
-                <span
-                  class="status"
-                  :class="user.status === 1 ? 'status-active' : 'status-inactive'"
-                >
-                  {{ user.status === 1 ? '启用' : '禁用' }}
-                </span>
               </div>
             </div>
             <div class="info-row">
@@ -507,15 +495,6 @@ onMounted(async () => {
   text-align: right;
   color: #111827;
   word-break: break-all;
-}
-
-.status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 6px;
-  font-size: 12px;
-  border-radius: 999px;
 }
 
 .security-tips {

@@ -416,11 +416,7 @@ const handleRemoveRole = async (role: RoleVo) => {
       </el-table-column>
       <el-table-column prop="permissionType" label="类型" width="100">
         <template #default="{ row }">
-          <DictTag
-            :options="typeOptions"
-            :value="row.permissionType"
-            :type-map="{ catalog: 'warning', menu: 'success', button: 'info' }"
-          />
+          <DictTag :options="typeOptions" :value="row.permissionType" :type-map="{ 'catalog': 'warning', 'menu': 'success', 'button': 'info' }"/>
         </template>
       </el-table-column>
       <el-table-column prop="path" label="路由路径" min-width="180" show-overflow-tooltip align="left">
@@ -448,45 +444,15 @@ const handleRemoveRole = async (role: RoleVo) => {
         <template #default="{ row }">
           <div class="action-buttons">
             <template v-if="row.permissionType === 'catalog'">
-              <IconButton
-                type="primary"
-                icon="Plus"
-                tooltip="新增菜单"
-                @click.stop="handleCreateChild(row, 'menu')"
-              />
+              <IconButton type="primary" icon="Plus" tooltip="新增菜单" @click.stop="handleCreateChild(row, 'menu')"/>
             </template>
             <template v-else-if="row.permissionType === 'menu'">
-              <IconButton
-                type="primary"
-                icon="Plus"
-                tooltip="新增按钮"
-                @click.stop="handleCreateChild(row, 'button')"
-              />
+              <IconButton type="primary" icon="Plus" tooltip="新增按钮" @click.stop="handleCreateChild(row, 'button')"/>
             </template>
-            <IconButton
-              type="primary"
-              icon="Edit"
-              tooltip="编辑"
-              @click.stop="handleEdit(row)"
-            />
-            <IconButton
-              type="info"
-              icon="User"
-              tooltip="查看角色"
-              @click.stop="handleViewRoles(row)"
-            />
-            <IconButton
-              type="primary"
-              :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'"
-              :tooltip="row.status === 1 ? '禁用' : '启用'"
-              @click.stop="handleToggleStatus(row)"
-            />
-            <IconButton
-              type="danger"
-              icon="Delete"
-              tooltip="删除"
-              @click.stop="handleDelete(row)"
-            />
+            <IconButton type="primary" icon="Edit" tooltip="编辑" @click.stop="handleEdit(row)"/>
+            <IconButton type="info" icon="User" tooltip="查看角色" @click.stop="handleViewRoles(row)"/>
+            <IconButton type="primary" :icon="row.status === 1 ? 'CircleClose' : 'CircleCheck'" :tooltip="row.status === 1 ? '禁用' : '启用'" @click.stop="handleToggleStatus(row)"/>
+            <IconButton type="danger" icon="Delete" tooltip="删除" @click.stop="handleDelete(row)"/>
           </div>
         </template>
       </el-table-column>
@@ -504,11 +470,7 @@ const handleRemoveRole = async (role: RoleVo) => {
             </el-radio-group>
           </template>
           <template v-else>
-            <DictTag
-              :options="typeOptions"
-              :value="form.permissionType"
-              :type-map="{ catalog: 'warning', menu: 'success', button: 'info' }"
-            />
+            <DictTag :options="typeOptions" :value="form.permissionType" :type-map="{ 'catalog': 'warning', 'menu': 'success', 'button': 'info' }"/>
           </template>
         </el-form-item>
         <el-form-item label="上级">
@@ -520,11 +482,7 @@ const handleRemoveRole = async (role: RoleVo) => {
         <el-form-item label="编码" :required="!editingPermissionId">
           <div class="code-input">
             <el-input v-if="!editingPermissionId && codePrefix" v-model="codePrefix" disabled style="width: 160px" />
-            <el-input
-              v-model="form.permissionCode"
-              placeholder="请输入编码"
-              :disabled="!!editingPermissionId"
-            />
+            <el-input v-model="form.permissionCode" placeholder="请输入编码" :disabled="!!editingPermissionId"/>
           </div>
         </el-form-item>
         <el-form-item v-if="form.permissionType === 'menu'" label="路由路径" required>
@@ -540,20 +498,10 @@ const handleRemoveRole = async (role: RoleVo) => {
           <el-input-number v-model="form.sortOrder" :min="1" :max="9999" />
         </el-form-item>
         <el-form-item label="显示状态">
-          <DictSelect
-            v-model.number="form.visible"
-            :options="visibleOptions"
-            :loading="visibleLoading"
-            style="width: 140px"
-          />
+          <DictSelect v-model.number="form.visible" :options="visibleOptions" :loading="visibleLoading"/>
         </el-form-item>
         <el-form-item label="启用状态" v-if="!editingPermissionId">
-          <DictSelect
-            v-model.number="form.status"
-            :options="statusOptions"
-            :loading="statusLoading"
-            style="width: 140px"
-          />
+          <DictSelect v-model.number="form.status" :options="statusOptions" :loading="statusLoading"/>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" rows="3" placeholder="请输入备注" />
