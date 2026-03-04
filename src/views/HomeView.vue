@@ -19,7 +19,9 @@ import {
   OfficeBuilding,
   Menu,
   Briefcase,
-  Document
+  Document,
+  Folder,
+  Timer
 } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import QuillEditor from '@/components/quill/QuillEditor.vue'
@@ -71,6 +73,18 @@ const systemModules = [
     icon: Files,
     description: '字典类型管理、字典数据维护、字典数据查询',
     color: '#9C27B0'
+  },
+  {
+    title: '附件管理',
+    icon: Folder,
+    description: '附件上传下载、附件数据管理、附件列表查询',
+    color: '#b0274c'
+  },
+  {
+    title: '定时任务',
+    icon: Timer,
+    description: '定时任务管理、定时任务调度、定时任务日志',
+    color: '#27b0ab'
   }
 ]
 
@@ -120,6 +134,12 @@ const microservices = [
     port: '5091',
     description: '数据字典管理、系统配置管理、基础业务数据维护',
     icon: DataAnalysis
+  },
+  {
+    name: '定时任务服务 (Base)',
+    port: '5093',
+    description: '定时任务管理、定时任务调度、定时任务日志记录',
+    icon: Timer
   }
 ]
 </script>
@@ -127,7 +147,7 @@ const microservices = [
 <template>
 
   <!-- 首页富文本编辑器示例 -->
-  <el-card class="section-card" shadow="hover">
+  <el-card class="section-card" shadow="hover" v-if="false">
     <template #header>
       <div class="card-header">
         <el-icon :size="20" style="margin-right: 8px; color: #409EFF">
@@ -152,7 +172,7 @@ const microservices = [
         <p class="system-subtitle">企业级微服务管理系统</p>
         <p class="system-description">
           基于 Spring Cloud 微服务架构，提供完整的 RBAC 权限管理体系，
-          支持用户管理、角色权限、数据字典、系统配置等企业级功能。
+          支持用户管理、角色管理、菜单管理、数据字典管理、系统配置管理、附件管理、定时任务管理等企业级功能。
         </p>
       </div>
       <div class="version-badge">
@@ -173,14 +193,7 @@ const microservices = [
     </template>
     <el-row :gutter="20">
       <el-col
-        v-for="(module, index) in systemModules"
-        :key="index"
-        :xs="24"
-        :sm="12"
-        :md="8"
-        :lg="8"
-        style="margin-bottom: 20px"
-      >
+        v-for="(module, index) in systemModules" :key="index" :xs="24" :sm="12" :md="8" :lg="8" style="margin-bottom: 20px">
         <el-card class="module-card" shadow="hover" :body-style="{ padding: '20px' }">
           <div class="module-icon" :style="{ backgroundColor: module.color + '20' }">
             <el-icon :size="32" :style="{ color: module.color }">
@@ -206,13 +219,7 @@ const microservices = [
     </template>
     <el-row :gutter="20">
       <el-col
-        v-for="(service, index) in microservices"
-        :key="index"
-        :xs="24"
-        :sm="24"
-        :md="8"
-        :lg="8"
-      >
+        v-for="(service, index) in microservices" :key="index" :xs="24" :sm="24" :md="8" :lg="8">
         <el-card class="service-card" shadow="hover">
           <div class="service-header">
             <el-icon :size="24" style="color: #409EFF; margin-right: 8px">
@@ -242,15 +249,7 @@ const microservices = [
           </div>
         </template>
         <div class="tech-tags">
-          <el-tag
-            v-for="(tech, index) in backendTech"
-            :key="index"
-            :type="tech.type as any"
-            size="large"
-            style="margin: 8px"
-          >
-            {{ tech.name }}
-          </el-tag>
+          <el-tag v-for="(tech, index) in backendTech" :key="index" :type="tech.type as any" size="large" style="margin: 8px">{{ tech.name }}</el-tag>
         </div>
       </el-card>
     </el-col>
@@ -265,15 +264,7 @@ const microservices = [
           </div>
         </template>
         <div class="tech-tags">
-          <el-tag
-            v-for="(tech, index) in frontendTech"
-            :key="index"
-            :type="tech.type as any"
-            size="large"
-            style="margin: 8px"
-          >
-            {{ tech.name }}
-          </el-tag>
+          <el-tag v-for="(tech, index) in frontendTech" :key="index" :type="tech.type as any" size="large" style="margin: 8px">{{ tech.name }}</el-tag>
         </div>
       </el-card>
     </el-col>
@@ -327,7 +318,7 @@ const microservices = [
   border: none;
 }
 
-.welcome-card :deep(.el-card__body) {
+.welcome-card {
   padding: 40px;
 }
 
