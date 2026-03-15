@@ -527,7 +527,6 @@ const handleRemoveUser = async (user: UserDetailVo) => {
     >
       <div v-loading="userListLoading" style="min-height: 300px">
         <el-table :data="userList" border stripe v-if="userList.length > 0">
-          <el-table-column prop="id" label="ID" width="70" />
           <el-table-column prop="username" label="用户名" min-width="120" />
           <el-table-column prop="realName" label="真实姓名" min-width="100" />
           <el-table-column prop="nickname" label="昵称" min-width="100" />
