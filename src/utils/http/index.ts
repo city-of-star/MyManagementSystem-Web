@@ -46,7 +46,7 @@ export { BusinessError, NetworkError } from './types'
 
 // ==================== 配置 ====================
 
-export { API_BASE_URL, SUCCESS_CODE, HTTP_ERROR_MAP, REQUEST_TIMEOUT } from './config'
+export { SUCCESS_CODE, HTTP_ERROR_MAP, REQUEST_TIMEOUT } from './config'
 export { SERVICE } from './config'
 export type { ServicePrefix } from './config'
 

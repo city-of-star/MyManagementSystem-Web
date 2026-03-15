@@ -5,14 +5,9 @@
  */
 
 /**
- * API 基础地址
- */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
-
-/**
  * 成功状态码
  */
-export const SUCCESS_CODE = Number(import.meta.env.VITE_SUCCESS_CODE) || 200
+export const SUCCESS_CODE =  200
 
 /**
  * HTTP 错误码映射表

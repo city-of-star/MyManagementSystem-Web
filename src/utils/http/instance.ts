@@ -8,14 +8,13 @@
  */
 
 import axios, { type AxiosInstance } from 'axios'
-import { API_BASE_URL, REQUEST_TIMEOUT } from './config'
+import { REQUEST_TIMEOUT } from './config'
 import { requestInterceptor, requestErrorInterceptor, createResponseInterceptors } from './interceptors'
 
 /**
  * 创建并配置 Axios 实例
  */
 export const http: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL || undefined,
   timeout: REQUEST_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
