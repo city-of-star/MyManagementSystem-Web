@@ -1,9 +1,4 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import Login from '@/views/auth/Login.vue'
-import Layout from '@/layouts/Layout.vue'
-import UserProfile from '@/views/profile/UserProfile.vue'
-import HomeView from '@/views/HomeView.vue'
-
 import { useMenuStore } from '@/store/menu/menu'
 import { useAuthStore } from '@/store/auth/auth'
 import { convertPermissionTreeToMenu, convertPermissionToMap} from '@/utils/menu/menuUtils'
@@ -20,17 +15,17 @@ const baseRoutes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: Login,
+    component: () => import('@/views/auth/Login.vue'),
   },
   // 首页路由（不需要权限，所有用户都可以访问）
   {
     path: '/home',
-    component: Layout,
+    component: () => import('@/layouts/Layout.vue'),
     children: [
       {
         path: '',
         name: 'home',
-        component: HomeView,
+        component: () => import('@/views/HomeView.vue'),
         meta: { title: '首页', icon: 'Home' },
       },
     ],
@@ -38,12 +33,12 @@ const baseRoutes: RouteRecordRaw[] = [
   // 个人信息页面（所有登录用户可访问）
   {
     path: '/profile',
-    component: Layout,
+    component: () => import('@/layouts/Layout.vue'),
     children: [
       {
         path: '',
         name: 'profile',
-        component: UserProfile,
+        component: () => import('@/views/profile/UserProfile.vue'),
         meta: { title: '个人信息', icon: 'User' },
       },
     ],
@@ -120,7 +115,7 @@ async function loadDynamicRoutes() {
 
     // 注册路由（prefix为父路由路径，routes为子路由）
     for (const [prefix, routes] of routeGroups) {
-      router.addRoute({ path: prefix, component: Layout, children: routes })
+      router.addRoute({ path: prefix, component: () => import('@/layouts/Layout.vue'), children: routes })
     }
 
     dynamicRoutesLoaded = true

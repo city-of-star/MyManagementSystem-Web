@@ -4,7 +4,7 @@ import type { UserDetailVo } from '@/api/system/user/user'
 const USER_STORAGE_KEY = 'currentUser'
 
 const defaultState: UserDetailVo = {
-  id: 0,
+  id: '',
   username: '',
   nickname: '',
   realName: '',
@@ -21,9 +21,9 @@ const defaultState: UserDetailVo = {
   lastLoginIp: '',
   passwordUpdateTime: '',
   remark: '',
-  createBy: 0,
+  createBy: '',
   createTime: '',
-  updateBy: 0,
+  updateBy: '',
   updateTime: '',
 }
 

@@ -67,7 +67,8 @@ const closeTab = (tab: { fullPath: string }) => {
       router.push(nextTab.fullPath)
     } else if (tabs.value.length > 0) {
       // 如果还有其他标签，跳转到第一个
-      router.push(tabs.value[0].fullPath)
+      const first = tabs.value[0]
+      if (first) router.push(first.fullPath)
     } else {
       // 如果没有标签了，跳转到首页
       router.push('/home')
